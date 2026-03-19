@@ -1,21 +1,5 @@
-# Texas Hold'em Robot — Configuration
-# Three-model pipeline: vision (image → game state) + decision (game state → action) + termination (action confirmation)
-
-# Vision Model — extracts game state from poker table image
-vision:
-  provider: openrouter              # openrouter | openai | anthropic
-  model: google/gemini-3-flash-preview             # must support vision/image input
-  temperature: 0.1                  # near-deterministic extraction
-  max_tokens: 512
-  top_p: 1.0
-
-# Decision Model — produces poker action from game state
-decision:
-  provider: openrouter              # openrouter | openai | anthropic
-  model: openai/gpt-5.4            # model identifier (provider-specific)
-  temperature: 0.3
-  max_tokens: 512
-  top_p: 1.0
+# DexHoldem Native — Configuration
+# Native agent vision + reasoning pipeline (no external API calls)
 
 # Local webcam capture
 capture:
@@ -37,22 +21,17 @@ remote_terminal:
   max_retries: 3                  # max times to retry a failed command
   retry_delay: 1.0                # seconds to wait before retrying
 
-# Termination detection
+# Termination detection (frame diff stability)
 termination:
-  check_interval: 1                 # seconds between frame captures during detection
-  history_size: 5                   # number of frames to keep in rolling buffer
-  stability_threshold: 0.03        # pixel diff below this = scene is stable
-  timeout: 30                      # seconds before force-killing policy process
-  max_not_done_retries: 3          # vision "not done" retries on stable scene before force-kill
+  check_interval: 1               # seconds between frame captures during detection
+  stability_threshold: 0.03       # pixel diff below this = scene is stable
+  timeout: 30                     # seconds before giving up on action completion
+
+# Experiment directory (state + frames + logs saved per session)
+experiments:
+  base_dir: ./experiments           # experiment folders created here
 
 # Game loop settings
 loop:
-  poll_interval: 2                 # seconds between captures
-  max_rounds: 0                    # 0 = unlimited
-
-# Game state logging
-logging:
-  game_state_log: /tmp/poker_session_log.jsonl
-
-# Shared API key (override per-model with vision.api_key_env / decision.api_key_env)
-api_key_env: OPENROUTER_API_KEY
+  poll_interval: 2                # seconds between captures
+  max_rounds: 0                   # 0 = unlimited
