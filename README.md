@@ -22,11 +22,16 @@
 - Coding agent native, no need to build your own agent loop!
 - Still primitive, more features are ongoing!
 
+## Demo
+
+<PLACE_HOLDER>
+
 ## How to use?
 
 ```
 npx skills add DexHoldem/DexHoldemSKills
 ```
+Then, tell your <a href="https://claude.ai/claude-code">Claude Code</a> / <a href="https://openai.com/index/codex/">Codex</a> / <a href="https://www.cursor.com/">Cursor</a> / ... : <em>"Launch a new experiment with the game loop."</em>
 
 ## Citation
 
