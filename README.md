@@ -33,6 +33,10 @@ npx skills add DexHoldem/DexHoldemSKills
 ```
 Then, tell your <a href="https://claude.ai/claude-code">Claude Code</a> / <a href="https://openai.com/index/codex/">Codex</a> / <a href="https://www.cursor.com/">Cursor</a> / ... : <em>"Launch a new experiment with the game loop."</em>
 
+## Demos
+
+[Demos](https://www.xiaohongshu.com/explore/69bd9d9c000000001a036e47?xsec_token=ABlU62p4OWRwcWPUCtwmVpOKUu1K9oenlyBMR4Mb-lrxg=&xsec_source=pc_user)
+
 ## Citation
 
 ```bibtex
