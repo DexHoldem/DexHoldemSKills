@@ -62,7 +62,7 @@ def action_execute(args, config):
             {"action": "click", "args": [click_x, click_y]},
             {"sleep": focus_delay},
             {"action": "pyperclip.copy", "args": [args.command]},
-            {"action": "hotkey", "args": ["command", "v"]},
+            {"action": "hotkey", "args": ["ctrl", "shift", "v"]},
             {"sleep": 0.1},
             {"action": "press", "args": ["enter"]},
         ]
@@ -85,6 +85,16 @@ def action_send_ctrlc(args, config):
     post_request(base_url, "/batch", payload)
 
 
+def action_click(args, config):
+    base_url = get_base_url(args, config)
+    payload = {
+        "actions": [
+            {"action": "click", "args": [args.x, args.y]},
+        ]
+    }
+    post_request(base_url, "/batch", payload)
+
+
 def action_calibrate(args, config):
     base_url = get_base_url(args, config)
     post_request(base_url, "/exec", {"action": "position"})
@@ -97,10 +107,12 @@ def main():
     parser.add_argument(
         "--action",
         required=True,
-        choices=["execute", "send_ctrlc", "calibrate"],
+        choices=["execute", "send_ctrlc", "click", "calibrate"],
         help="Action to perform",
     )
     parser.add_argument("--command", help="Shell command to paste (required for execute)")
+    parser.add_argument("--x", type=int, help="X coordinate (for click action)")
+    parser.add_argument("--y", type=int, help="Y coordinate (for click action)")
     parser.add_argument(
         "--config",
         default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml"),
@@ -111,6 +123,8 @@ def main():
 
     if args.action == "execute" and not args.command:
         parser.error("--command is required for execute action")
+    if args.action == "click" and (args.x is None or args.y is None):
+        parser.error("--x and --y are required for click action")
 
     config = {}
     if os.path.exists(args.config):
@@ -119,6 +133,7 @@ def main():
     actions = {
         "execute": action_execute,
         "send_ctrlc": action_send_ctrlc,
+        "click": action_click,
         "calibrate": action_calibrate,
     }
     actions[args.action](args, config)

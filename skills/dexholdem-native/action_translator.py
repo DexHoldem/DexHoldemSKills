@@ -97,12 +97,21 @@ def translate(action_obj, my_chips=None):
     action = action_obj.get("action")
 
     if action == "view_card":
+        position = action_obj.get("position", "left")
+        instruction = 0 if position == "left" else 1
+        robot_cmd = (
+            f"python TexasPoker/robot_client.py"
+            f" --server_ip localhost --obs_horizon 1 --instruction {instruction}"
+        )
         return [
             {"command": "python3 play_audio.py wyyp.mp3", "local": True},
-            {"command": "pick_up_card", "args": {}},
-            {"command": "view_card", "args": {}},
-            {"command": "put_down_card", "args": {}},
-            {"command": "python3 play_audio.py pmywt.mp3", "local": True},
+            {"command": robot_cmd},
+        ]
+
+    if action == "put_down_card":
+        return [
+            {"command": "python3 remote_exec.py --action send_ctrlc", "local": True},
+            {"command": "python3 remote_exec.py --action click --x 2587 --y 1094", "local": True},
         ]
 
     if action == "fold":

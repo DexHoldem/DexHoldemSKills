@@ -121,6 +121,34 @@ def save_hand_cache(cache_path, cache):
     os.replace(tmp, cache_path)
 
 
+# ── status history ────────────────────────────────────────────────────────
+
+def _status_history_path(config):
+    exp_dir = _current_exp_dir(config)
+    if exp_dir:
+        return os.path.join(exp_dir, "status_history.json")
+    return None
+
+
+def load_status_history(path):
+    if not path or not os.path.exists(path):
+        return []
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def append_status(path, entry):
+    history = load_status_history(path)
+    entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+    history.append(entry)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(history, f, indent=2)
+    os.replace(tmp, path)
+    return history
+
+
 # ── init ───────────────────────────────────────────────────────────────────
 
 def cmd_init(args, config):
@@ -203,6 +231,38 @@ def cmd_hand_clear(args, config):
         os.remove(cache_path)
 
 
+# ── status-history commands ───────────────────────────────────────────────
+
+def cmd_status_save(args, config):
+    path = _status_history_path(config)
+    if not path:
+        print("Error: no active experiment. Run 'init' first.", file=sys.stderr)
+        sys.exit(1)
+    entry = {
+        "round": args.round,
+        "robot_state": args.robot_state,
+        "held_card": args.held_card,
+        "last_action": args.last_action,
+        "diff": args.diff,
+    }
+    history = append_status(path, entry)
+    print(json.dumps(entry, indent=2))
+
+
+def cmd_status_load(args, config):
+    path = _status_history_path(config)
+    history = load_status_history(path)
+    n = args.last or len(history)
+    recent = history[-n:]
+    print(json.dumps(recent, indent=2))
+
+
+def cmd_status_clear(args, config):
+    path = _status_history_path(config)
+    if path and os.path.exists(path):
+        os.remove(path)
+
+
 # ── main ───────────────────────────────────────────────────────────────────
 
 def main():
@@ -257,6 +317,22 @@ def main():
     # hand-clear
     sub.add_parser("hand-clear", help="Clear hand cache (between hands)")
 
+    # status-save
+    p_ss = sub.add_parser("status-save", help="Append a status entry to history")
+    p_ss.add_argument("--round", type=int, default=0)
+    p_ss.add_argument("--robot-state", default="idle",
+                       choices=["idle", "moving", "holding_card"])
+    p_ss.add_argument("--held-card", default=None, help="Card in gripper or null")
+    p_ss.add_argument("--last-action", default=None, help="Last executed action name")
+    p_ss.add_argument("--diff", type=float, default=None, help="Frame diff value")
+
+    # status-load
+    p_sl = sub.add_parser("status-load", help="Print recent status history")
+    p_sl.add_argument("--last", type=int, default=None, help="Show last N entries (default: all)")
+
+    # status-clear
+    sub.add_parser("status-clear", help="Clear status history")
+
     args = parser.parse_args()
     config = _load_config()
 
@@ -278,6 +354,18 @@ def main():
 
     if args.command == "hand-clear":
         cmd_hand_clear(args, config)
+        return
+
+    if args.command == "status-save":
+        cmd_status_save(args, config)
+        return
+
+    if args.command == "status-load":
+        cmd_status_load(args, config)
+        return
+
+    if args.command == "status-clear":
+        cmd_status_clear(args, config)
         return
 
     # resolve state path

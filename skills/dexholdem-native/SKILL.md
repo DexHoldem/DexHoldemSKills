@@ -67,17 +67,25 @@ python3 frame_diff.py <prev_frame> <current_frame>
 
 Prints a float 0.0–1.0. If diff >= `stability_threshold` AND the previous iteration was executing a robot action → **"policy still running"**, wait `poll_interval`, recapture. If below threshold or no previous frame, proceed.
 
-**c. Recognition** — `Read` the captured image. Following `vision_prompt.md`, extract game-state JSON (`hand`, `community_cards`, `pot`, `position`, `is_my_turn`, `game_phase`, `my_chips`, etc.).
+**c. Recognition** — `Read` the captured image. Following `vision_prompt.md`, extract game-state JSON (`hand`, `held_card`, `robot_state`, `community_cards`, `pot`, `position`, `is_my_turn`, `game_phase`, `my_chips`, etc.).
+
+Save the recognition to status history:
+
+```bash
+python3 execution_state.py status-save --round <N> --robot-state <robot_state> --held-card <held_card> --last-action <last_action> --diff <diff_value>
+```
 
 - `game_phase: "game_over"` → stop loop, report final state.
 - `game_phase: "between_hands"` → clear hand cache (`python3 execution_state.py hand-clear`), wait `poll_interval`, continue.
 - `game_phase: "showdown"` or `is_my_turn: false` → wait `poll_interval`, continue.
-- **Hand cache update** — load hand cache: `python3 execution_state.py hand-load`. Check `held_card` from recognition:
-  - `held_card` not `null` **and not already in cache** → cache it: `python3 execution_state.py hand-set --position <next_empty> --card <held_card>` (`left` if `left` is `null`, otherwise `right`). Then execute `put_down_card` (step e), recapture.
-  - `held_card` not `null` **but already in cache** → execute `put_down_card` (step e), recapture.
-  - `held_card` is `null` → check cache completeness:
-    - Both `left` and `right` cached → set `hand` to `[left, right]`, proceed to step d.
-    - Fewer than 2 cached → run `python3 action_translator.py --action '{"action": "view_card"}'`, execute returned commands (step e), recapture and re-recognize.
+
+**View-card workflow** — load hand cache (`python3 execution_state.py hand-load`) and status history (`python3 execution_state.py status-load --last 3`). If both `left` and `right` are cached, set `hand` to `[left, right]` and proceed to step d. Otherwise, determine the current state:
+
+- **State i — Robot idle, hand incomplete**: `robot_state: "idle"`, frame diff is low (robot is nearly static), and fewer than 2 cards cached. → Proceed to step d with a `view_card` decision. The position is `"left"` if `left` is `null`, otherwise `"right"`.
+
+- **State ii — Robot moving, view_card already dispatched**: `robot_state: "moving"`, fewer than 2 cards cached, and the last executed action (from status history) was `view_card`. The robot policy is still running. → **Do not proceed to decision.** Exit this iteration. The outer loop will wait `poll_interval` seconds and recapture.
+
+- **State iii — Robot holding a readable card**: `robot_state: "holding_card"`, `held_card` is not `null`, and the card is not yet in the hand cache. → Cache it: `python3 execution_state.py hand-set --position <next_empty> --card <held_card>`. Then execute `put_down_card` (step e): `python3 action_translator.py --action '{"action": "put_down_card"}'`, run the returned commands via `remote_exec.py`. After execution, recapture and re-recognize.
 
 **d. Decision** — reason about game-state JSON using `prompt.md` as strategy guide. Produce action JSON, e.g. `{"action": "call", "bet_chips": 50}`.
 
@@ -98,7 +106,9 @@ For each command in the sequence:
    ```bash
    python3 remote_exec.py --action execute --command '<policy_cmd>'
    ```
-3. **Wait for stability**: capture frames and run `frame_diff.py` in a loop (every `termination.check_interval` seconds). When diff < `termination.stability_threshold`, proceed to verification.
+3. **Wait for completion**: capture frames every `termination.check_interval` seconds (default 30 s — the robot moves slowly). **The completion condition depends on the action type:**
+   - **`view_card` commands**: Do **NOT** use frame diff to decide completion. Instead, `Read` each captured frame and check whether `robot_state` is `"holding_card"` with a readable `held_card`. Only when the card is visually confirmed and cached should you proceed. Do **NOT** send Ctrl+C until the card has been read and cached — the robot moves slowly enough that low frame diff does not mean the policy has finished.
+   - **All other commands**: use `frame_diff.py`. When diff < `termination.stability_threshold`, proceed to verification.
 4. **Verify outcome**: set `execution_state.py update --phase verifying`. Read the stable frame via `Read` tool. Check whether the command's expected physical result is visible (e.g., `pick_chips` → chips missing from stack; `place_bet` → chips in pot; `pick_up_card` → card lifted; `put_down_card` → card on table).
 5. **On success**: send Ctrl+C, wait `ctrlc_delay`. Save the verified frame: `execution_state.py save-frame <path> --round <N> --label verified`. Update: `execution_state.py update --completed <N+1> --frame <saved_path>`. Proceed to next command.
 6. **On failure**: send Ctrl+C. If attempts < `max_retries` → wait `retry_delay`, re-execute from step 2. Otherwise → abort, `execution_state.py clear`.
@@ -149,6 +159,9 @@ python3 execution_state.py clear                   # remove state file (keep exp
 python3 execution_state.py hand-load               # print hand cache JSON
 python3 execution_state.py hand-set --position left --card 9h   # cache a viewed card
 python3 execution_state.py hand-clear              # reset hand cache (between hands)
+python3 execution_state.py status-save --round 1 --robot-state idle --diff 0.01  # log status
+python3 execution_state.py status-load --last 3    # print recent status entries
+python3 execution_state.py status-clear            # clear status history
 ```
 
 Experiment directory layout (`{working_dir}/experiments/`):
