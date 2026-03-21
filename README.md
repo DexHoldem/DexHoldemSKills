@@ -22,10 +22,6 @@
 - Coding agent native, no need to build your own agent loop!
 - Still primitive, more features are ongoing!
 
-## Demo
-
-<PLACE_HOLDER>
-
 ## How to use?
 
 ```
