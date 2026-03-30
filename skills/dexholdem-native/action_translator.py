@@ -111,7 +111,7 @@ def translate(action_obj, my_chips=None):
     if action == "put_down_card":
         return [
             {"command": "python3 remote_exec.py --action send_ctrlc", "local": True},
-            {"command": "python3 remote_exec.py --action click --x 2587 --y 1094", "local": True},
+            {"command": "python3 remote_exec.py --action click --x 2526 --y 1305", "local": True},
         ]
 
     if action == "fold":
