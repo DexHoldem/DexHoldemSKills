@@ -18,11 +18,13 @@ Play poker with a physical robot using your own vision and reasoning — no exte
 
 Configuration is in `config.yaml`, with prompts in `vision_prompt.md` and `prompt.md`.
 
+**Important:** Execute all scripts as opaque CLI tools. Do NOT read the source of `execute_action.py`, `action_translator.py`, or `remote_exec.py`. Treat them as black boxes — run them, read their stdout/stderr, and act on the result.
+
 ## Setup checklist
 
 0. Activate the project venv before running any commands: `source .venv/bin/activate`
 1. `python3 capture.py --help` — verify capture script.
-2. `python3 action_translator.py --help` — verify translator.
+2. `python3 execute_action.py --help` — verify executor.
 3. `python3 remote_exec.py --action calibrate` — verify remote service reachable (check `remote_terminal.host` in `config.yaml` on failure).
 4. Have user position the remote terminal window; update `remote_terminal.click_x`/`click_y` in `config.yaml`.
 5. `python3 remote_exec.py --action execute --command 'echo test'` — confirm "test" appears in remote terminal.
@@ -85,33 +87,39 @@ python3 execution_state.py status-save --round <N> --robot-state <robot_state> -
 
 - **State ii — Robot moving, view_card already dispatched**: `robot_state: "moving"`, fewer than 2 cards cached, and the last executed action (from status history) was `view_card`. The robot policy is still running. → **Do not proceed to decision.** Exit this iteration. The outer loop will wait `poll_interval` seconds and recapture.
 
-- **State iii — Robot holding a readable card**: `robot_state: "holding_card"`, `held_card` is not `null`, and the card is not yet in the hand cache. → Cache it: `python3 execution_state.py hand-set --position <next_empty> --card <held_card>`. Then execute `put_down_card` (step e): `python3 action_translator.py --action '{"action": "put_down_card"}'`, run the returned commands via `remote_exec.py`. After execution, recapture and re-recognize.
+- **State iii — Robot holding a readable card**: `robot_state: "holding_card"`, `held_card` is not `null`, and the card is not yet in the hand cache. → Cache it: `python3 execution_state.py hand-set --position <next_empty> --card <held_card>`. Then execute: `python3 execute_action.py put_down_card`. After execution, recapture and re-recognize.
 
 **d. Decision** — reason about game-state JSON using `prompt.md` as strategy guide. Produce action JSON, e.g. `{"action": "call", "bet_chips": 50}`.
 
-**e. Action translation and execution** — translate the action into robot commands:
+**e. Execute** — run the decided action:
 
 ```bash
-python3 action_translator.py --action '<decision JSON>' --chips '<my_chips JSON>'
+python3 execute_action.py <action> [--position left|right] [--bet-chips N] [--chips '<JSON>']
 ```
 
-The `--chips` argument is optional (omit if chip denominations were not detected). Parse stdout as a JSON array of command objects.
+Examples:
 
-Save execution state before starting: `python3 execution_state.py save --phase executing --action '<decision JSON>' --commands '<cmd_names>' --completed 0 --round <N>`.
+```bash
+python3 execute_action.py view_card
+python3 execute_action.py view_card --position right
+python3 execute_action.py put_down_card
+python3 execute_action.py call --bet-chips 50
+python3 execute_action.py raise --bet-chips 100 --chips '[{"value":50,"count":4}]'
+```
 
-For each command in the sequence:
+The script handles all translation and remote dispatch internally. Exit 0 = success, exit 1 = error, exit 2 = action not yet implemented (placeholder).
 
-1. **Local commands**: if the command has `"local": true`, run its `command` string as a local background process. Skip to next command.
-2. **Remote commands**: substitute the command JSON into `robot.command_template` (replace `{command}` placeholder) to build `policy_cmd`. Execute:
-   ```bash
-   python3 remote_exec.py --action execute --command '<policy_cmd>'
-   ```
-3. **Wait for completion**: capture frames every `termination.check_interval` seconds (default 30 s — the robot moves slowly). **The completion condition depends on the action type:**
-   - **`view_card` commands**: Do **NOT** use frame diff to decide completion. Instead, `Read` each captured frame and check whether `robot_state` is `"holding_card"` with a readable `held_card`. Only when the card is visually confirmed and cached should you proceed. Do **NOT** send Ctrl+C until the card has been read and cached — the robot moves slowly enough that low frame diff does not mean the policy has finished.
-   - **All other commands**: use `frame_diff.py`. When diff < `termination.stability_threshold`, proceed to verification.
-4. **Verify outcome**: set `execution_state.py update --phase verifying`. Read the stable frame via `Read` tool. Check whether the command's expected physical result is visible (e.g., `pick_chips` → chips missing from stack; `place_bet` → chips in pot; `pick_up_card` → card lifted; `put_down_card` → card on table).
-5. **On success**: send Ctrl+C, wait `ctrlc_delay`. Save the verified frame: `execution_state.py save-frame <path> --round <N> --label verified`. Update: `execution_state.py update --completed <N+1> --frame <saved_path>`. Proceed to next command.
-6. **On failure**: send Ctrl+C. If attempts < `max_retries` → wait `retry_delay`, re-execute from step 2. Otherwise → abort, `execution_state.py clear`.
+Save execution state before starting: `python3 execution_state.py save --phase executing --action '<decision JSON>' --commands '<action_name>' --completed 0 --round <N>`.
+
+**Wait for completion** after execution: capture frames every `termination.check_interval` seconds (default 30 s — the robot moves slowly). The completion condition depends on the action type:
+
+- **`view_card`**: Do **NOT** use frame diff. Instead, `Read` each captured frame and check whether `robot_state` is `"holding_card"` with a readable `held_card`. Only when the card is visually confirmed and cached should you proceed. Do **NOT** send Ctrl+C until the card has been read and cached.
+- **All other actions**: use `frame_diff.py`. When diff < `termination.stability_threshold`, proceed to verification.
+
+**Verify outcome**: set `execution_state.py update --phase verifying`. Read the stable frame. Check whether the action's expected physical result is visible.
+
+- **On success**: send Ctrl+C (`python3 remote_exec.py --action send_ctrlc`), wait `ctrlc_delay`. Save verified frame: `execution_state.py save-frame <path> --round <N> --label verified`. Update: `execution_state.py update --completed 1 --frame <saved_path>`.
+- **On failure**: send Ctrl+C. If attempts < `max_retries` → wait `retry_delay`, re-execute. Otherwise → abort, `execution_state.py clear`.
 
 After all commands complete successfully, clear the state: `python3 execution_state.py clear`.
 
@@ -121,30 +129,24 @@ After all commands complete successfully, clear the state: `python3 execution_st
 
 Stop on game over, user interrupt, or max rounds reached.
 
-## Action translator reference
+## Execute action reference
 
 ```bash
-# Translate a poker action to robot commands
-python3 action_translator.py --action '{"action": "call", "bet_chips": 50}'
-# Output: [{"command": "pick_chips", "args": {"amount": 50}}, {"command": "place_bet", "args": {}}]
-
-# View cards
-python3 action_translator.py --action '{"action": "view_card"}'
-# Output: [{"command": "pick_up_card", ...}, {"command": "view_card", ...}, {"command": "put_down_card", ...}]
+python3 execute_action.py view_card                    # view left card
+python3 execute_action.py view_card --position right   # view right card
+python3 execute_action.py put_down_card                # put down held card
+python3 execute_action.py fold                         # placeholder (exit 2)
+python3 execute_action.py check                        # placeholder (exit 2)
+python3 execute_action.py call --bet-chips 50          # placeholder (exit 2)
+python3 execute_action.py raise --bet-chips 100        # placeholder (exit 2)
+python3 execute_action.py all_in                       # placeholder (exit 2)
 ```
 
-## Remote execution reference
+## Troubleshooting
 
-```bash
-# Execute a command in the remote terminal
-python3 remote_exec.py --action execute --command '<command_string>'
-
-# Send Ctrl+C to the remote terminal
-python3 remote_exec.py --action send_ctrlc
-
-# Calibrate — get current mouse position on remote machine
-python3 remote_exec.py --action calibrate
-```
+- **Remote service unreachable**: check `remote_terminal.host` in `config.yaml`.
+- **Calibrate terminal coordinates**: `python3 remote_exec.py --action calibrate`
+- **Manual remote command**: `python3 remote_exec.py --action execute --command '<command>'`
 
 ## Execution state reference
 
