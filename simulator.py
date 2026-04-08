@@ -22,7 +22,7 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
-# ── rendering constants (from dry_run.py) ─────────────────────────────────
+# ── rendering constants ─────────────────────────────────
 
 WIDTH, HEIGHT = 1280, 720
 TABLE_COLOR = (34, 119, 59)
@@ -60,7 +60,7 @@ STRAIGHT, FLUSH, FULL_HOUSE, FOUR_KIND = 4, 5, 6, 7
 STRAIGHT_FLUSH, ROYAL_FLUSH = 8, 9
 
 
-# ── rendering functions (from dry_run.py) ─────────────────────────────────
+# ── rendering functions ─────────────────────────────────
 
 def _get_font(size=20):
     try:
