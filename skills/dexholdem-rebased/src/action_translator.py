@@ -1,10 +1,35 @@
 #!/usr/bin/env python3
-"""Translate a poker decision (or special action) into a sequence of robot primitive commands."""
+"""Translate a poker action into a sequence of robot instruction integers.
+
+Instruction table:
+    0  — view left card          7  — pull back chip 10
+    1  — view right card         8  — pull back chip 50
+    2  — push chip 5  (bet)      9  — pull back chip 100
+    3  — push chip 10 (bet)      10 — put down left  (face down)
+    4  — push chip 50 (bet)      11 — put down right (face down)
+    5  — push chip 100 (bet)     12 — put down left  (face up)
+    6  — pull back chip 5        13 — put down right (face up)
+"""
 
 import argparse
 import json
 import sys
 
+# ── instruction constants ────────────────────────────────────────────────
+
+INSTR_VIEW_LEFT = 0
+INSTR_VIEW_RIGHT = 1
+
+INSTR_PUSH = {5: 2, 10: 3, 50: 4, 100: 5}
+INSTR_PULL = {5: 6, 10: 7, 50: 8, 100: 9}
+
+INSTR_PUT_DOWN = {
+    ("left", False): 10, ("right", False): 11,   # face down
+    ("left", True): 12,  ("right", True): 13,     # face up
+}
+
+
+# ── chip decomposition ───────────────────────────────────────────────────
 
 def split_chips(amount, my_chips):
     """Decompose a bet amount into specific chips from the robot's inventory.
@@ -35,19 +60,12 @@ def split_chips(amount, my_chips):
     if remaining > 0:
         # No exact change — find smallest denomination that covers the remainder
         for chip in reversed(sorted_chips):
-            # Check if there are unused chips of this denomination
-            used = 0
-            for r in result:
-                if r["value"] == chip["value"]:
-                    used = r["value"]  # not count, just flag
-                    break
             available = chip["count"]
             for r in result:
                 if r["value"] == chip["value"]:
                     available -= r["count"]
                     break
             if available > 0 and chip["value"] >= remaining:
-                # Add one chip of this denomination
                 found = False
                 for r in result:
                     if r["value"] == chip["value"]:
@@ -65,7 +83,6 @@ def split_chips(amount, my_chips):
                 break
 
         if remaining > 0:
-            # Still can't cover — use any available chip that's large enough
             for chip in sorted_chips:
                 available = chip["count"]
                 for r in result:
@@ -92,61 +109,69 @@ def split_chips(amount, my_chips):
     return result
 
 
+ROBOT_CMD = "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction {}"
+
+
+def _instr_cmd(instr):
+    """Format a single instruction integer as a robot_client.py command."""
+    return ROBOT_CMD.format(instr)
+
+
+def _chips_to_commands(chip_list):
+    """Expand a split_chips result into a flat list of robot commands."""
+    commands = []
+    for entry in chip_list:
+        instr = INSTR_PUSH.get(entry["value"])
+        if instr is None:
+            print(f"Warning: unknown chip value {entry['value']}, skipping", file=sys.stderr)
+            continue
+        commands.extend([_instr_cmd(instr)] * entry["count"])
+    return commands
+
+
+# ── translate ─────────────────────────────────────────────────────────────
+
 def translate(action_obj, my_chips=None):
-    """Convert a poker action dict to a list of robot command dicts."""
+    """Convert a poker action dict to a list of robot command strings."""
     action = action_obj.get("action")
 
     if action == "view_card":
         position = action_obj.get("position", "left")
-        instruction = 0 if position == "left" else 1
-        robot_cmd = (
-            f"python TexasPoker/robot_client.py"
-            f" --server_ip localhost --obs_horizon 1 --instruction {instruction}"
-        )
-        return [
-            {"command": "python3 src/play_audio.py wyyp.mp3", "local": True},
-            {"command": robot_cmd},
-        ]
+        instr = INSTR_VIEW_LEFT if position == "left" else INSTR_VIEW_RIGHT
+        return [_instr_cmd(instr)]
 
     if action == "put_down_card":
-        return [
-            {"command": "python3 src/remote_exec.py --action send_ctrlc", "local": True},
-            {"command": "python3 src/remote_exec.py --action click --x 2587 --y 1094", "local": True},
-        ]
-
-    if action == "fold":
-        return [{"command": "fold_cards", "args": {}}]
+        position = action_obj.get("position", "left")
+        face_up = action_obj.get("face_up", False)
+        instr = INSTR_PUT_DOWN.get((position, face_up))
+        if instr is None:
+            print(f"Error: invalid put_down_card position={position} face_up={face_up}", file=sys.stderr)
+            sys.exit(1)
+        return [_instr_cmd(instr)]
 
     if action == "check":
-        return [{"command": "tap_table", "args": {}}]
+        print("Warning: check is a placeholder — no instruction assigned yet", file=sys.stderr)
+        return []
 
-    if action == "call":
+    if action == "fold":
+        print("Warning: fold is a placeholder — no instruction assigned yet", file=sys.stderr)
+        return []
+
+    if action in ("call", "raise"):
         bet_chips = action_obj.get("bet_chips", 0)
         if bet_chips <= 0:
             return []
-        pick_args = {"amount": bet_chips}
-        if my_chips is not None:
-            pick_args["chips"] = split_chips(bet_chips, my_chips)
-        return [
-            {"command": "pick_chips", "args": pick_args},
-            {"command": "place_bet", "args": {}},
-        ]
-
-    if action == "raise":
-        bet_chips = action_obj.get("bet_chips")
-        if bet_chips is None or bet_chips <= 0:
-            print("Error: 'raise' requires a positive 'bet_chips' value", file=sys.stderr)
+        if my_chips is None:
+            print("Error: call/raise requires --chips inventory", file=sys.stderr)
             sys.exit(1)
-        pick_args = {"amount": bet_chips}
-        if my_chips is not None:
-            pick_args["chips"] = split_chips(bet_chips, my_chips)
-        return [
-            {"command": "pick_chips", "args": pick_args},
-            {"command": "place_bet", "args": {}},
-        ]
+        chip_list = split_chips(bet_chips, my_chips)
+        return _chips_to_commands(chip_list)
 
     if action == "all_in":
-        return [{"command": "push_all_chips", "args": {}}]
+        if my_chips is None:
+            print("Error: all_in requires --chips inventory", file=sys.stderr)
+            sys.exit(1)
+        return _chips_to_commands(my_chips)
 
     print(f"Error: unknown action '{action}'", file=sys.stderr)
     sys.exit(1)
@@ -154,7 +179,7 @@ def translate(action_obj, my_chips=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Translate a poker action into robot primitive commands."
+        description="Translate a poker action into robot instruction integers."
     )
     parser.add_argument(
         "--action",
@@ -165,7 +190,7 @@ def main():
         "--chips",
         required=False,
         default=None,
-        help='JSON string of chip inventory, e.g. \'[{"value": 100, "count": 4}, {"value": 10, "count": 2}]\'',
+        help='JSON string of chip inventory, e.g. \'[{"value": 100, "count": 4}]\'',
     )
     args = parser.parse_args()
 
@@ -183,8 +208,8 @@ def main():
             print(f"Error: invalid --chips JSON — {e}", file=sys.stderr)
             sys.exit(1)
 
-    commands = translate(action_obj, my_chips=my_chips)
-    print(json.dumps(commands))
+    instructions = translate(action_obj, my_chips=my_chips)
+    print(json.dumps(instructions))
 
 
 if __name__ == "__main__":

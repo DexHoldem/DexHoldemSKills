@@ -100,9 +100,13 @@ def route(game_state):
         if hand_cache["left"] is None:
             _cache_card("left", held_card)
             hand_cache["left"] = held_card
+            put_down_position = "left"
         elif hand_cache["right"] is None:
             _cache_card("right", held_card)
             hand_cache["right"] = held_card
+            put_down_position = "right"
+        else:
+            put_down_position = "left"
 
         # If hand is now complete, reason; otherwise need to put card down first
         if hand_cache["left"] and hand_cache["right"]:
@@ -112,10 +116,10 @@ def route(game_state):
                 "game_state": game_state,
             }
         else:
-            # Need to put card down — hint executor to do put_down_card
             return {
                 "next": "reason",
                 "action_hint": "put_down_card",
+                "position": put_down_position,
                 "game_state": game_state,
             }
 

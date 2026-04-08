@@ -43,17 +43,8 @@ def _run(script, *args, cwd=None):
     return result.stdout.strip(), result.returncode
 
 
-def _run_bg(command_str):
-    """Run a shell command in the background."""
-    subprocess.Popen(
-        command_str, shell=True,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        cwd=SKILL_DIR,
-    )
-
-
 def _translate(action_json, chips_json=None):
-    """Call action_translator to get command sequence."""
+    """Call action_translator to get instruction sequence (list of ints)."""
     cmd_args = ["--action", action_json]
     if chips_json:
         cmd_args += ["--chips", chips_json]
@@ -154,7 +145,7 @@ def execute(action_obj, chips=None, config=None):
     action_json = json.dumps(action_obj)
     chips_json = json.dumps(chips) if chips else None
 
-    # Translate action to command sequence
+    # Translate action to command sequence (list of command strings)
     commands = _translate(action_json, chips_json)
     if commands is None:
         return {"status": "failed", "error": "translation_failed", "commands_completed": 0}
@@ -163,12 +154,11 @@ def execute(action_obj, chips=None, config=None):
         return {"status": "success", "commands_completed": 0}
 
     # Save execution state
-    cmd_names = json.dumps([c.get("command", "") for c in commands])
     _state_cmd(
         "save",
         "--phase", "executing",
         "--action", action_json,
-        "--commands", cmd_names,
+        "--commands", json.dumps(commands),
         "--completed", "0",
         "--round", "0",
     )
@@ -177,46 +167,28 @@ def execute(action_obj, chips=None, config=None):
     max_retries = rt.get("max_retries", 3)
     retry_delay = rt.get("retry_delay", 1.0)
     ctrlc_delay = rt.get("ctrlc_delay", 0.5)
-    cmd_template = config.get("robot", {}).get("command_template", "{command}")
     completed = 0
 
     # Capture a baseline frame before execution
     baseline_frame = _capture()
 
-    for i, cmd_obj in enumerate(commands):
-        is_local = cmd_obj.get("local", False)
-        command_str = cmd_obj.get("command", "")
-
-        if is_local:
-            # Run locally in background
-            _run_bg(command_str)
-            completed += 1
-            _state_cmd("update", "--completed", str(completed))
-            continue
-
-        # Remote command — build policy command from template
-        if "args" in cmd_obj:
-            policy_cmd = cmd_template.replace("{command}", json.dumps(cmd_obj))
-        else:
-            policy_cmd = command_str
+    for robot_cmd in commands:
 
         success = False
         for attempt in range(max_retries):
             # Execute on remote
-            _remote_exec("--action", "execute", "--command", policy_cmd)
+            _remote_exec("--action", "execute", "--command", robot_cmd)
 
             # Wait for robot to finish moving
             stable_frame, stable = _wait_for_stability(config, prev_frame=baseline_frame)
 
             if stable:
-                # Send Ctrl+C to stop the remote process
                 _send_ctrlc()
                 time.sleep(ctrlc_delay)
                 success = True
                 baseline_frame = stable_frame
                 break
             else:
-                # Timeout — retry
                 _send_ctrlc()
                 time.sleep(ctrlc_delay)
                 if attempt < max_retries - 1:
