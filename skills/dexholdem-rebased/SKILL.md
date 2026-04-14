@@ -17,21 +17,25 @@ metadata:
 
 ## Preflight (required before each loop)
 
-Run the preflight check. It pings the remote service and pastes `echo hello world` into the remote terminal. Do **not** start the loop if it fails.
+Run the preflight check. It verifies the remote terminal, the camera, and sets up an experiment directory. Do **not** start the loop if it fails.
 
 ```bash
-python3 src/preflight.py
+python3 src/preflight.py                      # auto-named experiment dir
+python3 src/preflight.py --exp-name my_run    # custom name
 ```
 
-Expected: JSON with `"status": "ok"` and both `connection` and `type_hello_world` checks passing. Visually confirm `hello world` appeared in the remote terminal.
+Checks performed:
+
+1. `connection` — reachability of `remote_terminal.host`
+2. `type_hello_world` — pastes `echo hello world` into the remote terminal (visually confirm it appeared)
+3. `camera` — captures a test frame via `src/capture.py`
+4. `experiment_dir` — creates `experiments/<exp-name>/frames/` and points `experiments/current` at it. Default name: `exp{YYYYMMDD}_{HHMMSS}`.
+
+Expected: JSON with `"status": "ok"` and all four checks passing. The created experiment dir is where subsequent state and frames for this session will be saved.
 
 ## Loop
 
-Read `config.yaml`, `vision_prompt.md`, `prompt.md`. Initialize:
-
-```bash
-python3 src/execution_state.py init
-```
+Read `config.yaml`, `vision_prompt.md`, `prompt.md`. Preflight already created the experiment directory — do **not** run `execution_state.py init` again; it would create a second experiment and move the `current` symlink.
 
 Each iteration:
 

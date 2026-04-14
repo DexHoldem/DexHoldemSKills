@@ -1,31 +1,34 @@
 #!/usr/bin/env python3
 """Preflight check for the DexHoldem loop.
 
-Verifies that the remote PyAutoGUI terminal service is reachable and that
-paste-into-terminal works end-to-end. Run this before starting the main loop.
-
-Checks:
-    1. HTTP reachability of remote_terminal.host (calls /exec with `position`).
-    2. Paste-and-run a harmless `echo hello world` into the remote terminal
-       via the same code path the executor uses.
+Verifies everything the main loop depends on before the first iteration:
+    1. remote_terminal.host is reachable (calls /exec `position`).
+    2. Paste-and-run of `echo hello world` works via the same path executor uses.
+    3. Local camera can capture a non-empty frame.
+    4. An experiment directory exists to receive state/frames for this session.
 
 Exit code 0 on success, 1 on failure. JSON result printed to stdout.
 
 Usage:
     python3 src/preflight.py
-    python3 src/preflight.py --host http://192.168.1.201:5000
+    python3 src/preflight.py --exp-name friday_night
+    python3 src/preflight.py --host http://192.168.1.201:5000 --camera-device 0
+    python3 src/preflight.py --skip-camera
 """
 
 import argparse
 import json
 import os
+import subprocess
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime
 
 import yaml
 
-SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+SKILL_DIR = os.path.dirname(SRC_DIR)
 
 
 def _load_config(path):
@@ -48,6 +51,8 @@ def _post(base_url, endpoint, payload, timeout=5.0):
         return json.loads(resp.read().decode("utf-8"))
 
 
+# ── check: remote connection ──────────────────────────────────────────────
+
 def check_connection(base_url):
     """Ping the remote service via /exec position."""
     try:
@@ -60,6 +65,8 @@ def check_connection(base_url):
     except Exception as e:
         return False, {"detail": repr(e)}
 
+
+# ── check: paste-and-run hello world ──────────────────────────────────────
 
 def check_type_hello_world(base_url, rt):
     """Focus the remote terminal and paste+run `echo hello world`."""
@@ -87,14 +94,118 @@ def check_type_hello_world(base_url, rt):
         return False, {"detail": repr(e)}
 
 
+# ── check: camera ─────────────────────────────────────────────────────────
+
+def check_camera(device, output_path):
+    """Run capture.py and verify a non-empty image was written."""
+    cmd = [
+        sys.executable,
+        os.path.join(SRC_DIR, "capture.py"),
+        "--device", str(device),
+        "--output", output_path,
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    except subprocess.TimeoutExpired:
+        return False, {"detail": "capture.py timed out after 15s"}
+    except Exception as e:
+        return False, {"detail": repr(e)}
+
+    if result.returncode != 0:
+        return False, {
+            "detail": "capture.py exited non-zero",
+            "stderr": result.stderr.strip(),
+            "returncode": result.returncode,
+        }
+
+    if not os.path.exists(output_path):
+        return False, {"detail": f"output file not created: {output_path}"}
+
+    size = os.path.getsize(output_path)
+    if size == 0:
+        return False, {"detail": f"output file is empty: {output_path}"}
+
+    return True, {"output_path": output_path, "size_bytes": size, "device": device}
+
+
+# ── check: experiment directory ───────────────────────────────────────────
+
+def _base_dir(config):
+    rel = config.get("experiments", {}).get("base_dir", "./experiments")
+    if os.path.isabs(rel):
+        return rel
+    return os.path.join(SKILL_DIR, rel)
+
+
+def ensure_experiment_dir(config, exp_name=None):
+    """Create experiments/<name>/ and point `current` symlink at it.
+
+    If exp_name is None, a timestamped default is used: exp{YYYYMMDD}_{HHMMSS}.
+    Returns (ok, detail).
+    """
+    base = _base_dir(config)
+    try:
+        os.makedirs(base, exist_ok=True)
+    except Exception as e:
+        return False, {"detail": f"cannot create base dir {base}: {e}"}
+
+    if not exp_name:
+        exp_name = datetime.now().strftime("exp%Y%m%d_%H%M%S")
+
+    exp_dir = os.path.join(base, exp_name)
+    frames_dir = os.path.join(exp_dir, "frames")
+
+    try:
+        os.makedirs(frames_dir, exist_ok=True)
+    except Exception as e:
+        return False, {"detail": f"cannot create {frames_dir}: {e}"}
+
+    # update 'current' symlink to point at this experiment
+    link = os.path.join(base, "current")
+    try:
+        if os.path.islink(link) or os.path.exists(link):
+            if os.path.islink(link):
+                os.remove(link)
+            else:
+                return False, {"detail": f"{link} exists and is not a symlink"}
+        os.symlink(exp_dir, link)
+    except Exception as e:
+        return False, {"detail": f"cannot update current symlink: {e}"}
+
+    return True, {
+        "exp_name": exp_name,
+        "exp_dir": exp_dir,
+        "frames_dir": frames_dir,
+        "current_symlink": link,
+    }
+
+
+# ── main ──────────────────────────────────────────────────────────────────
+
 def main():
-    parser = argparse.ArgumentParser(description="Preflight check for DexHoldem remote terminal.")
+    parser = argparse.ArgumentParser(description="Preflight check for the DexHoldem loop.")
     parser.add_argument(
         "--config",
         default=os.path.join(SKILL_DIR, "config.yaml"),
         help="Path to config.yaml",
     )
     parser.add_argument("--host", help="Override remote service URL")
+    parser.add_argument(
+        "--exp-name",
+        default=None,
+        help="Experiment directory name (default: exp{YYYYMMDD}_{HHMMSS})",
+    )
+    parser.add_argument(
+        "--camera-device", type=int, default=0,
+        help="Camera device index passed to capture.py (default: 0)",
+    )
+    parser.add_argument(
+        "--camera-output",
+        default="/tmp/poker_preflight.jpg",
+        help="Where the preflight test frame is written",
+    )
+    parser.add_argument("--skip-camera", action="store_true", help="Skip the camera check")
+    parser.add_argument("--skip-remote", action="store_true", help="Skip remote terminal checks")
     args = parser.parse_args()
 
     config = _load_config(args.config)
@@ -103,23 +214,47 @@ def main():
 
     results = {"host": base_url, "checks": []}
 
-    ok, detail = check_connection(base_url)
-    results["checks"].append({"name": "connection", "ok": ok, "detail": detail})
-    if not ok:
+    def record(name, ok, detail):
+        results["checks"].append({"name": name, "ok": ok, "detail": detail})
+        return ok
+
+    def fail(err):
         results["status"] = "failed"
-        results["error"] = "cannot reach remote_terminal.host"
+        results["error"] = err
         print(json.dumps(results, indent=2))
         sys.exit(1)
 
-    ok, detail = check_type_hello_world(base_url, rt)
-    results["checks"].append({"name": "type_hello_world", "ok": ok, "detail": detail})
-    if not ok:
-        results["status"] = "failed"
-        results["error"] = "paste-to-terminal failed"
-        print(json.dumps(results, indent=2))
-        sys.exit(1)
+    # 1. remote connection
+    if args.skip_remote:
+        record("connection", True, {"skipped": True})
+    else:
+        ok, detail = check_connection(base_url)
+        if not record("connection", ok, detail):
+            fail("cannot reach remote_terminal.host")
+
+    # 2. paste-and-run hello world
+    if args.skip_remote:
+        record("type_hello_world", True, {"skipped": True})
+    else:
+        ok, detail = check_type_hello_world(base_url, rt)
+        if not record("type_hello_world", ok, detail):
+            fail("paste-to-terminal failed")
+
+    # 3. camera
+    if args.skip_camera:
+        record("camera", True, {"skipped": True})
+    else:
+        ok, detail = check_camera(args.camera_device, args.camera_output)
+        if not record("camera", ok, detail):
+            fail("camera capture failed")
+
+    # 4. experiment directory
+    ok, detail = ensure_experiment_dir(config, exp_name=args.exp_name)
+    if not record("experiment_dir", ok, detail):
+        fail("could not create experiment directory")
 
     results["status"] = "ok"
+    results["experiment"] = detail
     print(json.dumps(results, indent=2))
     sys.exit(0)
 
