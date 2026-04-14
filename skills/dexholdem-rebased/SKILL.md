@@ -29,13 +29,13 @@ python3 src/preflight.py --exp-name my_run    # custom name
 
 Checks performed:
 
-1. `uv_sync` — runs `uv sync` in the skill dir to install dependencies from the skill-local `pyproject.toml` (pyyaml, opencv-python, pillow) into `.venv/`. If the current interpreter lacks the deps afterwards, preflight re-execs itself under `.venv/bin/python` automatically.
-2. `connection` — reachability of `remote_terminal.host`
-3. `type_hello_world` — pastes `echo hello world` into the remote terminal (visually confirm it appeared)
-4. `camera` — captures a test frame via `src/capture.py`
-5. `experiment_dir` — creates `experiments/<exp-name>/frames/` and points `experiments/current` at it. Default name: `exp{YYYYMMDD}_{HHMMSS}`.
+0. `uv_sync` — runs `uv sync` in the skill dir to install dependencies from the skill-local `pyproject.toml` (pyyaml, opencv-python, pillow) into `.venv/`. If the current interpreter lacks the deps afterwards, preflight re-execs itself under `.venv/bin/python` automatically.
+1. `experiment_dir` — creates `<cwd>/experiments/<exp-name>/frames/` under the agent's current working directory and points `experiments/current` at it. Default name: `exp{YYYYMMDD}_{HHMMSS}`.
+2. `camera` — captures a photo via `src/capture.py` and writes it to `<exp_dir>/frames/preflight.jpg`. **Open the file and confirm the scene looks right.**
+3. `type_hello_world` — pastes `echo hello world` into the remote terminal. **Visually confirm it appeared on the remote screen.** This also covers the remote-service reachability check.
+4. `move_cursor_put_down_card` — moves the remote mouse cursor to the `put_down_card` coordinates from `config.yaml` without clicking. **Visually confirm the cursor landed on the GUI button.**
 
-Requires `uv` on PATH. On a fresh install (e.g. `playground/` created via `npx skills add`), running `python3 src/preflight.py` is enough — it bootstraps its own environment.
+Requires `uv` on PATH. On a fresh install (e.g. `playground/` created via `npx skills add`), running `python3 src/preflight.py` from inside `playground/` is enough — it bootstraps its own environment and drops the experiment dir right next to your session files.
 
 Expected: JSON with `"status": "ok"` and all four checks passing. The created experiment dir is where subsequent state and frames for this session will be saved.
 

@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Preflight check for the DexHoldem loop.
 
-Verifies everything the main loop depends on before the first iteration:
-    1. `uv sync` installs the skill's Python dependencies (re-execs into
+Bootstraps the environment and walks through the minimal set of sanity
+checks before the main loop starts:
+
+    0. `uv sync` installs the skill's Python dependencies (re-execs into
        the created .venv if the current interpreter lacks them).
-    2. remote_terminal.host is reachable (calls /exec `position`).
-    3. Paste-and-run of `echo hello world` works via the same path executor uses.
-    4. Local camera can capture a non-empty frame.
-    5. An experiment directory exists to receive state/frames for this session.
+    1. Create a fresh experiment directory under the agent's current
+       working directory (e.g. playground/experiments/<name>/).
+    2. Capture a photo from the local camera into that experiment dir
+       so the user can eyeball the view.
+    3. Paste-and-run `echo hello world` in the remote terminal.
+    4. Move the remote mouse cursor to the `put_down_card` coordinates
+       so the user can confirm the button lines up.
 
 Exit code 0 on success, 1 on failure. JSON result printed to stdout.
 
@@ -15,7 +20,7 @@ Usage:
     python3 src/preflight.py
     python3 src/preflight.py --exp-name friday_night
     python3 src/preflight.py --host http://192.168.1.201:5000 --camera-device 0
-    python3 src/preflight.py --skip-camera --skip-uv-sync
+    python3 src/preflight.py --skip-camera --skip-remote --skip-uv-sync
 """
 
 # NOTE: Top-level imports are stdlib only so this script can run on a fresh
@@ -116,21 +121,6 @@ def _post(base_url, endpoint, payload, timeout=5.0):
         return json.loads(resp.read().decode("utf-8"))
 
 
-# ── check: remote connection ──────────────────────────────────────────────
-
-def check_connection(base_url):
-    """Ping the remote service via /exec position."""
-    try:
-        body = _post(base_url, "/exec", {"action": "position"})
-        return True, body
-    except urllib.error.HTTPError as e:
-        return False, {"code": e.code, "detail": e.read().decode("utf-8", errors="replace")}
-    except urllib.error.URLError as e:
-        return False, {"detail": str(e.reason)}
-    except Exception as e:
-        return False, {"detail": repr(e)}
-
-
 # ── check: paste-and-run hello world ──────────────────────────────────────
 
 def check_type_hello_world(base_url, rt):
@@ -151,6 +141,34 @@ def check_type_hello_world(base_url, rt):
     try:
         body = _post(base_url, "/batch", payload)
         return True, body
+    except urllib.error.HTTPError as e:
+        return False, {"code": e.code, "detail": e.read().decode("utf-8", errors="replace")}
+    except urllib.error.URLError as e:
+        return False, {"detail": str(e.reason)}
+    except Exception as e:
+        return False, {"detail": repr(e)}
+
+
+# ── check: move cursor to put_down_card position ──────────────────────────
+
+def check_move_cursor_put_down_card(base_url, config):
+    """Move the remote mouse cursor to the configured put_down_card position.
+
+    Purely visual — the user confirms the cursor landed on the GUI button.
+    No click is issued.
+    """
+    pdc = config.get("put_down_card", {}) or {}
+    if "click_x" not in pdc or "click_y" not in pdc:
+        return False, {"detail": "put_down_card.click_x / click_y missing from config"}
+    x, y = pdc["click_x"], pdc["click_y"]
+    payload = {
+        "actions": [
+            {"action": "moveTo", "args": [x, y], "kwargs": {"duration": 0.3}},
+        ]
+    }
+    try:
+        body = _post(base_url, "/batch", payload)
+        return True, {"x": x, "y": y, "response": body}
     except urllib.error.HTTPError as e:
         return False, {"code": e.code, "detail": e.read().decode("utf-8", errors="replace")}
     except urllib.error.URLError as e:
@@ -196,14 +214,21 @@ def check_camera(device, output_path):
 # ── check: experiment directory ───────────────────────────────────────────
 
 def _base_dir(config):
+    """Resolve the experiments base dir against the agent's CWD.
+
+    When the skill is installed into a playground/ dir via `npx skills add`
+    and invoked from there, `os.getcwd()` is that playground dir, which is
+    exactly where the user wants experiments to accumulate. Absolute paths
+    in config are respected as-is.
+    """
     rel = config.get("experiments", {}).get("base_dir", "./experiments")
     if os.path.isabs(rel):
         return rel
-    return os.path.join(SKILL_DIR, rel)
+    return os.path.join(os.getcwd(), rel)
 
 
 def ensure_experiment_dir(config, exp_name=None):
-    """Create experiments/<name>/ and point `current` symlink at it.
+    """Create <cwd>/experiments/<name>/ and point `current` symlink at it.
 
     If exp_name is None, a timestamped default is used: exp{YYYYMMDD}_{HHMMSS}.
     Returns (ok, detail).
@@ -266,8 +291,8 @@ def main():
     )
     parser.add_argument(
         "--camera-output",
-        default="/tmp/poker_preflight.jpg",
-        help="Where the preflight test frame is written",
+        default=None,
+        help="Override path for the preflight test frame (default: <exp_dir>/frames/preflight.jpg)",
     )
     parser.add_argument("--skip-camera", action="store_true", help="Skip the camera check")
     parser.add_argument("--skip-remote", action="store_true", help="Skip remote terminal checks")
@@ -305,37 +330,41 @@ def main():
     base_url = (args.host or rt.get("host", "http://localhost:5000")).rstrip("/")
     results["host"] = base_url
 
-    # 1. remote connection
-    if args.skip_remote:
-        record("connection", True, {"skipped": True})
-    else:
-        ok, detail = check_connection(base_url)
-        if not record("connection", ok, detail):
-            fail("cannot reach remote_terminal.host")
+    # 1. experiment directory (in agent CWD)
+    ok, detail = ensure_experiment_dir(config, exp_name=args.exp_name)
+    if not record("experiment_dir", ok, detail):
+        fail("could not create experiment directory")
+    exp_dir = detail["exp_dir"]
+    frames_dir = detail["frames_dir"]
+    results["experiment"] = detail
 
-    # 2. paste-and-run hello world
+    # 2. camera — save the preview frame into the experiment dir so the
+    #    user can open and eyeball it.
+    camera_output = args.camera_output or os.path.join(frames_dir, "preflight.jpg")
+    if args.skip_camera:
+        record("camera", True, {"skipped": True})
+    else:
+        ok, detail = check_camera(args.camera_device, camera_output)
+        if not record("camera", ok, detail):
+            fail("camera capture failed")
+
+    # 3. paste-and-run `echo hello world` in the remote terminal
     if args.skip_remote:
         record("type_hello_world", True, {"skipped": True})
     else:
         ok, detail = check_type_hello_world(base_url, rt)
         if not record("type_hello_world", ok, detail):
-            fail("paste-to-terminal failed")
+            fail("paste-to-terminal failed (is remote_terminal.host reachable?)")
 
-    # 3. camera
-    if args.skip_camera:
-        record("camera", True, {"skipped": True})
+    # 4. move remote cursor to put_down_card position for visual check
+    if args.skip_remote:
+        record("move_cursor_put_down_card", True, {"skipped": True})
     else:
-        ok, detail = check_camera(args.camera_device, args.camera_output)
-        if not record("camera", ok, detail):
-            fail("camera capture failed")
-
-    # 4. experiment directory
-    ok, detail = ensure_experiment_dir(config, exp_name=args.exp_name)
-    if not record("experiment_dir", ok, detail):
-        fail("could not create experiment directory")
+        ok, detail = check_move_cursor_put_down_card(base_url, config)
+        if not record("move_cursor_put_down_card", ok, detail):
+            fail("could not move cursor to put_down_card position")
 
     results["status"] = "ok"
-    results["experiment"] = detail
     print(json.dumps(results, indent=2))
     sys.exit(0)
 
