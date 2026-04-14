@@ -11,8 +11,8 @@ checks before the main loop starts:
     2. Capture a photo from the local camera into that experiment dir
        so the user can eyeball the view.
     3. Paste-and-run `echo hello world` in the remote terminal.
-    4. Move the remote mouse cursor to the `put_down_card` coordinates
-       so the user can confirm the button lines up.
+    4. Move the remote mouse cursor to the `reset_hand` coordinates
+       so the user can confirm the reset button lines up.
 
 Exit code 0 on success, 1 on failure. JSON result printed to stdout.
 
@@ -149,18 +149,18 @@ def check_type_hello_world(base_url, rt):
         return False, {"detail": repr(e)}
 
 
-# ── check: move cursor to put_down_card position ──────────────────────────
+# ── check: move cursor to reset_hand position ─────────────────────────────
 
-def check_move_cursor_put_down_card(base_url, config):
-    """Move the remote mouse cursor to the configured put_down_card position.
+def check_move_cursor_reset_hand(base_url, config):
+    """Move the remote mouse cursor to the configured reset_hand position.
 
-    Purely visual — the user confirms the cursor landed on the GUI button.
-    No click is issued.
+    Purely visual — the user confirms the cursor landed on the GUI reset
+    button. No click is issued.
     """
-    pdc = config.get("put_down_card", {}) or {}
-    if "click_x" not in pdc or "click_y" not in pdc:
-        return False, {"detail": "put_down_card.click_x / click_y missing from config"}
-    x, y = pdc["click_x"], pdc["click_y"]
+    rh = config.get("reset_hand", {}) or {}
+    if "click_x" not in rh or "click_y" not in rh:
+        return False, {"detail": "reset_hand.click_x / click_y missing from config"}
+    x, y = rh["click_x"], rh["click_y"]
     payload = {
         "actions": [
             {"action": "moveTo", "args": [x, y], "kwargs": {"duration": 0.3}},
@@ -356,13 +356,13 @@ def main():
         if not record("type_hello_world", ok, detail):
             fail("paste-to-terminal failed (is remote_terminal.host reachable?)")
 
-    # 4. move remote cursor to put_down_card position for visual check
+    # 4. move remote cursor to reset_hand position for visual check
     if args.skip_remote:
-        record("move_cursor_put_down_card", True, {"skipped": True})
+        record("move_cursor_reset_hand", True, {"skipped": True})
     else:
-        ok, detail = check_move_cursor_put_down_card(base_url, config)
-        if not record("move_cursor_put_down_card", ok, detail):
-            fail("could not move cursor to put_down_card position")
+        ok, detail = check_move_cursor_reset_hand(base_url, config)
+        if not record("move_cursor_reset_hand", ok, detail):
+            fail("could not move cursor to reset_hand position")
 
     results["status"] = "ok"
     print(json.dumps(results, indent=2))

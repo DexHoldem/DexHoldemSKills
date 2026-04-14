@@ -33,7 +33,7 @@ Checks performed:
 1. `experiment_dir` — creates `<cwd>/experiments/<exp-name>/frames/` under the agent's current working directory and points `experiments/current` at it. Default name: `exp{YYYYMMDD}_{HHMMSS}`.
 2. `camera` — captures a photo via `src/capture.py` and writes it to `<exp_dir>/frames/preflight.jpg`. **Open the file and confirm the scene looks right.**
 3. `type_hello_world` — pastes `echo hello world` into the remote terminal. **Visually confirm it appeared on the remote screen.** This also covers the remote-service reachability check.
-4. `move_cursor_put_down_card` — moves the remote mouse cursor to the `put_down_card` coordinates from `config.yaml` without clicking. **Visually confirm the cursor landed on the GUI button.**
+4. `move_cursor_reset_hand` — moves the remote mouse cursor to the `reset_hand` coordinates from `config.yaml` (the GUI button that resets the dexterous hand to init state) without clicking. **Visually confirm the cursor landed on the reset button.**
 
 Requires `uv` on PATH. On a fresh install (e.g. `playground/` created via `npx skills add`), running `python3 src/preflight.py` from inside `playground/` is enough — it bootstraps its own environment and drops the experiment dir right next to your session files.
 
@@ -78,4 +78,9 @@ Parse the JSON output and follow its `next` field:
 python3 src/executor.py --action '<action_json>' [--chips '<chips_json>']
 ```
 
-Increment round. Continue loop.
+The executor automatically runs a **pre-action stage** before dispatching commands, declared by the translator:
+- For most actions (view, bet/call/raise, all-in): send Ctrl+C then click the `reset_hand` button and wait for the arm to settle at init pose.
+- For `put_down_card` (the arm is currently holding a card): send Ctrl+C only — **no** reset click, because reset would drop the card.
+- For placeholders (`check`, `fold`): no stage.
+
+After a successful `view_card`, the executor locks the next round to `put_down_card` at the same position (see prompt.md action-space constraints). Increment round. Continue loop.

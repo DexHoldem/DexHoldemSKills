@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Translate a poker action into a sequence of robot instruction integers.
+"""Translate a poker action into a robot command sequence with a pre-stage prefix.
 
 Instruction table:
     0  — view left card          7  — pull back chip 10
@@ -9,6 +9,19 @@ Instruction table:
     4  — push chip 50 (bet)      11 — put down right (face down)
     5  — push chip 100 (bet)     12 — put down left  (face up)
     6  — pull back chip 5        13 — put down right (face up)
+
+Output format (JSON to stdout):
+    {"prefix": "reset" | "ctrlc" | null, "commands": ["..."]}
+
+The `prefix` declares what must run on the remote BEFORE dispatching the
+commands list:
+    - "reset" : send Ctrl+C, then click the reset-hand GUI button, then wait
+                for the arm to settle at its init pose. Used whenever the
+                next action needs a free hand.
+    - "ctrlc" : send Ctrl+C only. Used for `put_down_card` (instr 10–13),
+                because the arm is currently holding a card and a reset
+                click would drop it.
+    - null    : no-op (placeholder actions like check / fold).
 """
 
 import argparse
@@ -132,13 +145,17 @@ def _chips_to_commands(chip_list):
 # ── translate ─────────────────────────────────────────────────────────────
 
 def translate(action_obj, my_chips=None):
-    """Convert a poker action dict to a list of robot command strings."""
+    """Convert a poker action dict to {prefix, commands}.
+
+    `prefix` is one of "reset", "ctrlc", or None. See the module docstring.
+    `commands` is a list of robot command strings (possibly empty).
+    """
     action = action_obj.get("action")
 
     if action == "view_card":
         position = action_obj.get("position", "left")
         instr = INSTR_VIEW_LEFT if position == "left" else INSTR_VIEW_RIGHT
-        return [_instr_cmd(instr)]
+        return {"prefix": "reset", "commands": [_instr_cmd(instr)]}
 
     if action == "put_down_card":
         position = action_obj.get("position", "left")
@@ -147,31 +164,32 @@ def translate(action_obj, my_chips=None):
         if instr is None:
             print(f"Error: invalid put_down_card position={position} face_up={face_up}", file=sys.stderr)
             sys.exit(1)
-        return [_instr_cmd(instr)]
+        # NOTE: no reset — the arm is holding a card. Reset would drop it.
+        return {"prefix": "ctrlc", "commands": [_instr_cmd(instr)]}
 
     if action == "check":
         print("Warning: check is a placeholder — no instruction assigned yet", file=sys.stderr)
-        return []
+        return {"prefix": None, "commands": []}
 
     if action == "fold":
         print("Warning: fold is a placeholder — no instruction assigned yet", file=sys.stderr)
-        return []
+        return {"prefix": None, "commands": []}
 
     if action in ("call", "raise"):
         bet_chips = action_obj.get("bet_chips", 0)
         if bet_chips <= 0:
-            return []
+            return {"prefix": None, "commands": []}
         if my_chips is None:
             print("Error: call/raise requires --chips inventory", file=sys.stderr)
             sys.exit(1)
         chip_list = split_chips(bet_chips, my_chips)
-        return _chips_to_commands(chip_list)
+        return {"prefix": "reset", "commands": _chips_to_commands(chip_list)}
 
     if action == "all_in":
         if my_chips is None:
             print("Error: all_in requires --chips inventory", file=sys.stderr)
             sys.exit(1)
-        return _chips_to_commands(my_chips)
+        return {"prefix": "reset", "commands": _chips_to_commands(my_chips)}
 
     print(f"Error: unknown action '{action}'", file=sys.stderr)
     sys.exit(1)
@@ -208,8 +226,8 @@ def main():
             print(f"Error: invalid --chips JSON — {e}", file=sys.stderr)
             sys.exit(1)
 
-    instructions = translate(action_obj, my_chips=my_chips)
-    print(json.dumps(instructions))
+    result = translate(action_obj, my_chips=my_chips)
+    print(json.dumps(result))
 
 
 if __name__ == "__main__":

@@ -95,6 +95,24 @@ def action_click(args, config):
     post_request(base_url, "/batch", payload)
 
 
+def action_click_reset_hand(args, config):
+    """Click the reset-hand GUI button. Reads coords from config['reset_hand']."""
+    base_url = get_base_url(args, config)
+    rh = config.get("reset_hand", {})
+    if "click_x" not in rh or "click_y" not in rh:
+        print(json.dumps({
+            "status": "error",
+            "detail": "reset_hand.click_x / click_y missing from config",
+        }))
+        raise SystemExit(1)
+    payload = {
+        "actions": [
+            {"action": "click", "args": [rh["click_x"], rh["click_y"]]},
+        ]
+    }
+    post_request(base_url, "/batch", payload)
+
+
 def action_calibrate(args, config):
     base_url = get_base_url(args, config)
     post_request(base_url, "/exec", {"action": "position"})
@@ -107,7 +125,7 @@ def main():
     parser.add_argument(
         "--action",
         required=True,
-        choices=["execute", "send_ctrlc", "click", "calibrate"],
+        choices=["execute", "send_ctrlc", "click", "click_reset_hand", "calibrate"],
         help="Action to perform",
     )
     parser.add_argument("--command", help="Shell command to paste (required for execute)")
@@ -134,6 +152,7 @@ def main():
         "execute": action_execute,
         "send_ctrlc": action_send_ctrlc,
         "click": action_click,
+        "click_reset_hand": action_click_reset_hand,
         "calibrate": action_calibrate,
     }
     actions[args.action](args, config)

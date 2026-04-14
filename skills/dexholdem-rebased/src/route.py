@@ -38,10 +38,12 @@ def _load_hand_cache():
     stdout, _ = _run_state_cmd("hand-load")
     if stdout:
         try:
-            return json.loads(stdout)
+            cache = json.loads(stdout)
+            cache.setdefault("pending_putdown", None)
+            return cache
         except json.JSONDecodeError:
             pass
-    return {"left": None, "right": None}
+    return {"left": None, "right": None, "pending_putdown": None}
 
 
 def _load_execution_state():
@@ -92,8 +94,21 @@ def route(game_state):
     if robot_state == "moving":
         return {"next": "wait", "reason": "robot_moving"}
 
-    # 6. Robot holding a card — cache it, then wait (put_down will happen next iteration)
     hand_cache = _load_hand_cache()
+
+    # 5a. Hard lock: a prior view_card set pending_putdown. The next round
+    #     MUST put the card back down at that position — ignore vision and
+    #     all other routing logic. This enforces the view→put_down pair.
+    pending = hand_cache.get("pending_putdown")
+    if pending in ("left", "right"):
+        return {
+            "next": "reason",
+            "action_hint": "put_down_card",
+            "position": pending,
+            "game_state": game_state,
+        }
+
+    # 6. Robot holding a card — cache it, then wait (put_down will happen next iteration)
 
     if robot_state == "holding_card" and held_card:
         # Cache the card in the next empty position

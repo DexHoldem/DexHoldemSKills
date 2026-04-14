@@ -108,9 +108,12 @@ def _hand_cache_path(config):
 
 def load_hand_cache(cache_path):
     if not cache_path or not os.path.exists(cache_path):
-        return {"left": None, "right": None}
+        return {"left": None, "right": None, "pending_putdown": None}
     with open(cache_path, "r") as f:
-        return json.load(f)
+        cache = json.load(f)
+    # Backfill new field for older cache files
+    cache.setdefault("pending_putdown", None)
+    return cache
 
 
 def save_hand_cache(cache_path, cache):
@@ -231,6 +234,31 @@ def cmd_hand_clear(args, config):
         os.remove(cache_path)
 
 
+def cmd_hand_lock(args, config):
+    """Set hand_cache.pending_putdown = <position> so the next route call
+    short-circuits to put_down_card at that position, ignoring vision."""
+    cache_path = _hand_cache_path(config)
+    if not cache_path:
+        print("Error: no active experiment. Run 'init' first.", file=sys.stderr)
+        sys.exit(1)
+    cache = load_hand_cache(cache_path)
+    cache["pending_putdown"] = args.position
+    save_hand_cache(cache_path, cache)
+    print(json.dumps(cache, indent=2))
+
+
+def cmd_hand_lock_clear(args, config):
+    """Clear hand_cache.pending_putdown (call this after put_down_card runs)."""
+    cache_path = _hand_cache_path(config)
+    if not cache_path:
+        print("Error: no active experiment. Run 'init' first.", file=sys.stderr)
+        sys.exit(1)
+    cache = load_hand_cache(cache_path)
+    cache["pending_putdown"] = None
+    save_hand_cache(cache_path, cache)
+    print(json.dumps(cache, indent=2))
+
+
 # ── status-history commands ───────────────────────────────────────────────
 
 def cmd_status_save(args, config):
@@ -317,6 +345,19 @@ def main():
     # hand-clear
     sub.add_parser("hand-clear", help="Clear hand cache (between hands)")
 
+    # hand-lock
+    p_hand_lock = sub.add_parser(
+        "hand-lock",
+        help="Lock next round to put_down_card at <position> (enforces view→put_down sequence)",
+    )
+    p_hand_lock.add_argument("--position", required=True, choices=["left", "right"])
+
+    # hand-lock-clear
+    sub.add_parser(
+        "hand-lock-clear",
+        help="Clear the pending_putdown lock (call after put_down_card executes)",
+    )
+
     # status-save
     p_ss = sub.add_parser("status-save", help="Append a status entry to history")
     p_ss.add_argument("--round", type=int, default=0)
@@ -354,6 +395,14 @@ def main():
 
     if args.command == "hand-clear":
         cmd_hand_clear(args, config)
+        return
+
+    if args.command == "hand-lock":
+        cmd_hand_lock(args, config)
+        return
+
+    if args.command == "hand-lock-clear":
+        cmd_hand_lock_clear(args, config)
         return
 
     if args.command == "status-save":

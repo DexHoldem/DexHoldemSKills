@@ -44,7 +44,7 @@ def _run(script, *args, cwd=None):
 
 
 def _translate(action_json, chips_json=None):
-    """Call action_translator to get instruction sequence (list of ints)."""
+    """Call action_translator. Returns {"prefix": ..., "commands": [...]} or None."""
     cmd_args = ["--action", action_json]
     if chips_json:
         cmd_args += ["--chips", chips_json]
@@ -52,9 +52,13 @@ def _translate(action_json, chips_json=None):
     if rc != 0:
         return None
     try:
-        return json.loads(stdout)
+        parsed = json.loads(stdout)
     except json.JSONDecodeError:
         return None
+    if not isinstance(parsed, dict) or "commands" not in parsed:
+        return None
+    parsed.setdefault("prefix", None)
+    return parsed
 
 
 def _state_cmd(subcommand, *args):
@@ -111,6 +115,41 @@ def _cancel_previous(config):
     return {"status": "cancelled", "previous_action": state.get("current_action")}
 
 
+def _click_reset_hand():
+    """Click the reset-hand GUI button on the remote screen."""
+    _remote_exec("--action", "click_reset_hand")
+
+
+def _run_prefix_stage(kind, config, baseline_frame):
+    """Run the pre-action stage declared by the translator.
+
+    Returns the (possibly updated) baseline_frame so the caller can use it
+    as the reference for subsequent stability checks.
+    """
+    if kind is None:
+        return baseline_frame
+
+    rt = config.get("remote_terminal", {})
+    ctrlc_delay = rt.get("ctrlc_delay", 0.5)
+
+    if kind == "ctrlc":
+        _send_ctrlc()
+        time.sleep(ctrlc_delay)
+        return baseline_frame
+
+    if kind == "reset":
+        # Stop whatever is running, then click the reset button and wait
+        # for the arm to settle back at its init pose.
+        _send_ctrlc()
+        time.sleep(ctrlc_delay)
+        _click_reset_hand()
+        stable_frame, _ = _wait_for_stability(config, prev_frame=baseline_frame)
+        return stable_frame or baseline_frame
+
+    # Unknown prefix — ignore defensively
+    return baseline_frame
+
+
 def _wait_for_stability(config, prev_frame=None):
     """Poll frame_diff until scene is stable. Returns (stable_frame_path, success)."""
     term = config.get("termination", {})
@@ -145,12 +184,18 @@ def execute(action_obj, chips=None, config=None):
     action_json = json.dumps(action_obj)
     chips_json = json.dumps(chips) if chips else None
 
-    # Translate action to command sequence (list of command strings)
-    commands = _translate(action_json, chips_json)
-    if commands is None:
+    # Translate action → {"prefix": ..., "commands": [...]}
+    translation = _translate(action_json, chips_json)
+    if translation is None:
         return {"status": "failed", "error": "translation_failed", "commands_completed": 0}
 
+    prefix = translation.get("prefix")
+    commands = translation.get("commands", [])
+
     if not commands:
+        # Placeholder actions (check/fold) or degenerate call/raise with 0 chips.
+        # No commands means nothing for the robot to do — skip the prefix stage too.
+        _write_action_lock(action_obj)
         return {"status": "success", "commands_completed": 0}
 
     # Save execution state
@@ -171,6 +216,9 @@ def execute(action_obj, chips=None, config=None):
 
     # Capture a baseline frame before execution
     baseline_frame = _capture()
+
+    # Pre-action stage: reset-to-init, or ctrl+c (for put_down_card), or no-op.
+    baseline_frame = _run_prefix_stage(prefix, config, baseline_frame)
 
     for robot_cmd in commands:
 
@@ -205,9 +253,26 @@ def execute(action_obj, chips=None, config=None):
         completed += 1
         _state_cmd("update", "--completed", str(completed))
 
-    # All commands done
+    # All commands done — update the view→put_down lock based on what we just ran
+    _write_action_lock(action_obj)
     _state_cmd("clear")
     return {"status": "success", "commands_completed": completed}
+
+
+def _write_action_lock(action_obj):
+    """After a successful action, write or clear the hand_cache.pending_putdown
+    lock so the router forces the correct next-round action.
+
+    - view_card  → lock next round to put_down_card at the same position.
+    - put_down_card → clear the lock.
+    - anything else → leave the lock alone.
+    """
+    action = action_obj.get("action")
+    if action == "view_card":
+        position = action_obj.get("position", "left")
+        _state_cmd("hand-lock", "--position", position)
+    elif action == "put_down_card":
+        _state_cmd("hand-lock-clear")
 
 
 def main():
