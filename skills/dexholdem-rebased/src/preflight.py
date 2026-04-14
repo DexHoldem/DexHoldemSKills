@@ -2,10 +2,12 @@
 """Preflight check for the DexHoldem loop.
 
 Verifies everything the main loop depends on before the first iteration:
-    1. remote_terminal.host is reachable (calls /exec `position`).
-    2. Paste-and-run of `echo hello world` works via the same path executor uses.
-    3. Local camera can capture a non-empty frame.
-    4. An experiment directory exists to receive state/frames for this session.
+    1. `uv sync` installs the skill's Python dependencies (re-execs into
+       the created .venv if the current interpreter lacks them).
+    2. remote_terminal.host is reachable (calls /exec `position`).
+    3. Paste-and-run of `echo hello world` works via the same path executor uses.
+    4. Local camera can capture a non-empty frame.
+    5. An experiment directory exists to receive state/frames for this session.
 
 Exit code 0 on success, 1 on failure. JSON result printed to stdout.
 
@@ -13,29 +15,92 @@ Usage:
     python3 src/preflight.py
     python3 src/preflight.py --exp-name friday_night
     python3 src/preflight.py --host http://192.168.1.201:5000 --camera-device 0
-    python3 src/preflight.py --skip-camera
+    python3 src/preflight.py --skip-camera --skip-uv-sync
 """
+
+# NOTE: Top-level imports are stdlib only so this script can run on a fresh
+# checkout before `uv sync` has installed third-party deps (pyyaml etc.).
+# Non-stdlib imports happen lazily inside the functions that need them.
 
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 from datetime import datetime
 
-import yaml
-
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(SRC_DIR)
+VENV_PYTHON = os.path.join(SKILL_DIR, ".venv", "bin", "python")
+REEXEC_ENV_FLAG = "DEXHOLDEM_PREFLIGHT_REEXECED"
 
 
 def _load_config(path):
+    import yaml  # lazy — deps may not be installed yet on first run
     if not os.path.exists(path):
         return {}
     with open(path, "r") as f:
         return yaml.safe_load(f) or {}
+
+
+# ── check: uv sync ────────────────────────────────────────────────────────
+
+def run_uv_sync():
+    """Run `uv sync` in the skill dir. Returns (ok, detail)."""
+    if shutil.which("uv") is None:
+        return False, {"detail": "uv not found on PATH. Install from https://docs.astral.sh/uv/"}
+    if not os.path.exists(os.path.join(SKILL_DIR, "pyproject.toml")):
+        return False, {"detail": f"no pyproject.toml in {SKILL_DIR}"}
+    try:
+        result = subprocess.run(
+            ["uv", "sync"],
+            cwd=SKILL_DIR,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        return False, {"detail": "uv sync timed out after 300s"}
+    except Exception as e:
+        return False, {"detail": repr(e)}
+
+    if result.returncode != 0:
+        return False, {
+            "detail": "uv sync exited non-zero",
+            "returncode": result.returncode,
+            "stderr": result.stderr.strip()[-1000:],
+        }
+    return True, {
+        "skill_dir": SKILL_DIR,
+        "stdout_tail": result.stdout.strip()[-500:],
+        "stderr_tail": result.stderr.strip()[-500:],
+    }
+
+
+def _deps_importable():
+    try:
+        import yaml  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def maybe_reexec_in_venv(argv):
+    """If deps aren't importable and the skill's .venv exists, re-exec into it.
+
+    Guarded by an env flag to prevent infinite loops.
+    """
+    if _deps_importable():
+        return
+    if os.environ.get(REEXEC_ENV_FLAG):
+        return  # already re-execed once; don't loop
+    if not os.path.exists(VENV_PYTHON):
+        return
+    os.environ[REEXEC_ENV_FLAG] = "1"
+    os.execv(VENV_PYTHON, [VENV_PYTHON] + argv)
 
 
 def _post(base_url, endpoint, payload, timeout=5.0):
@@ -206,13 +271,10 @@ def main():
     )
     parser.add_argument("--skip-camera", action="store_true", help="Skip the camera check")
     parser.add_argument("--skip-remote", action="store_true", help="Skip remote terminal checks")
+    parser.add_argument("--skip-uv-sync", action="store_true", help="Skip the `uv sync` step")
     args = parser.parse_args()
 
-    config = _load_config(args.config)
-    rt = config.get("remote_terminal", {}) or {}
-    base_url = (args.host or rt.get("host", "http://localhost:5000")).rstrip("/")
-
-    results = {"host": base_url, "checks": []}
+    results = {"checks": []}
 
     def record(name, ok, detail):
         results["checks"].append({"name": name, "ok": ok, "detail": detail})
@@ -223,6 +285,25 @@ def main():
         results["error"] = err
         print(json.dumps(results, indent=2))
         sys.exit(1)
+
+    # 0. uv sync — install skill's Python deps into the skill-local .venv
+    if args.skip_uv_sync:
+        record("uv_sync", True, {"skipped": True})
+    else:
+        ok, detail = run_uv_sync()
+        if not record("uv_sync", ok, detail):
+            fail("uv sync failed")
+        # If deps still aren't importable in the current interpreter but the
+        # skill's .venv now exists, re-exec into it so the rest of preflight
+        # (and any yaml-using code paths) can run. os.execv replaces the
+        # process; checks after this point run in the fresh interpreter.
+        maybe_reexec_in_venv(sys.argv)
+
+    # Config load (requires yaml, now available post-sync/re-exec)
+    config = _load_config(args.config)
+    rt = config.get("remote_terminal", {}) or {}
+    base_url = (args.host or rt.get("host", "http://localhost:5000")).rstrip("/")
+    results["host"] = base_url
 
     # 1. remote connection
     if args.skip_remote:

@@ -10,10 +10,13 @@ metadata:
 
 ## Setup
 
-1. Activate venv: `source .venv/bin/activate`
-2. `python3 src/capture.py --help` — verify capture
-3. `python3 src/remote_exec.py --action calibrate` — verify remote service
-4. `python3 src/remote_exec.py --action execute --command 'echo test'` — verify remote terminal
+Dependencies are declared in the skill-local `pyproject.toml` and installed automatically by preflight. On a fresh copy of the skill you can go straight to the Preflight step — no manual `pip install` or venv activation needed.
+
+Manual smoke tests (optional, after preflight has installed deps):
+
+1. `python3 src/capture.py --help` — verify capture
+2. `python3 src/remote_exec.py --action calibrate` — verify remote service
+3. `python3 src/remote_exec.py --action execute --command 'echo test'` — verify remote terminal
 
 ## Preflight (required before each loop)
 
@@ -26,10 +29,13 @@ python3 src/preflight.py --exp-name my_run    # custom name
 
 Checks performed:
 
-1. `connection` — reachability of `remote_terminal.host`
-2. `type_hello_world` — pastes `echo hello world` into the remote terminal (visually confirm it appeared)
-3. `camera` — captures a test frame via `src/capture.py`
-4. `experiment_dir` — creates `experiments/<exp-name>/frames/` and points `experiments/current` at it. Default name: `exp{YYYYMMDD}_{HHMMSS}`.
+1. `uv_sync` — runs `uv sync` in the skill dir to install dependencies from the skill-local `pyproject.toml` (pyyaml, opencv-python, pillow) into `.venv/`. If the current interpreter lacks the deps afterwards, preflight re-execs itself under `.venv/bin/python` automatically.
+2. `connection` — reachability of `remote_terminal.host`
+3. `type_hello_world` — pastes `echo hello world` into the remote terminal (visually confirm it appeared)
+4. `camera` — captures a test frame via `src/capture.py`
+5. `experiment_dir` — creates `experiments/<exp-name>/frames/` and points `experiments/current` at it. Default name: `exp{YYYYMMDD}_{HHMMSS}`.
+
+Requires `uv` on PATH. On a fresh install (e.g. `playground/` created via `npx skills add`), running `python3 src/preflight.py` is enough — it bootstraps its own environment.
 
 Expected: JSON with `"status": "ok"` and all four checks passing. The created experiment dir is where subsequent state and frames for this session will be saved.
 
