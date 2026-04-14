@@ -120,6 +120,42 @@ def _click_reset_hand():
     _remote_exec("--action", "click_reset_hand")
 
 
+def _bgm(*args):
+    """Shell out to bgm.py. Failures are swallowed — audio is best-effort."""
+    try:
+        _run("bgm.py", *args)
+    except Exception:
+        pass
+
+
+def _fire_audio_hooks(action_obj, config):
+    """Fire BGM + SFX hooks for the given action. Called before robot dispatch
+    so music overlaps physical motion. Safe to call for placeholder actions
+    (check/fold) — each branch is independent.
+    """
+    if not config.get("audio", {}).get("enabled", True):
+        return
+
+    action = action_obj.get("action")
+
+    # Action-level BGM transitions
+    if action == "all_in":
+        _bgm("loop", "allin")
+    elif action == "fold":
+        _bgm("oneshot", "fold")
+
+    # Action-specific SFX prefixes
+    if action == "view_card":
+        _bgm("sfx", "view_card")
+    elif action == "put_down_card" and not action_obj.get("face_up", False):
+        _bgm("sfx", "put_down_card_face_down")
+
+    # Random taunt on any action (stacks with the above). `check` is silent.
+    if action and action != "check":
+        chance = float(config.get("audio", {}).get("taunt_chance", 0.2))
+        _bgm("sfx", "taunt", "--chance", str(chance))
+
+
 def _run_prefix_stage(kind, config, baseline_frame):
     """Run the pre-action stage declared by the translator.
 
@@ -191,6 +227,9 @@ def execute(action_obj, chips=None, config=None):
 
     prefix = translation.get("prefix")
     commands = translation.get("commands", [])
+
+    # Audio hooks fire on every action (including placeholders like fold).
+    _fire_audio_hooks(action_obj, config)
 
     if not commands:
         # Placeholder actions (check/fold) or degenerate call/raise with 0 chips.

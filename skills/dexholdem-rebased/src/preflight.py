@@ -13,6 +13,8 @@ checks before the main loop starts:
     3. Paste-and-run `echo hello world` in the remote terminal.
     4. Move the remote mouse cursor to the `reset_hand` coordinates
        so the user can confirm the reset button lines up.
+    5. Verify ffplay is on PATH and every audio file mapped in
+       `config.audio.files` is present under `audio/`.
 
 Exit code 0 on success, 1 on failure. JSON result printed to stdout.
 
@@ -175,6 +177,47 @@ def check_move_cursor_reset_hand(base_url, config):
         return False, {"detail": str(e.reason)}
     except Exception as e:
         return False, {"detail": repr(e)}
+
+
+# ── check: audio ──────────────────────────────────────────────────────────
+
+AUDIO_DIR = os.path.join(SKILL_DIR, "audio")
+
+
+def check_audio(config):
+    """Verify ffplay is on PATH and every mapped audio file exists."""
+    audio_cfg = config.get("audio", {}) or {}
+    if not audio_cfg.get("enabled", True):
+        return True, {"skipped": "audio.enabled is false"}
+
+    ffplay = shutil.which("ffplay")
+    if ffplay is None:
+        return False, {
+            "detail": "ffplay not found on PATH",
+            "hint": "install ffmpeg (ubuntu: `sudo apt install ffmpeg`)",
+        }
+
+    mapping = audio_cfg.get("files", {}) or {}
+    if not mapping:
+        return False, {"detail": "config.audio.files is empty"}
+
+    missing = []
+    resolved = {}
+    for logical, filename in mapping.items():
+        path = os.path.join(AUDIO_DIR, filename)
+        if os.path.isfile(path):
+            resolved[logical] = filename
+        else:
+            missing.append({"logical": logical, "filename": filename, "path": path})
+
+    if missing:
+        return False, {"detail": "audio files missing", "missing": missing}
+
+    return True, {
+        "ffplay": ffplay,
+        "audio_dir": AUDIO_DIR,
+        "files": resolved,
+    }
 
 
 # ── check: camera ─────────────────────────────────────────────────────────
@@ -363,6 +406,11 @@ def main():
         ok, detail = check_move_cursor_reset_hand(base_url, config)
         if not record("move_cursor_reset_hand", ok, detail):
             fail("could not move cursor to reset_hand position")
+
+    # 5. audio — ffplay on PATH and every mapped file present
+    ok, detail = check_audio(config)
+    if not record("audio", ok, detail):
+        fail("audio check failed")
 
     results["status"] = "ok"
     print(json.dumps(results, indent=2))

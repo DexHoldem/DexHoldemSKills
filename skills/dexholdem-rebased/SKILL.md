@@ -34,10 +34,11 @@ Checks performed:
 2. `camera` — captures a photo via `src/capture.py` and writes it to `<exp_dir>/frames/preflight.jpg`. **Open the file and confirm the scene looks right.**
 3. `type_hello_world` — pastes `echo hello world` into the remote terminal. **Visually confirm it appeared on the remote screen.** This also covers the remote-service reachability check.
 4. `move_cursor_reset_hand` — moves the remote mouse cursor to the `reset_hand` coordinates from `config.yaml` (the GUI button that resets the dexterous hand to init state) without clicking. **Visually confirm the cursor landed on the reset button.**
+5. `audio` — verifies `ffplay` is on PATH and every file listed under `config.audio.files` exists in `audio/`. Required for BGM + SFX (see Loop → Audio below).
 
 Requires `uv` on PATH. On a fresh install (e.g. `playground/` created via `npx skills add`), running `python3 src/preflight.py` from inside `playground/` is enough — it bootstraps its own environment and drops the experiment dir right next to your session files.
 
-Expected: JSON with `"status": "ok"` and all four checks passing. The created experiment dir is where subsequent state and frames for this session will be saved.
+Expected: JSON with `"status": "ok"` and all five checks passing. The created experiment dir is where subsequent state and frames for this session will be saved.
 
 ## Loop
 
@@ -84,3 +85,13 @@ The executor automatically runs a **pre-action stage** before dispatching comman
 - For placeholders (`check`, `fold`): no stage.
 
 After a successful `view_card`, the executor locks the next round to `put_down_card` at the same position (see prompt.md action-space constraints). Increment round. Continue loop.
+
+## Audio (BGM + SFX)
+
+`route.py` and `executor.py` also fire audio hooks via `src/bgm.py` — a local ffplay-based BGM manager. The reasoning LLM does **not** need to manage audio; it's a pure side-effect of game-phase and action transitions:
+
+- **BGM (looping)** — `start.mp4` loops when a hand is active; `allin.mp4` replaces it when the agent goes all-in.
+- **One-shots** — folding plays `lose.mp4` and stops BGM; reaching `game_over` plays `win.mp4` and stops BGM.
+- **SFX prefixes** — `view_card` is prefixed with `wyyp.mp3`, `put_down_card` face-down with `pmywt.mp3`, and every action has a `taunt_chance` (default 0.2) of also playing `gwcpx.mp3`.
+
+All files and the taunt probability live in `config.yaml` → `audio:`. Set `audio.enabled: false` to mute everything without touching the code. Playback is local (agent machine), so speakers on the loop host must be within earshot of the table.

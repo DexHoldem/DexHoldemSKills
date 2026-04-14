@@ -34,6 +34,26 @@ def _run_state_cmd(subcommand, *args):
     return result.stdout.strip(), result.returncode
 
 
+def _bgm(*args):
+    """Fire-and-forget call into bgm.py. Best-effort; failures are swallowed."""
+    try:
+        cmd = [sys.executable, os.path.join(SRC_DIR, "bgm.py")] + list(args)
+        subprocess.run(cmd, capture_output=True, text=True, cwd=SKILL_DIR)
+    except Exception:
+        pass
+
+
+def _bgm_phase_sync(phase):
+    """Phase-level BGM hooks. `active` → keep/start start.mp4 loop (only if
+    silent, so an all_in swap isn't clobbered). `game_over` → play win.mp4
+    once. `between_hands` / `showdown` → leave BGM alone.
+    """
+    if phase == "active":
+        _bgm("loop", "start", "--only-if-silent")
+    elif phase == "game_over":
+        _bgm("oneshot", "win")
+
+
 def _load_hand_cache():
     stdout, _ = _run_state_cmd("hand-load")
     if stdout:
@@ -71,6 +91,9 @@ def route(game_state):
     is_my_turn = game_state.get("is_my_turn", False)
     robot_state = game_state.get("robot_state", "idle")
     held_card = game_state.get("held_card")
+
+    # BGM hooks — fire on every route call so transitions are picked up.
+    _bgm_phase_sync(game_phase)
 
     # 1. Game over
     if game_phase == "game_over":
