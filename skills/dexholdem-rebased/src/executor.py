@@ -146,7 +146,7 @@ def _wait_for_stability(config, prev_frame=None):
     return last_frame, False
 
 
-def execute(action_obj, chips=None, config=None, dry_run=False):
+def execute(action_obj, chips=None, config=None):
     """Execute a full poker action: translate, dispatch, poll, verify."""
     if config is None:
         config = _load_config()
@@ -161,10 +161,6 @@ def execute(action_obj, chips=None, config=None, dry_run=False):
 
     if not commands:
         return {"status": "success", "commands_completed": 0}
-
-    # Dry run — return translated commands without executing
-    if dry_run:
-        return {"status": "dry_run", "commands": commands}
 
     # Save execution state
     cmd_names = json.dumps([c.get("command", "") for c in commands])
@@ -274,11 +270,6 @@ Output:
         action="store_true",
         help="Cancel any interrupted execution before proceeding",
     )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Translate action to commands but skip execution. Prints command sequence.",
-    )
     args = parser.parse_args()
 
     if not args.action and not args.cancel_previous:
@@ -309,7 +300,7 @@ Output:
                 print(json.dumps({"status": "failed", "error": f"invalid chips JSON: {e}"}))
                 sys.exit(1)
 
-        result = execute(action_obj, chips=chips, config=config, dry_run=args.dry_run)
+        result = execute(action_obj, chips=chips, config=config)
         print(json.dumps(result))
 
 

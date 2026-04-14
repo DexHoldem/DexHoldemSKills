@@ -15,6 +15,16 @@ metadata:
 3. `python3 src/remote_exec.py --action calibrate` — verify remote service
 4. `python3 src/remote_exec.py --action execute --command 'echo test'` — verify remote terminal
 
+## Preflight (required before each loop)
+
+Run the preflight check. It pings the remote service and pastes `echo hello world` into the remote terminal. Do **not** start the loop if it fails.
+
+```bash
+python3 src/preflight.py
+```
+
+Expected: JSON with `"status": "ok"` and both `connection` and `type_hello_world` checks passing. Visually confirm `hello world` appeared in the remote terminal.
+
 ## Loop
 
 Read `config.yaml`, `vision_prompt.md`, `prompt.md`. Initialize:
@@ -59,18 +69,3 @@ python3 src/executor.py --action '<action_json>' [--chips '<chips_json>']
 ```
 
 Increment round. Continue loop.
-
-## Dry Run (no hardware, no images)
-
-For testing the routing and reasoning pipeline without hardware or image rendering, use `vision_prompt_dryrun.md` instead of `vision_prompt.md`. This prompt asks the LLM to generate game state JSON directly.
-
-**Loop:**
-
-1. **VISION** — follow `vision_prompt_dryrun.md` with no prior state. The model generates an opening game state (preflop, blinds posted).
-2. **ROUTE** — `python3 src/route.py --state '<game_state_json>'`
-3. **REASONING** — action_hint or poker reasoning via `prompt.md`.
-4. **EXECUTE** — `python3 src/executor.py --action '<action_json>' --dry-run`
-5. **VISION** — follow `vision_prompt_dryrun.md` with the previous state + action taken. The model simulates the next state.
-6. Repeat 2–5.
-
-Steps 1 (ENV/capture) and image reading are skipped entirely. No Pillow dependency.
