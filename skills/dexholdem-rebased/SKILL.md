@@ -53,7 +53,7 @@ python3 src/capture.py
 python3 src/execution_state.py save-frame <image_path> --round <N> --label capture
 ```
 
-**2. VISION** — `Read` the previous frame and current frame. Following `vision_prompt.md`, extract game state as JSON.
+**2. VISION** — `Read` the previous frame and current frame. **You (the loop agent) are the vision model.** There is no separate vision API call — you must open `vision_prompt.md` yourself, read it as your system prompt for this step, and apply it to the two frames you just `Read` to produce the game state JSON. Do this on *every* iteration, not just the first: the correct classification (e.g. `active` vs `between_hands`, `is_my_turn`, `robot_state`) depends on subtle cues in `vision_prompt.md` that are easy to forget, and `route.py` behavior hinges on them. When in doubt, re-read `vision_prompt.md` before writing the JSON.
 
 **3. ROUTE** — decide next action:
 

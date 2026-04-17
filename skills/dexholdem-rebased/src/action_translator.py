@@ -122,7 +122,7 @@ def split_chips(amount, my_chips):
     return result
 
 
-ROBOT_CMD = "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction {}"
+ROBOT_CMD = "python Dexas-Policy/robot_client.py --instruction {} --port 13579 --server_ip 192.168.1.200"
 
 
 def _instr_cmd(instr):

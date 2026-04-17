@@ -137,6 +137,9 @@ For each visible player (other than the robot), include:
 
 - `is_my_turn` (bool): `true` if it appears to be the robot's turn to act. Look for: action has come around to the robot's seat, no other player is visibly acting, or the dealer button and bet positions indicate the robot is next. `false` if another player is acting or the hand is between streets.
 - `game_phase` (string): one of `"active"` (hand in progress), `"showdown"` (cards revealed, determining winner), `"between_hands"` (hand ended, waiting for next deal), `"game_over"` (session ended, table closed).
+  - **A hand is `active` as soon as hole cards have been dealt**, even if no community cards are on the board yet and even if you cannot read any card faces. Face-down cards in front of the robot or other seats → `active`, not `between_hands`.
+  - `between_hands` means the previous hand has been physically cleared: no hole cards in front of any seat, bets pulled into the pot or winner, dealer preparing to deal again. If you see face-down hole cards anywhere on the table, it is **not** `between_hands`.
+  - Opponent presence (empty chair vs. human sitting) does **not** affect `game_phase`. The router treats `between_hands` as "do nothing, clear hand cache, wait for next deal" — do not pick it as a fallback just because you cannot read cards clearly. When unsure between `active` and `between_hands`, prefer `active` if any face-down cards are visible at player positions.
 - `action_prompt` (array of strings): available actions if it is the robot's turn (e.g., `["fold", "call", "raise"]`). Empty array `[]` if not the robot's turn.
 
 ## When in doubt

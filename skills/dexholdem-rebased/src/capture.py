@@ -4,6 +4,7 @@
 import argparse
 import os
 import sys
+import time
 
 
 def main():
@@ -22,13 +23,32 @@ def main():
         print("Error: OpenCV is required. Install with: pip install opencv-python", file=sys.stderr)
         sys.exit(1)
 
-    cap = cv2.VideoCapture(args.device)
-    if not cap.isOpened():
-        print(f"Error: could not open camera device {args.device}", file=sys.stderr)
-        sys.exit(1)
-
-    ok, frame = cap.read()
-    cap.release()
+    # The first cap.read() after an MJPG/resolution reconfigure can block on
+    # a 10s V4L2 select() timeout. If that happens, release and reopen — a
+    # fresh open usually succeeds on the next attempt.
+    frame = None
+    for attempt in range(4):
+        cap = cv2.VideoCapture(args.device, cv2.CAP_V4L2)
+        if not cap.isOpened():
+            print(f"Error: could not open camera device {args.device}", file=sys.stderr)
+            sys.exit(1)
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        time.sleep(1.5)
+        ok, f = cap.read()
+        if ok and f is not None:
+            # Warm up AE/AWB a few more frames.
+            for _ in range(4):
+                ok2, f2 = cap.read()
+                if ok2 and f2 is not None:
+                    f = f2
+            frame = f
+            cap.release()
+            break
+        cap.release()
+        time.sleep(0.5)
+    ok = frame is not None
 
     if not ok or frame is None:
         print("Error: failed to read a frame from the camera", file=sys.stderr)

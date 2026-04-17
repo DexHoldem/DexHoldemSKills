@@ -71,9 +71,21 @@ def _remote_exec(*args):
     return _run("remote_exec.py", *args)
 
 
-def _capture():
-    """Capture a frame and return image path."""
-    stdout, rc = _run("capture.py")
+def _capture(config=None):
+    """Capture a frame and return image path.
+
+    Honors the device flag embedded in config.capture.command so the executor
+    uses the same camera as the loop agent (not hard-coded device 0).
+    """
+    args = []
+    if config:
+        cmd_str = (config.get("capture", {}) or {}).get("command", "")
+        tokens = cmd_str.split()
+        if "--device" in tokens:
+            i = tokens.index("--device")
+            if i + 1 < len(tokens):
+                args += ["--device", tokens[i + 1]]
+    stdout, rc = _run("capture.py", *args)
     if rc == 0 and stdout:
         return stdout.strip().split("\n")[-1]
     return None
@@ -198,7 +210,7 @@ def _wait_for_stability(config, prev_frame=None):
 
     while time.time() - start < timeout:
         time.sleep(check_interval)
-        current_frame = _capture()
+        current_frame = _capture(config)
         if not current_frame:
             continue
 
@@ -254,7 +266,7 @@ def execute(action_obj, chips=None, config=None):
     completed = 0
 
     # Capture a baseline frame before execution
-    baseline_frame = _capture()
+    baseline_frame = _capture(config)
 
     # Pre-action stage: reset-to-init, or ctrl+c (for put_down_card), or no-op.
     baseline_frame = _run_prefix_stage(prefix, config, baseline_frame)
