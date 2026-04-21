@@ -10,7 +10,17 @@ metadata:
 
 ## Setup
 
-Dependencies are declared in the skill-local `pyproject.toml` and installed automatically by preflight. On a fresh copy of the skill you can go straight to the Preflight step — no manual `pip install` or venv activation needed.
+Dependencies are declared in the skill-local `pyproject.toml` and installed into a skill-local `.venv/` by preflight (step 0, `uv_sync`). All Python commands in this skill must run under that venv — `uv` manages the venv, `uv add <pkg>` installs new deps into it.
+
+**First-run env check (do this before anything else on a fresh clone):**
+
+1. Check whether the skill-local venv already exists:
+   ```bash
+   ls skills/dexholdem-rebased/.venv/bin/python 2>/dev/null && echo "venv present" || echo "venv missing — preflight will create it"
+   ```
+2. Confirm `uv` is on PATH: `command -v uv` (install from https://docs.astral.sh/uv/ if missing).
+3. If the venv is missing, the first `python3 src/preflight.py` run will create it via `uv sync` and re-exec itself into `.venv/bin/python` automatically. No manual `pip install` or `source .venv/bin/activate` needed.
+4. If the venv is present but you added a new dependency, run `uv add <pkg>` from the skill dir — do not `pip install` into the venv directly.
 
 Manual smoke tests (optional, after preflight has installed deps):
 
@@ -21,6 +31,8 @@ Manual smoke tests (optional, after preflight has installed deps):
 ## Preflight (required before each loop)
 
 Run the preflight check. It verifies the remote terminal, the camera, and sets up an experiment directory. Do **not** start the loop if it fails.
+
+**Run preflight from the user's main project folder** — the CWD at invocation time determines where `experiments/<exp-name>/` is created. Do **not** run it from inside a hidden agent dir like `.claude/`, `.agent/`, or any other tool-internal scratch dir; those are not meant to hold session artifacts and will hide the experiment from the user. If your CWD is a hidden agent dir, `cd` up to the project root first.
 
 ```bash
 python3 src/preflight.py                      # auto-named experiment dir

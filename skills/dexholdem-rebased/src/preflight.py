@@ -123,6 +123,17 @@ def _post(base_url, endpoint, payload, timeout=5.0):
         return json.loads(resp.read().decode("utf-8"))
 
 
+# Hint surfaced whenever a remote-terminal POST fails to connect — by far the
+# most common cause is the pyautogui server not running on the remote host.
+_REMOTE_CONN_HINT = (
+    "cannot reach remote host — most likely the pyautogui server is not "
+    "running on the remote machine. Start it with "
+    "`python3 server/pyautogui_server.py` on the remote, then retry. "
+    "Also verify the host/port in config.yaml → remote_terminal.host and "
+    "that no firewall blocks the port."
+)
+
+
 # ── check: paste-and-run hello world ──────────────────────────────────────
 
 def check_type_hello_world(base_url, rt):
@@ -146,7 +157,7 @@ def check_type_hello_world(base_url, rt):
     except urllib.error.HTTPError as e:
         return False, {"code": e.code, "detail": e.read().decode("utf-8", errors="replace")}
     except urllib.error.URLError as e:
-        return False, {"detail": str(e.reason)}
+        return False, {"detail": str(e.reason), "host": base_url, "hint": _REMOTE_CONN_HINT}
     except Exception as e:
         return False, {"detail": repr(e)}
 
@@ -174,7 +185,7 @@ def check_move_cursor_reset_hand(base_url, config):
     except urllib.error.HTTPError as e:
         return False, {"code": e.code, "detail": e.read().decode("utf-8", errors="replace")}
     except urllib.error.URLError as e:
-        return False, {"detail": str(e.reason)}
+        return False, {"detail": str(e.reason), "host": base_url, "hint": _REMOTE_CONN_HINT}
     except Exception as e:
         return False, {"detail": repr(e)}
 
