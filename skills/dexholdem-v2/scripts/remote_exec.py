@@ -59,12 +59,16 @@ def action_execute(args, config):
 
 def action_send_ctrlc(args, config):
     rt = config.get("remote_terminal", {}) or {}
+    enter_presses = int(rt.get("ctrlc_enter_presses", 2))
+    actions = [
+        {"action": "click", "args": [rt.get("click_x", 500), rt.get("click_y", 300)]},
+        {"sleep": 0.2},
+        {"action": "hotkey", "args": ["ctrl", "c"]},
+    ]
+    for _ in range(max(enter_presses, 0)):
+        actions.append({"action": "press", "args": ["enter"]})
     payload = {
-        "actions": [
-            {"action": "click", "args": [rt.get("click_x", 500), rt.get("click_y", 300)]},
-            {"sleep": 0.2},
-            {"action": "hotkey", "args": ["ctrl", "c"]},
-        ]
+        "actions": actions
     }
     post(base_url(args, config), "/batch", payload, request_timeout(args, config))
 

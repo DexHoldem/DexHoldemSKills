@@ -97,9 +97,9 @@ This prefix is part of the action execution flow. It should not be treated as a
 standalone action that automatically makes the scene stable.
 
 The scene becomes stable only after the full action sequence has visually
-finished and the robot has stopped large movement. For `put_down_card`, the
-reset prefix may be skipped because resetting while holding a card can drop it;
-the vision check must account for that special case.
+finished and the robot has stopped large movement. The reset/cancel prefix is
+only a terminal-control and hand-reset setup step before dispatching the next
+robot policy; it is not evidence that the resulting atom has finished.
 
 ## Vision Agent Procedure
 

@@ -260,7 +260,7 @@ def translate(action, chips=None, table=None):
         if instr is None:
             raise ValueError(f"invalid put_down_card position={position} face_up={face_up}")
         return {
-            "prefix": "ctrlc",
+            "prefix": "reset",
             "commands": [_cmd(instr)],
             "command_steps": ["put_down_card"],
             "sequence_steps": ["put_down_card", "verify_idle"],

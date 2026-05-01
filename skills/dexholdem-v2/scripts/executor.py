@@ -191,11 +191,11 @@ def run_prefix(prefix, config, dry_run):
         return
     rt = config.get("remote_terminal", {}) or {}
     ctrlc_delay = float(rt.get("ctrlc_delay", 0.5))
+    if prefix == "reset":
+        remote_exec("--action", "click_reset_hand")
     if prefix in ("ctrlc", "reset"):
         remote_exec("--action", "send_ctrlc")
         time.sleep(ctrlc_delay)
-    if prefix == "reset":
-        remote_exec("--action", "click_reset_hand")
 
 
 def dispatch_cached_current(dry_run=False):
