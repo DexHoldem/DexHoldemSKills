@@ -155,7 +155,7 @@ Actions can span multiple individual robot policies and multiple state folders.
   "plan": {
     "prefix": "reset",
     "commands": [
-      "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction 0"
+      "python Dexas-Policy/robot_client.py --instruction 0 --port 13579 --server_ip 192.168.1.200"
     ],
     "command_steps": ["pick_card"],
     "sequence_steps": ["pick_card", "read_card", "put_down_card", "verify_idle"]
@@ -239,8 +239,8 @@ clearer count of the chips to collect and zone information is not reliable.
   "plan": {
     "prefix": "reset",
     "commands": [
-      "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction 3",
-      "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction 2"
+      "python Dexas-Policy/robot_client.py --instruction 3 --port 13579 --server_ip 192.168.1.200",
+      "python Dexas-Policy/robot_client.py --instruction 2 --port 13579 --server_ip 192.168.1.200"
     ],
     "command_steps": ["push_chip_10_1", "push_chip_5_1"],
     "sequence_steps": ["push_chip_10_1", "push_chip_5_1", "verify_idle"],
@@ -274,8 +274,8 @@ clearer count of the chips to collect and zone information is not reliable.
   "plan": {
     "prefix": "reset",
     "commands": [
-      "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction 7",
-      "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction 6"
+      "python Dexas-Policy/robot_client.py --instruction 7 --port 13579 --server_ip 192.168.1.200",
+      "python Dexas-Policy/robot_client.py --instruction 6 --port 13579 --server_ip 192.168.1.200"
     ],
     "command_steps": ["pull_chip_10_1", "pull_chip_5_1"],
     "sequence_steps": ["pull_chip_10_1", "pull_chip_5_1", "verify_idle"],
