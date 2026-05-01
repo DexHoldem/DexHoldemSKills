@@ -3,8 +3,8 @@
 
 import argparse
 import json
-import sys
 
+from utils import STAGE_SET, STAGES, utc_now
 
 INSTR_VIEW_LEFT = 0
 INSTR_VIEW_RIGHT = 1
@@ -18,7 +18,6 @@ INSTR_PUT_DOWN = {
 }
 ROBOT_CMD = "python TexasPoker/robot_client.py --server_ip localhost --obs_horizon 1 --instruction {}"
 DENOMINATIONS = tuple(sorted(INSTR_PUSH.keys()))
-LOOP_STAGES = {"idle", "atom_idle", "acting", "to_recover", "down", "show_hand", "win", "lose"}
 
 
 def _cmd(instr):
@@ -106,49 +105,76 @@ def compute_raise_amount(action, table):
     }
 
 
-def compute_collect_counts(action, table):
+def compute_collect_sources(action, table):
     for field in ("chip_counts", "pull_chip_counts"):
         if action.get(field) is not None:
-            return normalize_chip_map(action[field]), {"source": f"action.{field}"}
+            counts = normalize_chip_map(action[field])
+            return [{"source": "unspecified_winnings", "chip_counts": counts}], {
+                "source": f"action.{field}",
+                "physical_collect_chips": chip_total(counts),
+            }
+
     my_current_bet = table.get("my_current_bet")
     opponent_bet = table.get("opponent_bet")
     if my_current_bet is None or opponent_bet is None:
         raise ValueError("collect_winnings requires chip_counts or table my_current_bet/opponent_bet")
-    counts = add_chip_maps(my_current_bet, opponent_bet)
-    return counts, {
-        "source": "my_current_bet_plus_opponent_bet",
-        "my_current_bet_total": chip_total(my_current_bet),
-        "opponent_bet_total": chip_total(opponent_bet),
+
+    my_counts = normalize_chip_map(my_current_bet)
+    opponent_counts = normalize_chip_map(opponent_bet)
+    counts = add_chip_maps(my_counts, opponent_counts)
+    return [
+        {"source": "opponent_bet", "chip_counts": opponent_counts},
+        {"source": "my_current_bet", "chip_counts": my_counts},
+    ], {
+        "source": "my_current_bet_plus_opponent_bet_by_zone",
+        "my_current_bet_total": chip_total(my_counts),
+        "opponent_bet_total": chip_total(opponent_counts),
         "physical_collect_chips": chip_total(counts),
     }
 
 
-def split_chips(amount, chips):
+def split_chips_exact(amount, chips):
     inventory = normalize_chip_map(chips)
-    remaining = int(amount)
-    result = {}
-    for value in sorted(DENOMINATIONS, reverse=True):
-        if remaining <= 0:
-            break
-        count = int(inventory.get(value, 0))
-        use = min(count, remaining // value)
-        if use:
-            result[value] = use
-            remaining -= use * value
+    target = int(amount)
+    if target < 0:
+        raise ValueError(f"chip amount must be non-negative: {amount}")
+    if target == 0:
+        return {}
 
-    if remaining > 0:
-        for value in sorted(DENOMINATIONS):
-            used = result.get(value, 0)
-            available = int(inventory.get(value, 0)) - used
-            if available > 0 and value >= remaining:
-                result[value] = used + 1
-                remaining = 0
-                break
+    best_counts = None
+    best_key = None
 
-    if remaining > 0:
-        raise ValueError(f"not enough chips to cover amount {amount}")
+    def search(index, remaining, counts):
+        nonlocal best_counts, best_key
+        if index == len(DENOMINATIONS):
+            if remaining == 0:
+                key = (
+                    sum(counts.values()),
+                    tuple(-int(value) for value in sorted(counts.keys(), reverse=True) for _ in range(counts[value])),
+                )
+                if best_key is None or key < best_key:
+                    best_key = key
+                    best_counts = {value: count for value, count in counts.items() if count > 0}
+            return
 
-    return result
+        value = sorted(DENOMINATIONS, reverse=True)[index]
+        max_count = min(int(inventory.get(value, 0)), remaining // value)
+        for count in range(max_count, -1, -1):
+            if count:
+                counts[value] = count
+            else:
+                counts.pop(value, None)
+            search(index + 1, remaining - value * count, counts)
+        counts.pop(value, None)
+
+    search(0, target, {})
+    if best_counts is None:
+        available_total = chip_total(inventory)
+        raise ValueError(
+            f"cannot make exact chip amount {target} from available chips {dict(sorted(inventory.items()))}; "
+            f"available total is {available_total}"
+        )
+    return best_counts
 
 
 def chip_commands_and_steps(chip_counts, instruction_map=INSTR_PUSH, verb="push"):
@@ -176,7 +202,7 @@ def intent_for_action(action):
 
 
 def parse_translation_as_sequence_cache(action, translation, sequence_id=None, loop_stage="acting"):
-    if loop_stage not in LOOP_STAGES:
+    if loop_stage not in STAGE_SET:
         raise ValueError(f"invalid loop stage: {loop_stage}")
     steps = [{"name": step, "status": "pending"} for step in translation.get("sequence_steps", [])]
     return {
@@ -191,6 +217,7 @@ def parse_translation_as_sequence_cache(action, translation, sequence_id=None, l
         "retry_count": 0,
         "last_error": None,
         "human_required": False,
+        "updated_at": utc_now(),
     }
 
 
@@ -255,7 +282,7 @@ def translate(action, chips=None, table=None):
         inventory = resolve_chip_inventory(action, chips, table)
         if inventory is None:
             raise ValueError("call requires my_chips inventory")
-        counts = split_chips(amount, inventory)
+        counts = split_chips_exact(amount, inventory)
         commands, command_steps = chip_commands_and_steps(counts)
         return {
             "prefix": "reset",
@@ -279,7 +306,7 @@ def translate(action, chips=None, table=None):
         inventory = resolve_chip_inventory(action, chips, table)
         if inventory is None:
             raise ValueError("raise requires my_chips inventory")
-        counts = split_chips(amount, inventory)
+        counts = split_chips_exact(amount, inventory)
         commands, command_steps = chip_commands_and_steps(counts)
         return {
             "prefix": "reset",
@@ -305,7 +332,8 @@ def translate(action, chips=None, table=None):
         }
 
     if name in ("collect_winnings", "pull_back_chips"):
-        counts, computed = compute_collect_counts(action, table)
+        sources, computed = compute_collect_sources(action, table)
+        counts = add_chip_maps(*(source["chip_counts"] for source in sources))
         if not counts:
             return {
                 "prefix": None,
@@ -314,14 +342,32 @@ def translate(action, chips=None, table=None):
                 "sequence_steps": [name],
                 "chip_counts": {},
                 "computed": {**computed, "physical_collect_chips": 0},
+                "source_zones": sources,
             }
-        commands, command_steps = chip_commands_and_steps(counts, INSTR_PULL, "pull")
+        commands = []
+        command_steps = []
+        source_zones = []
+        for source in sources:
+            source_counts = {value: count for value, count in source["chip_counts"].items() if count > 0}
+            if not source_counts:
+                continue
+            source_commands, source_steps = chip_commands_and_steps(source_counts, INSTR_PULL, f"pull_{source['source']}")
+            commands.extend(source_commands)
+            command_steps.extend(source_steps)
+            source_zones.append(
+                {
+                    "source": source["source"],
+                    "chip_counts": {str(value): count for value, count in sorted(source_counts.items())},
+                    "steps": source_steps,
+                }
+            )
         return {
             "prefix": "reset",
             "commands": commands,
             "command_steps": command_steps,
             "sequence_steps": command_steps + ["verify_idle"],
             "chip_counts": {str(value): count for value, count in sorted(counts.items())},
+            "source_zones": source_zones,
             "computed": computed,
         }
 
@@ -335,7 +381,7 @@ def main():
     parser.add_argument("--table")
     parser.add_argument("--as-sequence-cache", action="store_true")
     parser.add_argument("--sequence-id")
-    parser.add_argument("--loop-stage", default="acting", choices=sorted(LOOP_STAGES))
+    parser.add_argument("--loop-stage", default="acting", choices=sorted(STAGES))
     args = parser.parse_args()
 
     try:

@@ -3,39 +3,31 @@
 
 import argparse
 import json
-import os
-import re
-import shutil
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
-
-STAGES = {"idle", "atom_idle", "acting", "to_recover", "down", "show_hand", "win", "lose"}
-CHIP_TEMPLATE = {"5": 0, "10": 0, "50": 0, "100": 0}
-
-
-def utc_now():
-    return datetime.now(timezone.utc).isoformat()
-
+from utils import (
+    STAGE_SET,
+    STAGES,
+    atomic_copy,
+    atomic_write_json,
+    atomic_write_text,
+    current_state_name as util_current_state_name,
+    first_pending_step,
+    load_config,
+    next_state_name,
+    read_json_file,
+    utc_now,
+)
 
 def read_json(path, default):
-    path = Path(path)
-    if not path.exists():
-        return default
-    with path.open("r") as f:
-        return json.load(f)
+    return read_json_file(path, default=default, missing_ok=True)
 
 
 def write_json(path, data):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.{int(time.time() * 1000000)}.tmp")
-    with tmp.open("w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, path)
+    atomic_write_json(path, data)
 
 
 def replace_symlink(link, target):
@@ -75,19 +67,35 @@ def default_action_sequence():
         "retry_count": 0,
         "last_error": None,
         "human_required": False,
+        "safety_counters": default_safety_counters(),
         "updated_at": utc_now(),
     }
 
 
-def load_config(path):
-    if not path or not Path(path).exists():
-        return {}
-    try:
-        import yaml
-        with open(path, "r") as f:
-            return yaml.safe_load(f) or {}
-    except ImportError:
-        return {}
+def default_safety_counters():
+    return {
+        "consecutive_waits": 0,
+        "total_waits": 0,
+        "consecutive_recoveries": 0,
+        "total_recoveries": 0,
+        "executor_failures": 0,
+        "action_sequences_started": 0,
+    }
+
+
+def normalize_safety_counters(seq):
+    counters = seq.setdefault("safety_counters", {})
+    for key, value in default_safety_counters().items():
+        counters.setdefault(key, value)
+    return counters
+
+
+def reset_consecutive_waits(seq):
+    normalize_safety_counters(seq)["consecutive_waits"] = 0
+
+
+def reset_consecutive_recoveries(seq):
+    normalize_safety_counters(seq)["consecutive_recoveries"] = 0
 
 
 def resolve_exp_dir(args):
@@ -103,13 +111,7 @@ def resolve_exp_dir(args):
 
 
 def current_state_name(exp_dir):
-    link = exp_dir / "s_current"
-    if link.exists():
-        return link.resolve().name
-    states = sorted([p.name for p in exp_dir.glob("s[0-9]*") if p.is_dir()], key=lambda x: int(x[1:]))
-    if not states:
-        raise RuntimeError("no state folders found")
-    return states[-1]
+    return util_current_state_name(exp_dir)
 
 
 def current_state_dir(exp_dir):
@@ -120,41 +122,6 @@ def state_dir(exp_dir, name=None):
     if name:
         return exp_dir / name
     return current_state_dir(exp_dir)
-
-
-def extract_json_block(markdown):
-    blocks = re.findall(r"```json\s*(.*?)```", markdown, flags=re.S)
-    for block in blocks:
-        try:
-            return json.loads(block)
-        except json.JSONDecodeError:
-            continue
-    match = re.search(r"(\{.*\})", markdown, flags=re.S)
-    if match:
-        try:
-            return json.loads(match.group(1))
-        except json.JSONDecodeError:
-            return None
-    return None
-
-
-def read_markdown_json(path):
-    path = Path(path)
-    if not path.exists():
-        return None
-    return extract_json_block(path.read_text())
-
-
-def sorted_state_dirs(exp_dir):
-    return sorted(
-        [p for p in Path(exp_dir).glob("s[0-9]*") if p.is_dir()],
-        key=lambda p: int(p.name[1:]),
-    )
-
-
-def latest_state_with(exp_dir, filename):
-    found = [p for p in sorted_state_dirs(exp_dir) if (p / filename).exists()]
-    return found[-1] if found else None
 
 
 def load_hole_cache(exp_dir):
@@ -175,6 +142,7 @@ def load_sequence(exp_dir):
     seq.setdefault("plan", None)
     seq.setdefault("steps", [])
     seq.setdefault("human_required", False)
+    normalize_safety_counters(seq)
     return seq
 
 
@@ -219,7 +187,7 @@ def cmd_save_capture(args):
     sdir = state_dir(exp_dir, args.state)
     sdir.mkdir(parents=True, exist_ok=True)
     dest = sdir / "00_capture.jpg"
-    shutil.copy2(args.source, dest)
+    atomic_copy(args.source, dest)
     print(json.dumps({"status": "ok", "path": str(dest)}, indent=2))
 
 
@@ -229,7 +197,7 @@ def cmd_save_markdown(args, filename):
     sdir.mkdir(parents=True, exist_ok=True)
     content = copy_or_read_source(args.source)
     dest = sdir / filename
-    dest.write_text(content)
+    atomic_write_text(dest, content)
     print(json.dumps({"status": "ok", "path": str(dest)}, indent=2))
 
 
@@ -240,8 +208,7 @@ def cmd_begin_next(args):
     if not (after_dir / "02_action.md").exists() and not args.allow_missing_action:
         raise RuntimeError(f"{after}/02_action.md does not exist; refusing to create next state")
 
-    states = [int(p.name[1:]) for p in exp_dir.glob("s[0-9]*") if p.is_dir()]
-    next_name = f"s{max(states, default=-1) + 1}"
+    next_name = next_state_name(exp_dir)
     (exp_dir / next_name).mkdir()
     replace_symlink(exp_dir / "s_current", next_name)
     print(json.dumps({"status": "ok", "state": next_name, "state_dir": str(exp_dir / next_name)}, indent=2))
@@ -271,15 +238,9 @@ def normalize_steps(raw):
     return steps
 
 
-def first_pending_step(steps):
-    for step in steps:
-        if step.get("status") != "completed":
-            return step.get("name")
-    return None
-
-
 def cmd_start_action(args):
     exp_dir = resolve_exp_dir(args)
+    previous_seq = load_sequence(exp_dir)
     if args.sequence_json:
         seq = json.loads(args.sequence_json)
         if not isinstance(seq, dict):
@@ -296,7 +257,7 @@ def cmd_start_action(args):
         if not seq.get("sequence_id"):
             seq["sequence_id"] = f"seq_{int(time.time())}"
         seq.setdefault("loop_stage", "acting")
-        if seq["loop_stage"] not in STAGES:
+        if seq["loop_stage"] not in STAGE_SET:
             raise RuntimeError(f"invalid loop stage: {seq['loop_stage']}")
         if not seq.get("intent"):
             raise RuntimeError("sequence is missing intent")
@@ -324,8 +285,14 @@ def cmd_start_action(args):
             "retry_count": 0,
             "last_error": None,
             "human_required": False,
+            "safety_counters": default_safety_counters(),
             "updated_at": utc_now(),
         }
+    seq["safety_counters"] = normalize_safety_counters(previous_seq).copy()
+    counters = normalize_safety_counters(seq)
+    counters["consecutive_waits"] = 0
+    counters["consecutive_recoveries"] = 0
+    counters["action_sequences_started"] = int(counters.get("action_sequences_started", 0)) + 1
     save_sequence(exp_dir, seq)
     print(json.dumps(seq, indent=2))
 
@@ -348,8 +315,91 @@ def cmd_complete_step(args):
     print(json.dumps(seq, indent=2))
 
 
+def cmd_dispatch_step(args):
+    exp_dir = resolve_exp_dir(args)
+    seq = load_sequence(exp_dir)
+    found = False
+    for step in seq.get("steps", []):
+        if step.get("name") == args.step:
+            if step.get("status") == "completed":
+                raise RuntimeError(f"step is already completed: {args.step}")
+            if step.get("status") == "dispatched":
+                raise RuntimeError(f"step is already dispatched: {args.step}")
+            step["status"] = "dispatched"
+            step["dispatched_at"] = utc_now()
+            if args.robot_command:
+                step["last_command"] = args.robot_command
+            if args.prefix is not None:
+                step["last_prefix"] = args.prefix or None
+            if args.command_index is not None:
+                step["command_index"] = args.command_index
+            found = True
+            break
+    if not found:
+        raise RuntimeError(f"step not found: {args.step}")
+    seq["current_step"] = args.step
+    seq["loop_stage"] = "acting"
+    reset_consecutive_waits(seq)
+    save_sequence(exp_dir, seq)
+    print(json.dumps(seq, indent=2))
+
+
+def cmd_prepare_retry(args):
+    exp_dir = resolve_exp_dir(args)
+    seq = load_sequence(exp_dir)
+    step_name = args.step or seq.get("current_step") or first_pending_step(seq.get("steps", []))
+    if not step_name:
+        raise RuntimeError("no current step to retry")
+    retry_count = int(seq.get("retry_count", 0))
+    if args.max_retries is not None and retry_count >= args.max_retries:
+        raise RuntimeError(f"retry limit reached: {retry_count}/{args.max_retries}")
+    counters = normalize_safety_counters(seq)
+    total_recoveries = int(counters.get("total_recoveries", 0))
+    if args.max_total_recoveries is not None and total_recoveries >= args.max_total_recoveries:
+        seq["loop_stage"] = "down"
+        seq["human_required"] = True
+        seq["last_error"] = {
+            "code": "total_recovery_limit_reached",
+            "message": f"total recovery limit reached: {total_recoveries}/{args.max_total_recoveries}",
+            "retryable": False,
+            "at": utc_now(),
+        }
+        save_sequence(exp_dir, seq)
+        raise RuntimeError(seq["last_error"]["message"])
+
+    found = False
+    for step in seq.get("steps", []):
+        if step.get("name") == step_name:
+            if step.get("status") == "completed":
+                raise RuntimeError(f"cannot retry completed step: {step_name}")
+            step["status"] = "pending"
+            step["retry_prepared_at"] = utc_now()
+            found = True
+            break
+    if not found:
+        raise RuntimeError(f"step not found: {step_name}")
+
+    seq["retry_count"] = retry_count + 1
+    seq["current_step"] = step_name
+    seq["loop_stage"] = "atom_idle"
+    counters["consecutive_waits"] = 0
+    counters["consecutive_recoveries"] = int(counters.get("consecutive_recoveries", 0)) + 1
+    counters["total_recoveries"] = total_recoveries + 1
+    history = seq.setdefault("retry_history", [])
+    history.append(
+        {
+            "step": step_name,
+            "reason": args.reason,
+            "retry_number": seq["retry_count"],
+            "at": utc_now(),
+        }
+    )
+    save_sequence(exp_dir, seq)
+    print(json.dumps(seq, indent=2))
+
+
 def cmd_set_loop_stage(args):
-    if args.stage not in STAGES:
+    if args.stage not in STAGE_SET:
         raise RuntimeError(f"invalid loop stage: {args.stage}")
     exp_dir = resolve_exp_dir(args)
     seq = load_sequence(exp_dir)
@@ -362,13 +412,15 @@ def cmd_complete_action(args):
     exp_dir = resolve_exp_dir(args)
     seq = load_sequence(exp_dir)
     for step in seq.get("steps", []):
-        if step.get("status") == "pending":
+        if step.get("status") != "completed":
             step["status"] = "completed"
             step["completed_at"] = utc_now()
     seq["current_step"] = None
     seq["loop_stage"] = args.loop_stage
     seq["last_error"] = None
     seq["human_required"] = False
+    reset_consecutive_waits(seq)
+    reset_consecutive_recoveries(seq)
     save_sequence(exp_dir, seq)
     print(json.dumps(seq, indent=2))
 
@@ -386,6 +438,66 @@ def cmd_fail(args):
     seq["human_required"] = args.human_required
     if args.human_required:
         seq["resume_options"] = args.resume_options.split(",") if args.resume_options else []
+    counters = normalize_safety_counters(seq)
+    if args.code == "executor_failed":
+        counters["executor_failures"] = int(counters.get("executor_failures", 0)) + 1
+    save_sequence(exp_dir, seq)
+    print(json.dumps(seq, indent=2))
+
+
+def cmd_record_wait(args):
+    exp_dir = resolve_exp_dir(args)
+    seq = load_sequence(exp_dir)
+    counters = normalize_safety_counters(seq)
+    counters["consecutive_waits"] = int(counters.get("consecutive_waits", 0)) + 1
+    counters["total_waits"] = int(counters.get("total_waits", 0)) + 1
+    counters["last_wait_reason"] = args.reason
+    counters["last_wait_at"] = utc_now()
+
+    limit_reached = False
+    limit_reason = None
+    if args.max_consecutive_waits is not None and counters["consecutive_waits"] > args.max_consecutive_waits:
+        limit_reached = True
+        limit_reason = (
+            f"consecutive wait limit reached: "
+            f"{counters['consecutive_waits']}/{args.max_consecutive_waits}"
+        )
+    if args.max_total_waits is not None and counters["total_waits"] > args.max_total_waits:
+        limit_reached = True
+        limit_reason = f"total wait limit reached: {counters['total_waits']}/{args.max_total_waits}"
+
+    if limit_reached:
+        seq["loop_stage"] = "down"
+        seq["human_required"] = True
+        seq["last_error"] = {
+            "code": "wait_limit_reached",
+            "message": limit_reason,
+            "retryable": False,
+            "at": utc_now(),
+        }
+
+    save_sequence(exp_dir, seq)
+    print(json.dumps({"sequence": seq, "limit_reached": limit_reached, "limit_reason": limit_reason}, indent=2))
+
+
+def cmd_reset_safety(args):
+    exp_dir = resolve_exp_dir(args)
+    seq = load_sequence(exp_dir)
+    counters = normalize_safety_counters(seq)
+    if args.scope == "all":
+        seq["safety_counters"] = default_safety_counters()
+    else:
+        counters["consecutive_waits"] = 0
+        counters["consecutive_recoveries"] = 0
+    seq["last_error"] = None
+    seq["human_required"] = False
+    seq.setdefault("safety_resets", []).append(
+        {
+            "scope": args.scope,
+            "reason": args.reason,
+            "at": utc_now(),
+        }
+    )
     save_sequence(exp_dir, seq)
     print(json.dumps(seq, indent=2))
 
@@ -444,6 +556,27 @@ def cmd_clear_hand(args):
     print(json.dumps(cache, indent=2))
 
 
+def cmd_next_hand(args):
+    exp_dir = resolve_exp_dir(args)
+    existing = load_hole_cache(exp_dir)
+    previous_seq = load_sequence(exp_dir)
+    cache = default_hole_cache()
+    if not args.refresh_blinds:
+        cache["blinds"] = existing.get("blinds", cache["blinds"])
+    seq = default_action_sequence()
+    seq["safety_counters"] = normalize_safety_counters(previous_seq).copy()
+    seq["safety_counters"]["consecutive_waits"] = 0
+    seq["safety_counters"]["consecutive_recoveries"] = 0
+    seq["post_hand_reset"] = {
+        "at": utc_now(),
+        "refresh_blinds": bool(args.refresh_blinds),
+        "note": args.note,
+    }
+    save_hole_cache(exp_dir, cache)
+    save_sequence(exp_dir, seq)
+    print(json.dumps({"hole_card_cache": cache, "action_sequence": seq}, indent=2))
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="DexHoldem V2 state manager")
     parser.add_argument("--exp-dir", help="Experiment root; defaults to cwd or experiments/current")
@@ -483,6 +616,27 @@ def build_parser():
     p = sub.add_parser("complete-step")
     p.add_argument("--step", required=True)
 
+    p = sub.add_parser("dispatch-step")
+    p.add_argument("--step", required=True)
+    p.add_argument("--robot-command")
+    p.add_argument("--prefix")
+    p.add_argument("--command-index", type=int)
+
+    p = sub.add_parser("prepare-retry")
+    p.add_argument("--step")
+    p.add_argument("--reason", default="retryable_recovery")
+    p.add_argument("--max-retries", type=int, default=2)
+    p.add_argument("--max-total-recoveries", type=int, default=8)
+
+    p = sub.add_parser("record-wait")
+    p.add_argument("--reason", default="wait")
+    p.add_argument("--max-consecutive-waits", type=int, default=20)
+    p.add_argument("--max-total-waits", type=int, default=200)
+
+    p = sub.add_parser("reset-safety")
+    p.add_argument("--scope", choices=["consecutive", "all"], default="consecutive")
+    p.add_argument("--reason", default="human_confirmed_resume")
+
     p = sub.add_parser("complete-action")
     p.add_argument("--loop-stage", default="idle", choices=sorted(STAGES))
 
@@ -517,6 +671,10 @@ def build_parser():
 
     sub.add_parser("clear-hand")
 
+    p = sub.add_parser("next-hand")
+    p.add_argument("--refresh-blinds", action="store_true")
+    p.add_argument("--note", default="post_hand_reset")
+
     return parser
 
 
@@ -539,6 +697,14 @@ def main():
             cmd_start_action(args)
         elif args.command == "complete-step":
             cmd_complete_step(args)
+        elif args.command == "dispatch-step":
+            cmd_dispatch_step(args)
+        elif args.command == "prepare-retry":
+            cmd_prepare_retry(args)
+        elif args.command == "record-wait":
+            cmd_record_wait(args)
+        elif args.command == "reset-safety":
+            cmd_reset_safety(args)
         elif args.command == "set-loop-stage":
             cmd_set_loop_stage(args)
         elif args.command == "complete-action":
@@ -553,6 +719,8 @@ def main():
             cmd_set_blinds(args)
         elif args.command == "clear-hand":
             cmd_clear_hand(args)
+        elif args.command == "next-hand":
+            cmd_next_hand(args)
     except Exception as exc:
         print(json.dumps({"status": "error", "error": str(exc)}), file=sys.stderr)
         raise SystemExit(1)

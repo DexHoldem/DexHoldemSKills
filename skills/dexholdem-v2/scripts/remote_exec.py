@@ -3,20 +3,10 @@
 
 import argparse
 import json
-import os
 import urllib.error
 import urllib.request
 
-
-def load_config(path):
-    if not os.path.exists(path):
-        return {}
-    try:
-        import yaml
-        with open(path, "r") as f:
-            return yaml.safe_load(f) or {}
-    except ImportError:
-        return {}
+from utils import load_config
 
 
 def base_url(args, config):
@@ -25,7 +15,13 @@ def base_url(args, config):
     return (config.get("remote_terminal", {}) or {}).get("host", "http://localhost:5000").rstrip("/")
 
 
-def post(url, endpoint, payload):
+def request_timeout(args, config):
+    if args.timeout is not None:
+        return args.timeout
+    return float((config.get("remote_terminal", {}) or {}).get("http_timeout", 10))
+
+
+def post(url, endpoint, payload, timeout):
     req = urllib.request.Request(
         f"{url}{endpoint}",
         data=json.dumps(payload).encode("utf-8"),
@@ -33,7 +29,7 @@ def post(url, endpoint, payload):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             body = json.loads(resp.read().decode("utf-8"))
             print(json.dumps(body))
             return body
@@ -58,7 +54,7 @@ def action_execute(args, config):
             {"action": "press", "args": ["enter"]},
         ]
     }
-    post(base_url(args, config), "/batch", payload)
+    post(base_url(args, config), "/batch", payload, request_timeout(args, config))
 
 
 def action_send_ctrlc(args, config):
@@ -70,7 +66,7 @@ def action_send_ctrlc(args, config):
             {"action": "hotkey", "args": ["ctrl", "c"]},
         ]
     }
-    post(base_url(args, config), "/batch", payload)
+    post(base_url(args, config), "/batch", payload, request_timeout(args, config))
 
 
 def action_click_reset_hand(args, config):
@@ -78,11 +74,16 @@ def action_click_reset_hand(args, config):
     if "click_x" not in rh or "click_y" not in rh:
         print(json.dumps({"status": "error", "detail": "reset_hand.click_x/click_y missing"}))
         raise SystemExit(1)
-    post(base_url(args, config), "/batch", {"actions": [{"action": "click", "args": [rh["click_x"], rh["click_y"]]}]})
+    post(
+        base_url(args, config),
+        "/batch",
+        {"actions": [{"action": "click", "args": [rh["click_x"], rh["click_y"]]}]},
+        request_timeout(args, config),
+    )
 
 
 def action_calibrate(args, config):
-    post(base_url(args, config), "/exec", {"action": "position"})
+    post(base_url(args, config), "/exec", {"action": "position"}, request_timeout(args, config))
 
 
 def main():
@@ -91,6 +92,7 @@ def main():
     parser.add_argument("--command")
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--host")
+    parser.add_argument("--timeout", type=float)
     args = parser.parse_args()
 
     if args.action == "execute" and not args.command:

@@ -8,12 +8,22 @@ physical recovery by itself.
 
 import argparse
 import json
-import re
 import shlex
 from pathlib import Path
 
+from utils import (
+    STAGE_SET,
+    current_state_name,
+    extract_json_objects,
+    first_pending_step,
+    has_cached_command_step,
+    load_config,
+    loop_safety_limits,
+    read_json_file,
+    step_status,
+    view_slot_from_intent,
+)
 
-STAGES = {"idle", "atom_idle", "acting", "to_recover", "down", "show_hand", "win", "lose"}
 WAIT_SECONDS = 3
 IDLE_TABLE_FIELDS = (
     "scene_stable",
@@ -33,31 +43,10 @@ STAGE_REQUIRED_TABLE_FIELDS = {
 
 def read_json(path):
     path = Path(path)
-    if not path.exists():
-        return None, f"{path.name} is missing"
     try:
-        with path.open("r") as f:
-            return json.load(f), None
-    except json.JSONDecodeError as exc:
-        return None, f"{path.name} is not valid JSON: {exc}"
-
-
-def extract_json_blocks(markdown):
-    blocks = []
-    for raw in re.findall(r"```json\s*(.*?)```", markdown, flags=re.S):
-        try:
-            blocks.append(json.loads(raw))
-        except json.JSONDecodeError:
-            continue
-    if blocks:
-        return blocks
-    match = re.search(r"(\{.*\})", markdown, flags=re.S)
-    if match:
-        try:
-            return [json.loads(match.group(1))]
-        except json.JSONDecodeError:
-            return []
-    return []
+        return read_json_file(path), None
+    except (FileNotFoundError, ValueError) as exc:
+        return None, str(exc)
 
 
 def read_markdown_json(path, predicate=None):
@@ -65,7 +54,7 @@ def read_markdown_json(path, predicate=None):
     if not path.exists():
         return None, f"{path.name} is missing"
     try:
-        blocks = extract_json_blocks(path.read_text())
+        blocks = extract_json_objects(path.read_text())
     except OSError as exc:
         return None, f"could not read {path.name}: {exc}"
     for block in blocks:
@@ -84,19 +73,6 @@ def resolve_exp_dir(path=None):
     if current.exists():
         return current.resolve()
     raise RuntimeError("run from an experiment root or pass --exp-dir")
-
-
-def current_state_name(exp_dir):
-    link = exp_dir / "s_current"
-    if link.exists():
-        return link.resolve().name
-    states = sorted(
-        [p.name for p in exp_dir.glob("s[0-9]*") if p.is_dir()],
-        key=lambda name: int(name[1:]),
-    )
-    if not states:
-        raise RuntimeError("no state folders found")
-    return states[-1]
 
 
 def command_for_action(action):
@@ -130,25 +106,6 @@ def add(judgments, check, result, reason, **extra):
     if extra:
         item.update(extra)
     judgments.append(item)
-
-
-def first_pending_step(sequence):
-    for step in sequence.get("steps", []) or []:
-        if step.get("status") != "completed":
-            return step.get("name")
-    return None
-
-
-def view_slot_from_intent(intent):
-    if intent == "view_left_hole_card":
-        return "left"
-    if intent == "view_right_hole_card":
-        return "right"
-    if intent == "show_left_hole_card":
-        return "left"
-    if intent == "show_right_hole_card":
-        return "right"
-    return None
 
 
 def cached_card(cache, slot):
@@ -188,7 +145,73 @@ def wait_action(reason, wait_seconds):
     return {"action": "wait", "reason": reason, "sleep_seconds": wait_seconds}
 
 
-def route_wait(exp_dir, state_name, state_dir, judgments, reason_key, message, wait_seconds):
+def safety_counters(sequence):
+    counters = sequence.get("safety_counters", {}) if isinstance(sequence, dict) else {}
+    return counters if isinstance(counters, dict) else {}
+
+
+def route_request_human(exp_dir, state_name, state_dir, judgments, reason_key, message, context=None):
+    action = {
+        "action": "request_human",
+        "reason": message,
+        "resume_options": ["inspect_scene", "reset_consecutive_safety", "reset_all_safety", "abort_hand"],
+    }
+    return route(
+        exp_dir,
+        state_name,
+        state_dir,
+        reason_key,
+        message,
+        judgments,
+        agent_required=False,
+        suggested_action=action,
+        commands=[command_for_action(action)],
+        context=context or {},
+    )
+
+
+def route_wait(exp_dir, state_name, state_dir, judgments, reason_key, message, wait_seconds, sequence=None, limits=None):
+    counters = safety_counters(sequence)
+    limits = limits or loop_safety_limits({})
+    next_consecutive = int(counters.get("consecutive_waits", 0)) + 1
+    next_total = int(counters.get("total_waits", 0)) + 1
+    if limits["max_consecutive_waits"] is not None and next_consecutive > limits["max_consecutive_waits"]:
+        add(
+            judgments,
+            "wait_limit",
+            False,
+            "next wait would exceed max_consecutive_waits",
+            consecutive_waits=counters.get("consecutive_waits", 0),
+            max_consecutive_waits=limits["max_consecutive_waits"],
+        )
+        return route_request_human(
+            exp_dir,
+            state_name,
+            state_dir,
+            judgments,
+            "wait_limit_reached",
+            f"consecutive wait limit reached before {reason_key}",
+            context={"wait_reason": reason_key, "safety_counters": counters},
+        )
+    if limits["max_total_waits"] is not None and next_total > limits["max_total_waits"]:
+        add(
+            judgments,
+            "wait_limit",
+            False,
+            "next wait would exceed max_total_waits",
+            total_waits=counters.get("total_waits", 0),
+            max_total_waits=limits["max_total_waits"],
+        )
+        return route_request_human(
+            exp_dir,
+            state_name,
+            state_dir,
+            judgments,
+            "wait_limit_reached",
+            f"total wait limit reached before {reason_key}",
+            context={"wait_reason": reason_key, "safety_counters": counters},
+        )
+
     action = wait_action(reason_key, wait_seconds)
     return route(
         exp_dir,
@@ -270,6 +293,32 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
                 commands=[],
                 action=action,
             )
+        if action.get("action") == "request_human":
+            sequence, sequence_error = read_json(exp_dir / "action_sequence.json")
+            context = {"action": action}
+            if sequence_error:
+                add(judgments, "action_sequence_valid", False, sequence_error)
+            else:
+                add(judgments, "human_pause", True, "request_human action blocks automatic state advance")
+                context.update(
+                    {
+                        "current_step": sequence.get("current_step"),
+                        "last_error": sequence.get("last_error"),
+                        "resume_options": sequence.get("resume_options", []),
+                    }
+                )
+            return route(
+                exp_dir,
+                state_name,
+                state_dir,
+                "human_pause",
+                "request_human is waiting for explicit human confirmation before the next state",
+                judgments,
+                agent_required=True,
+                required_agent_task="wait_for_human_confirmation",
+                commands_after_human=command_for_begin_next(state_name),
+                context=context,
+            )
         return route(
             exp_dir,
             state_name,
@@ -321,6 +370,7 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
             agent_required=True,
             required_agent_task="repair_cache_files",
         )
+    safety_limits = loop_safety_limits(load_config(exp_dir / "config.yaml"))
 
     table = parsed["table"]
     loop_stage = parsed.get("loop_stage")
@@ -329,7 +379,7 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
         add(judgments, "loop_stage_source", "fallback", "loop_stage missing in parsed state; using action_sequence.json")
     else:
         add(judgments, "loop_stage_source", "parsed_state", "loop_stage read from parsed state")
-    if loop_stage not in STAGES:
+    if loop_stage not in STAGE_SET:
         add(judgments, "loop_stage_valid", False, f"unknown loop_stage: {loop_stage}")
         return route(
             exp_dir,
@@ -402,6 +452,8 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
                 "to_recover_scene_unstable",
                 "retryable recovery needs a stable scene before retry",
                 wait_seconds,
+                sequence=sequence,
+                limits=safety_limits,
             )
         if scene_stable is not True:
             add(judgments, "to_recover_scene_stability", "unknown", "retryable recovery needs a clear scene_stable true value")
@@ -415,6 +467,70 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
                 agent_required=True,
                 required_agent_task="resolve_scene_stability",
             )
+        current_step = sequence.get("current_step") or first_pending_step(sequence)
+        counters = safety_counters(sequence)
+        retry_count = int(sequence.get("retry_count", 0))
+        total_recoveries = int(counters.get("total_recoveries", 0))
+        if safety_limits["max_step_retries"] is not None and retry_count >= safety_limits["max_step_retries"]:
+            add(
+                judgments,
+                "retry_limit",
+                False,
+                "current sequence reached max_step_retries",
+                retry_count=retry_count,
+                max_step_retries=safety_limits["max_step_retries"],
+            )
+            return route_request_human(
+                exp_dir,
+                state_name,
+                state_dir,
+                judgments,
+                "retry_limit_reached",
+                "retry limit reached for the current action sequence",
+                context={"current_step": current_step, "safety_counters": counters},
+            )
+        if safety_limits["max_total_recoveries"] is not None and total_recoveries >= safety_limits["max_total_recoveries"]:
+            add(
+                judgments,
+                "retry_limit",
+                False,
+                "experiment reached max_total_recoveries",
+                total_recoveries=total_recoveries,
+                max_total_recoveries=safety_limits["max_total_recoveries"],
+            )
+            return route_request_human(
+                exp_dir,
+                state_name,
+                state_dir,
+                judgments,
+                "retry_limit_reached",
+                "total recovery limit reached for this experiment",
+                context={"current_step": current_step, "safety_counters": counters},
+            )
+        if has_cached_command_step(sequence, current_step):
+            return route(
+                exp_dir,
+                state_name,
+                state_dir,
+                "recover_retryable",
+                "prepare and retry the cached atom command for the recoverable failure",
+                judgments,
+                agent_required=False,
+                commands=[
+                    (
+                        f"python3 state.py prepare-retry --step {shlex.quote(current_step)} "
+                        f"--reason to_recover --max-retries {safety_limits['max_step_retries']} "
+                        f"--max-total-recoveries {safety_limits['max_total_recoveries']}"
+                    ),
+                    "python3 executor.py --continue-current",
+                ],
+                context={
+                    "current_step": current_step,
+                    "last_error": sequence.get("last_error"),
+                    "intent": sequence.get("intent"),
+                    "retry_count": sequence.get("retry_count", 0),
+                },
+            )
         return route(
             exp_dir,
             state_name,
@@ -425,7 +541,7 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
             agent_required=True,
             required_agent_task="recover_retryable_action",
             context={
-                "current_step": sequence.get("current_step") or first_pending_step(sequence),
+                "current_step": current_step,
                 "last_error": sequence.get("last_error"),
                 "intent": sequence.get("intent"),
                 "action": sequence.get("action"),
@@ -458,6 +574,8 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
             "scene_unstable",
             "scene is unstable; wait and preserve the current sequence",
             wait_seconds,
+            sequence=sequence,
+            limits=safety_limits,
         )
     if scene_stable is not True:
         add(judgments, "scene_stable", "unknown", "scene_stable is not a clear true/false value")
@@ -470,6 +588,8 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
                 "robot_acting",
                 "robot is acting and scene stability is unclear; wait before re-parsing",
                 wait_seconds,
+                sequence=sequence,
+                limits=safety_limits,
             )
         return route(
             exp_dir,
@@ -493,6 +613,8 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
             "robot_acting",
             "robot action may still be moving or settling",
             wait_seconds,
+            sequence=sequence,
+            limits=safety_limits,
         )
 
     if loop_stage == "show_hand":
@@ -555,9 +677,36 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
 
     if loop_stage == "atom_idle":
         current_step = sequence.get("current_step") or first_pending_step(sequence)
+        current_status = step_status(sequence, current_step) if current_step else None
         intent = sequence.get("intent")
         slot = view_slot_from_intent(intent)
-        add(judgments, "atom_sequence", "open", "sequence has settled after an atom action", current_step=current_step, intent=intent)
+        add(
+            judgments,
+            "atom_sequence",
+            "open",
+            "sequence has settled after an atom action",
+            current_step=current_step,
+            current_step_status=current_status,
+            intent=intent,
+        )
+        if current_status == "dispatched":
+            return route(
+                exp_dir,
+                state_name,
+                state_dir,
+                "verify_dispatched_step",
+                "visually verify the dispatched atom before completing it in the cache",
+                judgments,
+                agent_required=True,
+                required_agent_task="verify_dispatched_step_result",
+                commands_after_verification=[f"python3 state.py complete-step --step {shlex.quote(current_step)}"],
+                context={
+                    "current_step": current_step,
+                    "intent": intent,
+                    "action": sequence.get("action"),
+                    "plan": sequence.get("plan"),
+                },
+            )
         if current_step == "read_card":
             return route(
                 exp_dir,
@@ -645,6 +794,18 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
                 commands_after_verification=["python3 state.py complete-action --loop-stage idle"],
                 context={"current_step": current_step, "intent": intent},
             )
+        if current_status == "pending" and has_cached_command_step(sequence, current_step):
+            return route(
+                exp_dir,
+                state_name,
+                state_dir,
+                "continue_cached_command",
+                "dispatch the next pending atom command from the cached action sequence",
+                judgments,
+                agent_required=False,
+                commands=["python3 executor.py --continue-current"],
+                context={"current_step": current_step, "intent": intent},
+            )
         return route(
             exp_dir,
             state_name,
@@ -680,6 +841,8 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
             "not_my_turn",
             "it is not the robot's turn",
             wait_seconds,
+            sequence=sequence,
+            limits=safety_limits,
         )
     if is_my_turn is not True:
         add(judgments, "is_my_turn", "unknown", "is_my_turn is not a clear true/false value")

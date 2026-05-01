@@ -12,12 +12,12 @@ experiments/
   exp20260430_150000/
     pyproject.toml
     config.yaml
+    utils.py
     capture.py
     state.py
     executor.py
     action_translator.py
     router.py
-    workflow.py
     remote_exec.py
     visual_guidelines/
     hole_card_cache.json
@@ -169,7 +169,15 @@ Actions can span multiple individual robot policies and multiple state folders.
   "current_step": "put_down_card",
   "retry_count": 0,
   "last_error": null,
-  "human_required": false
+  "human_required": false,
+  "safety_counters": {
+    "consecutive_waits": 0,
+    "total_waits": 0,
+    "consecutive_recoveries": 0,
+    "total_recoveries": 0,
+    "executor_failures": 0,
+    "action_sequences_started": 1
+  }
 }
 ```
 
@@ -182,21 +190,44 @@ being picked up and remaining near its original face-down position. Use `down`
 instead if the card is dropped, exposed, misplaced, covered, or unsafe to retry.
 The `plan` object is the translator output captured at action start. Do not
 recompute it from a later state while retrying or verifying the same sequence.
+The `safety_counters` object is experiment-level loop protection. It persists
+across state folders and action sequence replacement, so repeated wait/recovery
+cycles eventually route to `request_human` instead of looping forever.
+After human inspection, use `state.py reset-safety --scope consecutive` only
+when the human explicitly approves another wait/recovery attempt. Use
+`--scope all` only when the human intentionally clears total wait or total
+recovery caps for the session.
+
+Step status meanings:
+
+- `pending` - the atom has not been dispatched.
+- `dispatched` - `executor.py` sent the robot policy for this atom, and the
+  next capture must verify the physical result.
+- `completed` - the atom result has been visually verified in `atom_idle`.
+
+Do not mark a robot atom `completed` from the same state that dispatched it.
+Complete it only after the next state image confirms the intended physical
+effect.
 
 For chip actions, the translator creates one step per moved chip and then a
 visual-idle verification step. A `call` is computed from the current table as
 `sum(opponent_bet) - sum(my_current_bet)`. A `raise` uses `amount` as the
 target total bet after the raise, so pushed chips are
 `amount - sum(my_current_bet)`.
+For `call` and `raise`, the translator only emits exact chip combinations from
+available `my_chips`. If exact chips are unavailable, it fails before robot
+dispatch instead of overpaying with a larger chip.
 Use `to_recover` when a chip push failed harmlessly, such as the target chip not
 moving or not following the dexterous hand, and the unfolded chip/card layout
 remains countable and undisturbed. Use `down` instead if chips are scattered,
 mixed, hidden, or any non-target object moved.
 
 After a confirmed `win`, `collect_winnings` pulls back chips from the recognized
-bet areas. By default the translator pulls `my_current_bet + opponent_bet`; use
-an explicit `chip_counts` override only when the visual parse gives a clearer
-count of the chips to collect.
+bet areas. By default the translator keeps source zones separate:
+`opponent_bet` and `my_current_bet`. The action sequence records
+`source_zones` so recovery can tell which betting area a pull step targeted.
+Use an explicit `chip_counts` override only when the visual parse gives a
+clearer count of the chips to collect and zone information is not reliable.
 
 ```json
 {
@@ -297,16 +328,18 @@ or:
    for the expected state and perform visual parsing.
 3. If `loop_stage` is `down`, inspect caches and recent states; choose wait or
    human help. Retry only after the state is reclassified as `to_recover`.
-4. If the scene is unstable, write a `wait` action.
+4. If the scene is unstable, write a `wait` action unless safety counters have
+   reached their configured limit.
 5. If `loop_stage` is `to_recover`, use the cached sequence plan to retry or
-   repair the current embodied action after the scene is stable.
+   repair the current embodied action after the scene is stable, unless retry
+   safety counters have reached their configured limit.
 6. If `loop_stage` is `acting`, write a short wait action and capture again.
 7. If `loop_stage` is `show_hand`, reveal robot cards as needed, then resolve
    the showdown outcome.
 8. If `loop_stage` is `win`, run `collect_winnings` after chip counts are
    clear.
 9. If `loop_stage` is `lose`, do not pull chips back; wait, request human help,
-   clear caches for the next hand, or stop.
+   run `state.py next-hand`, or stop.
 10. If `loop_stage` is `atom_idle`, continue or verify the current action
    sequence. Do not start unrelated poker reasoning.
 11. If a readable held card appears during a view-card sequence, cache it.
@@ -321,11 +354,16 @@ or:
     add a separate `to_call` field.
 18. Write `02_action.md` before `state.py begin-next`.
 
+After a hand is over and the table is ready for the next hand, run
+`state.py next-hand` before creating the next state. This clears hole cards and
+resets `action_sequence.json` while preserving blind/dealer cache. Run
+`state.py next-hand --refresh-blinds` instead when the dealer/small-blind button
+may have moved.
+
 ## Useful Commands
 
 ```bash
 python3 router.py
-python3 workflow.py
 python3 state.py current
 python3 state.py save-capture --source /tmp/frame.jpg
 python3 state.py save-parsed --source parsed.md
@@ -333,6 +371,10 @@ python3 state.py save-action --source action.md
 python3 state.py begin-next --after s0
 python3 state.py cache-card --slot left --card Ah --source-state s3 --confidence 0.9
 python3 state.py set-blinds --dealer robot --small-blind robot --big-blind opponent --source-state s0
+python3 state.py prepare-retry --step push_chip_10_1 --reason to_recover
+python3 state.py reset-safety --scope consecutive
+python3 state.py next-hand
+python3 state.py next-hand --refresh-blinds
 python3 action_translator.py --action '{"action":"view_card","position":"left"}' --as-sequence-cache
 python3 action_translator.py --action '{"action":"collect_winnings"}' --table '{"my_current_bet":{"5":1},"opponent_bet":{"10":1}}' --as-sequence-cache
 python3 state.py start-action --sequence-json '<translator sequence-cache JSON>'

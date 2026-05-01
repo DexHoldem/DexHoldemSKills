@@ -43,6 +43,10 @@ The vision agent may inspect the current action intent, action-sequence
 progress, hole-card cache, and previous images to judge whether a failure needs
 human help.
 
+If the context says a specific step is `dispatched`, explicitly judge whether
+that atom appears physically successful, still in progress, retryable, or unsafe
+after comparing the current image with the previous state.
+
 Call out a human-help condition when any of these are visible or strongly
 suspected:
 

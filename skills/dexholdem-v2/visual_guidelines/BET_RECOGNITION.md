@@ -19,6 +19,9 @@ counts in plain language by side and denomination. The coding agent will parse
 those counts into `my_current_bet` and `opponent_bet`.
 
 Do not model a generic pot or a generic players array in parsed visual state.
+Keep the two bet areas separate. Later collection actions may pull chips from
+`opponent_bet` and `my_current_bet` as distinct source zones, so do not merge
+them into one pot count.
 
 ## Denominations And Colors
 

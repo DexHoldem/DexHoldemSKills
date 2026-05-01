@@ -11,31 +11,21 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from utils import load_config, loop_safety_limits
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 VENV_PYTHON = SKILL_DIR / ".venv" / "bin" / "python"
 REEXEC_ENV = "DEXHOLDEM_V2_PREFLIGHT_REEXECED"
 RUNTIME_FILES = [
+    "utils.py",
     "capture.py",
     "state.py",
     "executor.py",
     "action_translator.py",
     "router.py",
-    "workflow.py",
     "remote_exec.py",
 ]
-
-
-def load_config(path):
-    if not Path(path).exists():
-        return {}
-    try:
-        import yaml
-        with open(path, "r") as f:
-            return yaml.safe_load(f) or {}
-    except ImportError:
-        return {}
 
 
 def run_uv_sync(skip):
@@ -101,7 +91,7 @@ def capture_initial(exp_dir, skip_camera, source=None):
     return True, {"output": str(output)}
 
 
-def post(base_url, endpoint, payload, timeout=5):
+def post(base_url, endpoint, payload, timeout=10):
     req = urllib.request.Request(
         f"{base_url}{endpoint}",
         data=json.dumps(payload).encode("utf-8"),
@@ -118,6 +108,7 @@ def check_remote(config, skip_remote):
     rt = config.get("remote_terminal", {}) or {}
     rh = config.get("reset_hand", {}) or {}
     base = rt.get("host", "http://localhost:5000").rstrip("/")
+    timeout = float(rt.get("http_timeout", 10))
     try:
         hello_payload = {
             "actions": [
@@ -129,14 +120,14 @@ def check_remote(config, skip_remote):
                 {"action": "press", "args": ["enter"]},
             ]
         }
-        hello = post(base, "/batch", hello_payload)
+        hello = post(base, "/batch", hello_payload, timeout=timeout)
         reset = None
         if "click_x" in rh and "click_y" in rh:
             reset = post(base, "/batch", {
                 "actions": [
                     {"action": "moveTo", "args": [rh["click_x"], rh["click_y"]], "kwargs": {"duration": 0.3}},
                 ]
-            })
+            }, timeout=timeout)
         return True, {"type_hello_world": hello, "move_cursor_reset_hand": reset}
     except urllib.error.URLError as exc:
         return False, {"detail": str(exc.reason), "host": base}
@@ -157,6 +148,55 @@ def check_audio(config, skip_audio):
     if missing:
         return False, {"missing": missing}
     return True, {"ffplay": shutil.which("ffplay")}
+
+
+def _number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def validate_config(config, require_remote):
+    errors = []
+    rt = config.get("remote_terminal", {}) or {}
+    rh = config.get("reset_hand", {}) or {}
+
+    if require_remote and not rt.get("host"):
+        errors.append("remote_terminal.host is required")
+
+    for section_name, section, fields, required in (
+        ("remote_terminal", rt, ("click_x", "click_y"), require_remote),
+        ("reset_hand", rh, ("click_x", "click_y"), require_remote),
+    ):
+        for field in fields:
+            value = section.get(field)
+            if value is None:
+                if required:
+                    errors.append(f"{section_name}.{field} is required")
+                continue
+            if not _number(value) or value < 0:
+                errors.append(f"{section_name}.{field} must be a non-negative number")
+
+    timeout = rt.get("http_timeout", 10)
+    if not _number(timeout) or timeout <= 0:
+        errors.append("remote_terminal.http_timeout must be a positive number")
+
+    try:
+        safety_limits = loop_safety_limits(config)
+    except Exception as exc:
+        errors.append(str(exc))
+        safety_limits = None
+
+    if errors:
+        return False, {"errors": errors}
+    return True, {
+        "remote_terminal": {
+            "host": rt.get("host"),
+            "click_x": rt.get("click_x"),
+            "click_y": rt.get("click_y"),
+            "http_timeout": timeout,
+        },
+        "reset_hand": {"click_x": rh.get("click_x"), "click_y": rh.get("click_y")},
+        "loop_safety": safety_limits,
+    }
 
 
 def main():
@@ -183,7 +223,18 @@ def main():
         raise SystemExit(1)
     maybe_reexec(sys.argv)
 
-    config = load_config(args.config)
+    try:
+        config = load_config(args.config)
+    except Exception as exc:
+        record("config", False, {"detail": str(exc)})
+        results["status"] = "failed"
+        print(json.dumps(results, indent=2))
+        raise SystemExit(1)
+    ok, detail = validate_config(config, require_remote=not args.skip_remote)
+    if not record("config", ok, detail):
+        results["status"] = "failed"
+        print(json.dumps(results, indent=2))
+        raise SystemExit(1)
 
     try:
         init = run_state_init(args.config, args.exp_name)

@@ -36,7 +36,8 @@ python3 skills/dexholdem-v2/scripts/preflight.py --skip-camera --skip-remote --s
 Preflight creates `experiments/<exp-name>/`, points `experiments/current` to
 that folder, initializes `s0/` and `s_current`, copies the executable helper
 scripts plus `pyproject.toml` and `config.yaml` into the experiment root, and
-captures `s0/00_capture.jpg` unless camera checks are skipped.
+validates remote click coordinates before capturing `s0/00_capture.jpg` unless
+camera checks are skipped.
 
 After preflight, work from the experiment root:
 
@@ -133,13 +134,28 @@ contains the original translator output under `plan` plus mutable step status.
 Use the cached `plan` when retrying, verifying, or diagnosing the same action
 sequence; do not recompute the plan from a later table state.
 
+Step status is deliberately physical:
+
+- `pending` means the atom has not been dispatched.
+- `dispatched` means `executor.py` sent the robot policy, but the next capture
+  has not yet verified the physical result.
+- `completed` means the atom was visually verified in an `atom_idle` state.
+
+`executor.py` dispatches at most one robot atom command per state. It marks the
+step `dispatched`; the main agent marks it `completed` only after visual
+verification.
+
 Useful cache helpers:
 
 ```bash
 python3 state.py cache-card --slot left --card Ah --source-state s3 --confidence 0.9
 python3 action_translator.py --action '{"action":"view_card","position":"left"}' --as-sequence-cache
 python3 state.py start-action --sequence-json '<translator sequence-cache JSON>'
+python3 state.py dispatch-step --step pick_card
 python3 state.py complete-step --step read_card
+python3 state.py prepare-retry --step push_chip_10_1 --reason to_recover
+python3 state.py next-hand
+python3 state.py next-hand --refresh-blinds
 python3 state.py set-loop-stage --stage to_recover
 python3 state.py set-loop-stage --stage show_hand
 python3 state.py set-loop-stage --stage win
@@ -257,13 +273,19 @@ For betting actions, the executor reads `my_chips`, `my_current_bet`, and
 bet after the raise, so the physical chips pushed are
 `amount - sum(my_current_bet)`.
 
+For `call` and `raise`, chip selection must be exact. If available `my_chips`
+cannot form the required amount exactly, the translator fails before robot
+dispatch. Do not silently overpay with a larger chip; choose a different poker
+action, repair chip recognition, or request human help.
+
 Chip actions are translated into one atom step per moved chip, such as
 `push_chip_10_1` and `push_chip_5_1`, followed by `verify_idle`.
 
 `collect_winnings` pulls chips back after a confirmed `win`. By default it
-pulls `my_current_bet + opponent_bet` from the parsed table. Use
-`chip_counts` only when visual parsing has a clearer explicit count for the
-chips that should be pulled back.
+pulls `opponent_bet` and `my_current_bet` as separate source zones from the
+parsed table, then records those zones in the action sequence. Use `chip_counts`
+only when visual parsing has a clearer explicit count for the chips that should
+be pulled back and zone information is not reliable.
 
 ## Recovery
 
@@ -290,13 +312,34 @@ Use `down` when direct continuation is unsafe or unclear:
 Request human help when a person must fix or confirm the table:
 
 ```bash
-python3 state.py require-human --reason "Dexterous hand is holding an unreadable card" --resume-options mark_card,confirm_card_returned,abort_hand
+python3 executor.py --action '{"action":"request_human","reason":"Dexterous hand is holding an unreadable card","resume_options":["mark_card","confirm_card_returned","abort_hand"]}'
 ```
+
+`request_human` is a blocking action. After it writes `02_action.md`, the router
+returns `human_pause` and does not automatically create the next state. Only
+after a human confirms the table is fixed should the agent run the router's
+`commands_after_human` to create and capture the next state.
 
 Retry only when the cached sequence plan and recent images show that repeating
 the current step is physically safe. In normal routing, that means the parsed
 state should be `to_recover`; otherwise keep the state `down` and request human
-help or wait for clearer evidence.
+help or wait for clearer evidence. For retryable atom failures, use
+`state.py prepare-retry --step <current_step>` followed by
+`executor.py --continue-current`; the router emits these commands when the
+current step has a cached atom command. Safety counters in
+`action_sequence.json` cap repeated waits and recoveries; when a cap is reached,
+the router escalates to `request_human` instead of continuing automatically.
+If a human inspects the table and explicitly approves continuing, run
+`state.py reset-safety --scope consecutive` before creating the next captured
+state. Use `--scope all` only when the human intentionally clears total wait or
+total recovery caps for the session.
+
+After a hand ends, either stop the session or reset local caches before the next
+hand. Use `state.py next-hand` to clear hole cards and reset
+`action_sequence.json` while preserving blind/dealer cache. Use
+`state.py next-hand --refresh-blinds` when the dealer/small-blind button may
+have moved and blind recognition must run again during the next preflight-like
+visual pass.
 
 ## Core Workflow
 
@@ -321,21 +364,32 @@ After preflight, repeat this loop from the experiment root until the action is
      command.
    - If it asks for visual parsing, repair the parsed state and rerun the
      router.
+   - If it asks to verify a dispatched step, inspect the current image and
+     cached sequence. If the intended atom succeeded, run the provided
+     `state.py complete-step ...` command and rerun the router. If it failed
+     harmlessly, mark `to_recover`; if unsafe, mark `down` or request human
+     help.
    - If it asks for held-card reading, use visual parsing to read the held card,
      update `hole_card_cache.json`, and continue the cached action sequence.
-   - If it returns `recover_retryable`, use the cached `action_sequence.json`
-     plan to re-execute or repair the current embodied action.
+   - If it returns `continue_cached_command`, run `executor.py
+     --continue-current`; this sends the next pending robot atom from
+     `action_sequence.json`.
+   - If it returns `recover_retryable` with commands, run them in order to reset
+     and retry the exact cached atom. If it requires the agent, inspect the
+     cached sequence and recent images before retrying or requesting help.
    - If it returns `recover_down`, inspect recent states and choose wait or
      `request_human`; only retry after the state is safely classified as
      `to_recover`.
+   - If it returns `human_pause`, wait for human confirmation before running the
+     supplied `commands_after_human`.
    - If it returns `show_hand`, reveal robot cards as needed with `show_card`
      actions, then use `SHOWDOWN_OUTCOME.md` to decide `win`, `lose`, or keep
      resolving showdown ambiguity.
    - If it returns `collect_winnings`, execute the suggested
      `collect_winnings` action with `executor.py`.
    - If it returns `hand_lost`, do not move chips toward the robot; decide
-     whether to wait for reset, request human help, clear caches for the next
-     hand, or stop.
+     whether to wait for reset, request human help, run `state.py next-hand`,
+     or stop.
    - If it returns `choose_poker_action`, call LLM reasoning with the parsed
      table state and hole-card cache, choose the poker action, use
      `action_translator.py` if you need to inspect the new action sequence, and
@@ -352,6 +406,7 @@ python3 executor.py --action '{"action":"wait","reason":"not_my_turn","sleep_sec
 python3 executor.py --action '{"action":"view_card","position":"left"}'
 python3 executor.py --action '{"action":"show_card","position":"left"}'
 python3 executor.py --action '{"action":"put_down_card","position":"left","face_up":false}'
+python3 executor.py --continue-current
 python3 executor.py --action '{"action":"call"}'
 python3 executor.py --action '{"action":"collect_winnings"}'
 python3 executor.py --action '{"action":"request_human","reason":"card was dropped"}'

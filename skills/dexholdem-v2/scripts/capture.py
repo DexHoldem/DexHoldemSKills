@@ -2,37 +2,22 @@
 """Reliable single-frame capture helper for DexHoldem V2."""
 
 import argparse
-import json
 import os
-import shutil
 import sys
 import time
 from datetime import datetime, timezone
 
-
-def _load_config(path):
-    if not path or not os.path.exists(path):
-        return {}
-    try:
-        import yaml
-        with open(path, "r") as f:
-            return yaml.safe_load(f) or {}
-    except Exception:
-        return {}
+from utils import atomic_copy, atomic_image_write, atomic_write_json, load_config
 
 
 def _write_meta(output_path, meta):
-    meta_path = output_path + ".meta.json"
-    tmp = meta_path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(meta, f, indent=2)
-    os.replace(tmp, meta_path)
+    atomic_write_json(output_path + ".meta.json", meta)
 
 
 def _copy_source(source, output, write_meta):
     output = os.path.abspath(output)
     os.makedirs(os.path.dirname(output), exist_ok=True)
-    shutil.copy2(source, output)
+    atomic_copy(source, output)
     if write_meta:
         _write_meta(output, {
             "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -84,7 +69,9 @@ def _capture_camera(args, config):
 
         output = os.path.abspath(args.output)
         os.makedirs(os.path.dirname(output), exist_ok=True)
-        if not cv2.imwrite(output, frame):
+        try:
+            atomic_image_write(output, lambda tmp: cv2.imwrite(tmp, frame))
+        except RuntimeError:
             last_error = f"failed to write image to {output}"
             time.sleep(retry_delay)
             continue
@@ -124,7 +111,7 @@ def main():
         _copy_source(args.source, args.output, args.meta)
         return
 
-    config = _load_config(args.config)
+    config = load_config(args.config)
     raise SystemExit(_capture_camera(args, config))
 
 
