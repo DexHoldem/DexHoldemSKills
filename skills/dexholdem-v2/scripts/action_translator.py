@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import sys
 
 from utils import STAGE_SET, STAGES, utc_now
 
@@ -221,6 +222,10 @@ def parse_translation_as_sequence_cache(action, translation, sequence_id=None, l
     }
 
 
+def text_to_sound_for_request_human(action):
+    return action.get("speech_text") or action.get("reason") or "Human help required"
+
+
 def translate(action, chips=None, table=None):
     name = action.get("action")
     table = merge_table(action, table)
@@ -228,7 +233,19 @@ def translate(action, chips=None, table=None):
     if name == "wait":
         return {"prefix": None, "commands": [], "command_steps": [], "sequence_steps": []}
 
-    if name in ("request_human", "stop"):
+    if name == "request_human":
+        return {
+            "prefix": None,
+            "commands": [],
+            "command_steps": [],
+            "sequence_steps": [name],
+            "text_to_sound": {
+                "action": "request_human",
+                "text": text_to_sound_for_request_human(action),
+            },
+        }
+
+    if name == "stop":
         return {"prefix": None, "commands": [], "command_steps": [], "sequence_steps": [name]}
 
     if name == "view_card":
@@ -266,7 +283,16 @@ def translate(action, chips=None, table=None):
             "sequence_steps": ["put_down_card", "verify_idle"],
         }
 
-    if name in ("check", "fold"):
+    if name == "check":
+        return {
+            "prefix": None,
+            "commands": [],
+            "command_steps": [],
+            "sequence_steps": [name],
+            "text_to_sound": {"action": "check", "text": "Check"},
+        }
+
+    if name == "fold":
         return {"prefix": None, "commands": [], "command_steps": [], "sequence_steps": [name]}
 
     if name == "call":

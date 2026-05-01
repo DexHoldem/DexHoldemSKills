@@ -61,6 +61,10 @@ def remote_exec(*args, check=True):
     return run_script("remote_exec.py", *args, check=check)
 
 
+def text_to_sound(*args, check=False):
+    return run_script("text_to_sound.py", *args, check=check)
+
+
 def current_state_info():
     result = state_cmd("current")
     return json.loads(result.stdout)
@@ -196,6 +200,27 @@ def run_prefix(prefix, config, dry_run):
     if prefix in ("ctrlc", "reset"):
         remote_exec("--action", "send_ctrlc")
         time.sleep(ctrlc_delay)
+
+
+def play_text_to_sound(payload, dry_run=False):
+    if not isinstance(payload, dict):
+        return None
+    args = []
+    if payload.get("action"):
+        args += ["--action", str(payload["action"])]
+    if payload.get("text"):
+        args += ["--text", str(payload["text"])]
+    if dry_run:
+        args.append("--dry-run")
+    result = text_to_sound(*args, check=False)
+    try:
+        parsed = json.loads(result.stdout) if result.stdout.strip() else {}
+    except json.JSONDecodeError:
+        parsed = {"stdout": result.stdout}
+    parsed["returncode"] = result.returncode
+    if result.stderr:
+        parsed["stderr"] = result.stderr[-500:]
+    return parsed
 
 
 def dispatch_cached_current(dry_run=False):
@@ -347,6 +372,11 @@ def execute(action, chips=None, table=None, dry_run=False, no_sleep=False, mark_
     try:
         if name == "request_human":
             reason = action.get("reason", "human help required")
+            sound_result = play_text_to_sound(translation.get("text_to_sound"), dry_run=dry_run)
+            if sound_result is not None:
+                execution["text_to_sound"] = sound_result
+                if sound_result.get("returncode") != 0:
+                    execution["text_to_sound_warning"] = sound_result.get("reason") or "text-to-sound failed"
             state_cmd("require-human", "--reason", reason, "--resume-options", ",".join(action.get("resume_options", [])))
             execution["stage"] = "down"
             execution["human_required"] = True
@@ -379,6 +409,11 @@ def execute(action, chips=None, table=None, dry_run=False, no_sleep=False, mark_
             if mark_idle:
                 execution["mark_idle_ignored"] = True
         else:
+            sound_result = play_text_to_sound(translation.get("text_to_sound"), dry_run=dry_run)
+            if sound_result is not None:
+                execution["text_to_sound"] = sound_result
+                if sound_result.get("returncode") != 0 and sound_result.get("required"):
+                    raise RuntimeError(sound_result.get("reason") or "text-to-sound failed")
             state_cmd("complete-action", "--loop-stage", "idle")
             execution["stage"] = "completed"
             execution["completed_at"] = utc_now()

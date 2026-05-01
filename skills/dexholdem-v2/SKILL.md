@@ -45,6 +45,16 @@ python3 preflight.py
 python3 preflight.py --exp-name my_run
 ```
 
+On Ubuntu/Linux, preflight can install a local TTS backend for action
+announcements:
+
+```bash
+python3 preflight.py --install-system-packages
+```
+
+This uses `apt-get` and non-interactive `sudo`; run `sudo -v` first or run
+preflight as root if the machine requires a sudo password.
+
 For a hardware-free smoke check:
 
 ```bash
@@ -334,6 +344,17 @@ action, repair chip recognition, or request human help.
 
 Chip actions are translated into one atom step per moved chip, such as
 `push_chip_10_1` and `push_chip_5_1`, followed by `verify_idle`.
+
+`check` has no robot motion. Its translation includes a `text_to_sound` payload,
+and the executor runs `text_to_sound.py` to announce "Check" before completing
+the action as `idle`. With `text_to_sound.backend: auto`, macOS uses
+`say` plus `afplay`; Ubuntu/Linux uses the first available local backend among
+`spd-say`, `espeak-ng`, and `espeak`.
+
+`request_human` also includes a `text_to_sound` payload. The executor speaks
+the action `reason` directly, then marks the sequence `down` through
+`state.py require-human`. Use `speech_text` only when the spoken wording should
+differ from the logged reason.
 
 `collect_winnings` pulls chips back after a confirmed `win`. By default it
 pulls `opponent_bet` and `my_current_bet` as separate source zones from the
