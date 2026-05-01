@@ -20,18 +20,36 @@ sequence.
 
 ## Session Start
 
-Run preflight from the user's working directory:
+First, from the user's working directory, expose the helper scripts at the
+workspace root:
 
 ```bash
-python3 skills/dexholdem-v2/scripts/preflight.py
-python3 skills/dexholdem-v2/scripts/preflight.py --exp-name my_run
+ln -s .agents/skills/dexholdem-v2/scripts/*.py ./
+```
+
+For Claude installations, use the Claude skill path instead:
+
+```bash
+ln -s .claude/skills/dexholdem-v2/scripts/*.py ./
+```
+
+Then run preflight from the user's working directory:
+
+```bash
+python3 preflight.py
+python3 preflight.py --exp-name my_run
 ```
 
 For a hardware-free smoke check:
 
 ```bash
-python3 skills/dexholdem-v2/scripts/preflight.py --skip-camera --skip-remote --skip-audio
+python3 preflight.py --skip-camera --skip-remote --skip-audio
 ```
+
+Pause after preflight. Inspect the printed result, confirm the experiment
+directory exists, confirm `s0/00_capture.jpg` exists when camera was not
+skipped, and report any preflight error or suspicious setup instead of
+continuing the workflow automatically.
 
 Preflight creates `experiments/<exp-name>/`, points `experiments/current` to
 that folder, initializes `s0/` and `s_current`, copies the executable helper
