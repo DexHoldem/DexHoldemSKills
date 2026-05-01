@@ -43,6 +43,14 @@ The vision agent may inspect the current action intent, action-sequence
 progress, hole-card cache, and previous images to judge whether a failure needs
 human help.
 
+Before judging failure or recovery, first decide whether the robot is still in
+motion. If the hand is reaching, blurred, lifting a card, moving away from the
+table, rotating a card, transporting chips, or otherwise not settled, describe
+the action as still in progress. The coding agent should treat that as
+`acting` and wait for another capture. Do not call the game failed, do not call
+the atom failed, and do not propose `to_recover` while the hand is still
+executing the atom.
+
 If the context says a specific step is `dispatched`, explicitly judge whether
 that atom appears physically successful, still in progress, retryable, or unsafe
 after comparing the current image with the previous state.
@@ -71,6 +79,13 @@ moving or the scene is unstable rather than immediately requiring human help.
 Human help is for physical states that look unsafe to retry or impossible to
 parse reliably.
 
+For card-pick/view-card actions, be especially conservative. A card partly
+lifted from the table, a card in the gripper but not yet readable, a hand
+rotating the card toward the camera, or a hand moving away from the hole-card
+area usually means the atom is still running. Do not classify those frames as
+missed pickup, failed pickup, dropped card, or lost game unless the hand has
+settled and the card is clearly dropped, exposed, misplaced, or pinned.
+
 ## Retryable Recovery Checks
 
 Call out a retryable recovery condition when the previous atom action appears
@@ -87,11 +102,17 @@ intact. These are `to_recover` candidates for the main coding agent:
 - After a chip-push attempt, no target chip appears to have been pushed, but no
   card, button, chip group, betting area, or opponent object was disturbed.
 
-Do not call a state retryable while the hand is still doing large movement; that
-is still `acting` or an unstable scene. Also do not call a state retryable if a
-card is exposed, dropped, misplaced, hidden, or if chips are scattered, mixed,
-hidden, or no longer countable. Those are `down` candidates because blind retry
-could damage the table state.
+Only call a state retryable from a settled post-atom view. In workflow terms,
+retryable recovery belongs after the scene is stable enough to be
+`atom_idle`; it does not belong during `acting`. If the hand is still away from
+rest pose, still moving, still holding an object, or the latest two frames show
+continued change, the correct visual conclusion is "still in progress; wait",
+not `to_recover`.
+
+Also do not call a state retryable if a card is exposed, dropped, misplaced,
+hidden, or if chips are scattered, mixed, hidden, or no longer countable. Those
+are `down` candidates after the scene has settled because blind retry could
+damage the table state.
 
 ## Safe Continuation Checks
 
@@ -122,6 +143,12 @@ not near its initial pose.
 ```
 
 ```text
+The dexterous hand is still in progress on the card-pick action. It is not near
+rest pose, and the card/hand relationship is still changing, so wait for another
+capture rather than judging recovery or failure.
+```
+
+```text
 The dexterous hand appears stuck or pressed against an object; the physical
 state is unsafe to continue automatically.
 ```
@@ -149,6 +176,11 @@ Answer in plain language. Include:
 - whether a failure looks retryable without human help,
 - any occlusion, disturbed layout, dropped card, moved non-target object, or
   human-help concern.
+
+When the current action is still in progress, say that directly and stop there:
+do not also speculate that the atom failed or that recovery is needed. Recovery
+and failure labels require a settled post-action image, preferably compared
+against at least the previous state and the pre-action state.
 
 Do not produce structured JSON. The coding agent will convert the description
 into the `robot` field and use it with `loop_stage`.

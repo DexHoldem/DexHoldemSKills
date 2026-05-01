@@ -10,7 +10,9 @@ Give the vision agent:
 - the current state image, usually `sN/00_capture.jpg`,
 - the previous state image, usually `sN-1/00_capture.jpg`,
 - optionally older state images if the last two frames are ambiguous,
-- optionally the previous action or action-sequence note, if available.
+- optionally the previous action or action-sequence note, if available,
+- when a robot atom was just dispatched, the pre-action image or last clearly
+  settled image, if available.
 
 Do not require the vision agent to read JSON files or produce JSON.
 
@@ -34,6 +36,12 @@ sN/00_capture.jpg
 The vision model or vision agent may inspect older states when the last two
 frames are ambiguous, but the final decision should answer whether the latest
 frame is safe for the main agent's next decision.
+
+For robot actions, compare enough frames to avoid judging too early. The current
+frame, previous frame, and last clearly settled pre-action frame are often all
+needed. If the current atom is a card-pick/view-card step and the hand is still
+approaching, lifting, rotating, or holding the card in a non-settled pose, the
+scene is unstable and the action is still running.
 
 ## Stable
 
@@ -71,6 +79,12 @@ If the robot may be stuck or has hit something, mark the scene unstable and let
 the higher-level state machine escalate to human help after repeated unstable
 captures. This guideline does not define the human-help escalation policy.
 
+Do not use an unstable frame to declare a retryable recovery. Recovery is a
+post-atom judgment: the hand must have settled into an `atom_idle`-compatible
+state first. While the robot is still moving or the latest frames show continued
+change, the correct conclusion is unstable/still running, so the next action
+should be wait and recapture.
+
 ## Cancel And Reset Prefix
 
 Most executable actions are prefixed with cancel/reset behavior:
@@ -93,8 +107,9 @@ the vision check must account for that special case.
 2. Open the previous image `sN-1/00_capture.jpg`.
 3. Compare the robot arm, dexterous hand, cards, chips, and turn marker. Check
    human arms only for large table-blocking or object-moving behavior.
-4. If the last two frames disagree but the reason is unclear, optionally inspect
-   `sN-2/00_capture.jpg` or earlier state images.
+4. If the last two frames disagree, the robot is not near a settled pose, or a
+   card/chip is mid-transfer, inspect `sN-2/00_capture.jpg` or the last
+   pre-action image before making any failure or recovery judgment.
 5. Answer in plain language:
    - stable or unstable,
    - which frames were compared,
@@ -117,6 +132,14 @@ substantially on the table and appears to be moving chips, so the table state
 may still be changing.
 ```
 
+Example still-running robot response:
+
+```text
+Unstable. Compared s7/00_capture.jpg, s8/00_capture.jpg, and the pre-action
+frame. The dexterous hand is still lifting or rotating the hole card and has not
+settled, so this is still an acting state rather than a recovery decision.
+```
+
 ## Response Contract
 
 Answer in plain language. Include:
@@ -133,6 +156,11 @@ to choose wait, continue the current sequence, retry, or human help.
 
 If the scene is unstable, the next action should normally be `wait`, not a
 robot movement or poker decision.
+
+If the scene is unstable because a dispatched atom is still running, the next
+action should be `wait` and recapture. Do not choose recovery from this
+guideline output. Recovery can be considered only after a later capture shows a
+settled `atom_idle`-compatible scene.
 
 Repeated unstable states may indicate the robot is stuck, the table is blocked,
 or a human is still acting. Escalation should be handled by the higher-level
