@@ -14,6 +14,11 @@ poker reasoning, and recovery decisions. Python helpers do deterministic work:
 preflight, image capture, state-file updates, action translation, and robot
 command dispatch, and next-move routing.
 
+The main agent owns final state interpretation. Helpers may mutate caches,
+action metadata, and state files only when the main agent invokes them.
+Visual subagents never write state files; they only return evidence for the
+main agent to merge.
+
 The workflow is state-folder based. Every decision is grounded in the current
 state image, parsed state markdown, local caches, and the current action
 sequence.
@@ -107,8 +112,9 @@ observation. This applies to ordinary poker actions, waits, continued
 and `down` states that need recovery or collection. The fresh state is how the
 agent verifies what physically happened.
 
-The only normal exception is `stop`, which ends the session instead of
-continuing the timeline.
+The normal exceptions are `stop`, which ends the session instead of continuing
+the timeline, and `request_human`, which blocks automatic state advance until a
+human confirms how to proceed.
 
 ## Loop Stage
 
@@ -197,38 +203,43 @@ unsafe physical recovery by itself; those remain main-agent responsibilities.
 
 ## Visual Parsing
 
-Do not run every file in `visual_guidelines/` on every state. Select the
-smallest set needed to write a truthful `loop_stage`, `robot`, and currently
-needed `table` fields. The visual model may answer in plain language; the
-coding agent converts those answers into `01_parsed_state.md`.
+Use the files in `visual_guidelines/` as needed to write a truthful
+`loop_stage`, `robot`, and table fields. Multiple visual checks may be used for
+the same captured state when they add useful information. The visual model may
+answer in plain language; the coding agent converts those answers into
+`01_parsed_state.md`.
 
-Guideline selection:
+When multiple independent visual questions are useful and the environment
+supports subagents, run visual subagents in parallel. Otherwise, use one vision
+pass and keep the same evidence/merge contract. Assign each subagent one
+guideline or one visual question, such as scene stability, robot behavior, turn
+button, community cards, bets, chip inventory, held card reading, or showdown
+outcome. Subagents are read-only evidence providers: they must inspect images
+and context, return findings, evidence, uncertainty, and suggested parsed
+fields, but must not edit state files. The main agent merges the subagent
+outputs, resolves conflicts conservatively, and writes the single authoritative
+`s_current/01_parsed_state.md`.
 
-- `SCENE_STABILITY.md` - use when deciding whether an action finished, whether
-  to wait, or before any robot movement. Usually paired with recent images.
-- `ROBOT_BEHAVIOR.md` - use for every state after robot/human movement, every
-  embodied sequence state, and all recovery decisions.
-- `TABLE_GEOMETRY.md` - use at setup, after camera/table changes, or when a
-  visual agent is confused about left/right betting or inventory regions.
-- `BLIND_BUTTON_RECOGNITION.md` - use during preflight or when the cached
-  dealer/blind assignment is missing or visibly contradicted.
-- `HELD_CARD_RECOGNITION.md` - use only when a card-view sequence is at
-  `read_card` or the robot is visibly holding a readable card.
-- `TURN_DETECTION.md` - use only when the state is otherwise idle/stable and a
-  poker decision may be needed.
-- `COMMUNITY_CARDS.md` - use when idle poker reasoning is possible, a new board
-  card may have appeared, or showdown/outcome comparison is needed.
-- `SHOWDOWN_OUTCOME.md` - use only when opponent cards are face-up, a fold is
-  suspected, the hand reaches showdown, or `loop_stage` is `show_hand`.
-- `CHIP_RECOGNITION.md` - use at setup, after chip movement/collection, or when
-  chip inventory is needed for betting or next-hand state.
-- `BET_RECOGNITION.md` - use before betting decisions, after bet/chip movement,
-  before `collect_winnings`, or when bet counts are uncertain.
+Guideline purposes:
 
-For `acting`, `atom_idle`, `to_recover`, and `down`, do not spend vision calls
-on turn, community cards, inventories, or bets unless that information affects
-the recovery or the pending action sequence. For `idle`, refresh the fields
-needed by poker reasoning: turn, board, chip inventories, and current bets.
+- `SCENE_STABILITY.md` - action completion, waiting decisions, and movement
+  checks, usually paired with recent images.
+- `ROBOT_BEHAVIOR.md` - dexterous-hand pose, motion, held objects, physical
+  safety, atom progress, and recovery context.
+- `TABLE_GEOMETRY.md` - robot/opponent orientation, betting zones, inventory
+  zones, and camera/table layout.
+- `BLIND_BUTTON_RECOGNITION.md` - dealer, small blind, and big blind buttons.
+- `HELD_CARD_RECOGNITION.md` - readable hole card held by the robot hand.
+- `TURN_DETECTION.md` - physical white turn button and `is_my_turn`.
+- `COMMUNITY_CARDS.md` - shared board cards.
+- `SHOWDOWN_OUTCOME.md` - showdown state, revealed cards, fold/win/lose
+  outcome.
+- `CHIP_RECOGNITION.md` - remaining chip inventories.
+- `BET_RECOGNITION.md` - current bet chips in each betting area.
+
+It is acceptable to refresh `is_my_turn`, board, chips, bets, and robot state
+on every captured image if that helps keep the parsed state current. The router
+will decide which fields matter for the current `loop_stage`.
 
 Keep parsed state compact:
 
@@ -254,9 +265,10 @@ can be inferred later from the stored cards, chip counts, and turn button
 state; they do not belong in `01_parsed_state.md`.
 
 The router uses stage-specific required fields. An `idle` state needs the full
-table block shown above. Non-idle states may omit fields that were not visually
-parsed and are irrelevant to the current gate, but should include
-`uncertain_fields` when an omitted or unclear value matters to the next action.
+table block shown above. Non-idle states must still include a `table` object,
+but it may be sparse when fields were not visually parsed and are irrelevant to
+the current gate. Include `uncertain_fields` when an omitted or unclear value
+matters to the next action.
 
 For showdown, use `loop_stage` as the main compact signal. Add only small table
 notes that help routing or verification, such as visible opponent hole cards;
@@ -431,7 +443,7 @@ python3 executor.py --action '{"action":"request_human","reason":"card was dropp
 ```
 
 After `executor.py` writes `02_action.md`, create the next state and capture the
-next observation:
+next observation unless the route is `human_pause` or the action is `stop`:
 
 ```bash
 python3 state.py current
