@@ -13,12 +13,16 @@ python3 perception_eval/preflight.py \
 
 The script reads agents directly from `subagent/<visual-variant>/`, infers the
 harness from the variant name unless `--harness` is supplied, and installs only
-the requested visible-agent topology:
+the requested visible visual-agent topology plus one common reasoning agent:
 
 - Codex variants install to `.codex/agents/`.
 - Claude variants install to `.claude/agents/`.
 - `--visual-setting general` installs the single general visual agent.
 - `--visual-setting split` installs the scoped split agents.
+- Every install also includes the harness-level Texas Hold'em reasoning agent:
+  `subagent/codex/reasoning_agent.toml` or
+  `subagent/claude/reasoning-agent.md`. This agent inherits the main harness
+  model and reasoning effort.
 
 It also copies DexHoldem v2 runtime scripts, `config.yaml`, `pyproject.toml`,
 and `visual_guidelines/` into the problem folder, then writes:
@@ -30,8 +34,9 @@ bench/problems/pN/runs/<run-id>/visual_raw/
 ```
 
 `agent_manifest.json` includes a `version` block with SHA-256 hashes and sizes
-for the preflight script, selected source agents, DexHoldem runtime scripts,
-visual guidelines, `config.yaml`, and `pyproject.toml`.
+for the preflight script, selected visual source agents, the reasoning source
+agent, DexHoldem runtime scripts, visual guidelines, `config.yaml`, and
+`pyproject.toml`.
 
 By default, each install first cleans the previous active install surface while
 preserving states, caches, and previous run records. Use `--no-clean` only when

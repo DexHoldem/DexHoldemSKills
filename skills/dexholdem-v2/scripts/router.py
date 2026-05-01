@@ -25,6 +25,10 @@ from utils import (
 )
 
 WAIT_SECONDS = 3
+ALWAYS_REQUIRED_TABLE_FIELDS = (
+    "scene_stable",
+    "is_my_turn",
+)
 IDLE_TABLE_FIELDS = (
     "scene_stable",
     "is_my_turn",
@@ -122,7 +126,11 @@ def next_unknown_hole(cache):
 
 def table_missing_fields(table, loop_stage):
     required = STAGE_REQUIRED_TABLE_FIELDS.get(loop_stage, ())
-    return [name for name in required if name not in table]
+    missing = []
+    for name in ALWAYS_REQUIRED_TABLE_FIELDS + tuple(required):
+        if name not in table and name not in missing:
+            missing.append(name)
+    return missing
 
 
 def uncertain_fields(table):

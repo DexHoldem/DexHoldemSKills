@@ -1,7 +1,7 @@
 # Turn Detection Guideline
 
-Use this guideline when a vision-capable agent is asked to determine whether it
-is the robot/player's turn from a captured table image.
+Use this guideline for every captured-state parse to determine whether it is
+the robot/player's turn from the current table image.
 
 ## Inputs To Provide
 

@@ -20,8 +20,12 @@ PREFLIGHT = SCRIPT_DIR / "preflight.py"
 
 DEFAULT_PROMPT = """Run the current DexHoldem perception step.
 
-Use the local setup and visible visual subagents. Do not execute robot actions.
+Use the local setup, visible visual subagents, and visible reasoning subagent.
+Do not execute robot actions.
 Do not perform image perception in the main agent; merge subagent evidence only.
+If the router asks for Texas Hold'em action reasoning, delegate that reasoning
+to the reasoning subagent and validate its recommendation before committing an
+action.
 
 Write:
 - runs/<run_id>/visual_raw/

@@ -20,8 +20,9 @@ DOCKERFILE = SCRIPT_DIR / "Dockerfile.codex"
 DEFAULT_PROMPT = """You are the main Codex benchmark harness agent for this DexHoldem perception problem.
 
 Work only inside the current problem folder. Use the visible visual agents as
-read-only evidence providers. Do not execute robot actions. Do not modify
-ground-truth files outside this folder.
+read-only evidence providers and the visible reasoning agent for Texas Hold'em
+action reasoning. Do not execute robot actions. Do not modify ground-truth
+files outside this folder.
 
 Do not read files outside the current problem folder. Treat the current problem
 folder as the complete workspace.

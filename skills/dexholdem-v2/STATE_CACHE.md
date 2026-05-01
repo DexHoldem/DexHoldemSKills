@@ -98,12 +98,15 @@ Derived concepts such as poker street, total call amount, and turn confidence
 can be inferred later from the compact state and should not be stored in
 `01_parsed_state.md`.
 
-Non-idle states do not need every visual field refreshed. For `acting`,
-`atom_idle`, `to_recover`, and `down`, keep the parsed state focused on
-`loop_stage`, `robot`, scene stability, and any fields needed by the cached
-action sequence or recovery decision. For `show_hand`, include community cards
-and visible showdown cards when available. For `win`, include enough bet/chip
-counts to collect winnings.
+Run scene stability and turn detection for every captured-state parse and
+include `table.scene_stable` plus `table.is_my_turn` even in non-idle states.
+Those baseline findings are dependencies for the conditional visual guidelines
+selected in the same iteration. Non-idle states do not need every other visual
+field refreshed. For `acting`, `atom_idle`, `to_recover`, and `down`, keep the
+parsed state focused on `loop_stage`, `robot`, scene stability, turn detection,
+and any fields needed by the cached action sequence or recovery decision. For
+`show_hand`, include community cards and visible showdown cards when available.
+For `win`, include enough bet/chip counts to collect winnings.
 
 ## Hole Card Cache
 
@@ -324,8 +327,10 @@ or:
 ## Agent Next-Move Priority
 
 1. If `00_capture.jpg` is missing, capture it.
-2. If `01_parsed_state.md` is missing, select only the visual guidelines needed
-   for the expected state and perform visual parsing.
+2. If `01_parsed_state.md` is missing, first run the every-iteration visual
+   baseline: scene stability and turn detection. Use those baseline findings
+   to select the other visual guidelines needed for the expected state, and
+   include the baseline findings in each conditional visual prompt.
 3. If `loop_stage` is `down`, inspect caches and recent states; choose wait or
    human help. Retry only after the state is reclassified as `to_recover`.
 4. If the scene is unstable, write a `wait` action unless safety counters have

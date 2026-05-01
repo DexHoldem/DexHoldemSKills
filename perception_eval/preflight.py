@@ -39,6 +39,8 @@ ACTIVE_DIRS = (
 GENERAL_PROMPT = """# General Visual-Agent Setup
 
 Use the single visible visual agent for image perception.
+Use the visible reasoning agent for Texas Hold'em poker-action reasoning when
+the router asks for `choose_poker_action`.
 
 The main agent must not inspect images or independently decide visual fields.
 Delegate image-reading questions to the visual agent and merge only its
@@ -54,6 +56,8 @@ Then write `runs/<run_id>/visual_summary.json` and
 SPLIT_PROMPT = """# Split Visual-Agent Setup
 
 Use the visible split visual agents for image perception.
+Use the visible reasoning agent for Texas Hold'em poker-action reasoning when
+the router asks for `choose_poker_action`.
 
 The main agent must not inspect images or independently decide visual fields.
 Delegate each image-reading question to the appropriate scoped visual agent and
@@ -202,6 +206,28 @@ def agent_source_files(source_dir: Path, harness: str, setting: str) -> list[Pat
     return sorted(split_dir.glob(pattern)) if split_dir.exists() else []
 
 
+def reasoning_source_files(harness: str) -> list[Path]:
+    if harness == "codex":
+        path = SOURCE_ROOT / "codex" / "reasoning_agent.toml"
+    elif harness == "claude":
+        path = SOURCE_ROOT / "claude" / "reasoning-agent.md"
+    else:
+        return []
+    return [path] if path.exists() else []
+
+
+def unique_paths(paths: list[Path]) -> list[Path]:
+    seen = set()
+    result = []
+    for path in paths:
+        key = path.resolve()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(path)
+    return result
+
+
 def latest_state(problem_dir: Path) -> str | None:
     link = problem_dir / "s_current"
     if link.exists():
@@ -295,11 +321,15 @@ def install(args: argparse.Namespace) -> dict:
     if inferred and args.harness and args.harness != inferred:
         raise SystemExit(f"harness {args.harness!r} does not match variant {variant!r}, inferred {inferred!r}")
 
-    source_files = agent_source_files(source_dir, harness, args.visual_setting)
-    if not source_files:
+    visual_source_files = agent_source_files(source_dir, harness, args.visual_setting)
+    if not visual_source_files:
         raise SystemExit(
             f"variant {variant!r} does not provide {args.visual_setting!r} agents for harness {harness!r}"
         )
+    reasoning_files = reasoning_source_files(harness)
+    if not reasoning_files:
+        raise SystemExit(f"harness {harness!r} does not provide a reasoning agent")
+    source_files = unique_paths(visual_source_files + reasoning_files)
 
     if args.clean_first:
         clean_result = clean_problem(problem_dir, remove_runs=False, dry_run=args.dry_run)
@@ -341,6 +371,8 @@ def install(args: argparse.Namespace) -> dict:
             "preflight_script": file_record(Path(__file__).resolve(), ROOT),
             "skill_root": str(SKILL_ROOT.relative_to(ROOT)),
             "source_agents": [file_record(path, ROOT) for path in source_files],
+            "visual_source_agents": [file_record(path, ROOT) for path in visual_source_files],
+            "reasoning_source_agents": [file_record(path, ROOT) for path in reasoning_files],
             "runtime_scripts": tree_records(SKILL_ROOT / "scripts", ROOT),
             "visual_guidelines": tree_records(SKILL_ROOT / "visual_guidelines", ROOT),
             "skill_config": file_record(SKILL_ROOT / "config.yaml", ROOT),

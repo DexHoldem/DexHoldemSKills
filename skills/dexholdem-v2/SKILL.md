@@ -239,7 +239,8 @@ conservatively, and writes the single authoritative
 Guideline purposes:
 
 - `SCENE_STABILITY.md` - action completion, waiting decisions, and movement
-  checks, usually paired with recent images.
+  checks, usually paired with recent images; run this for every
+  captured-state parse.
 - `ROBOT_BEHAVIOR.md` - dexterous-hand pose, motion, held objects, physical
   safety, atom progress, and recovery context. A robot-behavior subagent should
   receive at least the current image and the previous captured image so it can
@@ -248,16 +249,32 @@ Guideline purposes:
   zones, and camera/table layout.
 - `BLIND_BUTTON_RECOGNITION.md` - dealer, small blind, and big blind buttons.
 - `HELD_CARD_RECOGNITION.md` - readable hole card held by the robot hand.
-- `TURN_DETECTION.md` - physical white turn button and `is_my_turn`.
+- `TURN_DETECTION.md` - physical white turn button and `is_my_turn`; run this
+  for every captured-state parse, including robot execution and recovery
+  states.
 - `COMMUNITY_CARDS.md` - shared board cards.
 - `SHOWDOWN_OUTCOME.md` - showdown state, revealed cards, fold/win/lose
   outcome.
 - `CHIP_RECOGNITION.md` - remaining chip inventories.
 - `BET_RECOGNITION.md` - current bet chips in each betting area.
 
-It is acceptable to refresh `is_my_turn`, board, chips, bets, and robot state
-on every captured image if that helps keep the parsed state current. The router
-will decide which fields matter for the current `loop_stage`.
+Every captured-state parse has a baseline visual dependency pass:
+
+1. Run `SCENE_STABILITY.md` and `TURN_DETECTION.md` for the current image.
+   Use `TABLE_GEOMETRY.md` as fixed reference text when orientation matters.
+2. Merge those baseline findings with `action_sequence.json`,
+   `hole_card_cache.json`, and recent state context to choose the expected
+   `loop_stage` and the conditional visual questions for this iteration.
+3. Run only the conditional guidelines needed for that expected stage. Each
+   conditional visual-agent prompt must include the baseline scene-stability
+   and turn-detection findings for the same current image, because board,
+   chip, bet, held-card, robot-behavior, blind, and showdown interpretation
+   depends on whether the current frame is stable and whose turn marker is
+   visible.
+
+Refresh board, chips, bets, and detailed robot state only when they help keep
+the parsed state current for the current `loop_stage`. The router will decide
+which fields matter for the current gate.
 
 Keep parsed state compact:
 
@@ -282,11 +299,13 @@ Derived concepts such as poker street, total call amount, and turn confidence
 can be inferred later from the stored cards, chip counts, and turn button
 state; they do not belong in `01_parsed_state.md`.
 
-The router uses stage-specific required fields. An `idle` state needs the full
-table block shown above. Non-idle states must still include a `table` object,
-but it may be sparse when fields were not visually parsed and are irrelevant to
-the current gate. Include `uncertain_fields` when an omitted or unclear value
-matters to the next action.
+The router uses stage-specific required fields. Every parsed state must include
+`table.scene_stable` from scene stability and `table.is_my_turn` from the turn
+button. An `idle` state needs the full table block shown above. Non-idle states
+must still include a `table` object, but it may be sparse apart from
+`scene_stable` and `is_my_turn` when other fields were not visually parsed and
+are irrelevant to the current gate. Include `uncertain_fields` when an omitted
+or unclear value matters to the next action.
 
 For showdown, use `loop_stage` as the main compact signal. Add only small table
 notes that help routing or verification, such as visible opponent hole cards;
@@ -295,10 +314,12 @@ do not store bulky hand-ranking explanations.
 ## Poker Reasoning
 
 When the router returns `choose_poker_action`, the main agent MUST delegate the
-Texas Hold'em reasoning to a reasoning subagent. Give the subagent the current
-parsed table, hole-card cache, blind/dealer assignment, action history if
-available, supported action space, and the blind amounts: small blind = 5,
-big blind = 10.
+Texas Hold'em reasoning to the visible `reasoning_agent` / `reasoning-agent`
+subagent. This reasoning subagent should inherit the main harness model and
+reasoning effort; do not use a separately pinned poker model unless the harness
+explicitly provides one. Give the subagent the current parsed table, hole-card
+cache, blind/dealer assignment, action history if available, supported action
+space, and the blind amounts: small blind = 5, big blind = 10.
 
 The reasoning subagent should infer the current betting situation from
 `my_current_bet`, `opponent_bet`, `my_chips`, `opponent_chips`, community
@@ -423,10 +444,13 @@ After preflight, repeat this loop from the experiment root until the action is
 
 1. Capture or reuse the current state's image. If `s_current/00_capture.jpg` is
    missing, run `python3 capture.py --output s_current/00_capture.jpg`.
-2. Select only the visual guidelines needed for this state, then use visual
-   agents or vision models to parse the current image. Provide recent state
-   images, `action_sequence.json`, and `hole_card_cache.json` when they help
-   the visual agent judge motion, robot behavior, held cards, chips, bets,
+2. Run the every-iteration baseline: `SCENE_STABILITY.md` and
+   `TURN_DETECTION.md` for the current image. Use those findings with caches
+   and recent state context to select only the other visual guidelines needed
+   for this state. Conditional visual-agent prompts must include the baseline
+   scene-stability and turn-detection findings they depend on. Provide recent
+   state images, `action_sequence.json`, and `hole_card_cache.json` when they
+   help the visual agent judge motion, robot behavior, held cards, chips, bets,
    showdown, or recovery state.
 3. The main coding agent summarizes the visual outputs into
    `s_current/01_parsed_state.md`. This file is the authoritative parsed state
