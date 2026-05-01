@@ -76,6 +76,11 @@ Perform one visual pass for blind/dealer assignment using
 python3 state.py set-blinds --dealer robot --small-blind robot --big-blind opponent --source-state s0
 ```
 
+Blind amounts are fixed for this setup: the small blind is an initial bet of 5
+chips, and the big blind is an initial bet of 10 chips. Use the cached
+small-blind/big-blind assignment with visible bet recognition when reasoning
+about preflop current bets.
+
 ## State Contract
 
 The experiment root contains the timeline and the durable caches:
@@ -209,15 +214,16 @@ the same captured state when they add useful information. The visual model may
 answer in plain language; the coding agent converts those answers into
 `01_parsed_state.md`.
 
-When multiple independent visual questions are useful and the environment
-supports subagents, run visual subagents in parallel. Otherwise, use one vision
-pass and keep the same evidence/merge contract. Assign each subagent one
-guideline or one visual question, such as scene stability, robot behavior, turn
-button, community cards, bets, chip inventory, held card reading, or showdown
-outcome. Subagents are read-only evidence providers: they must inspect images
-and context, return findings, evidence, uncertainty, and suggested parsed
-fields, but must not edit state files. The main agent merges the subagent
-outputs, resolves conflicts conservatively, and writes the single authoritative
+When visual information is needed, the main agent MUST delegate image reading
+to visual subagents. Assign each subagent one guideline or one visual question,
+such as scene stability, robot behavior, turn button, community cards, bets,
+chip inventory, held card reading, or showdown outcome. Give each subagent the
+current image, relevant recent images, cache summaries, action-sequence context,
+and the appropriate visual guideline as its prompt. Subagents are read-only
+evidence providers: they must inspect images and context, return findings,
+evidence, uncertainty, and suggested parsed fields, but must not edit state
+files. The main agent merges the subagent outputs, resolves conflicts
+conservatively, and writes the single authoritative
 `s_current/01_parsed_state.md`.
 
 Guideline purposes:
@@ -225,7 +231,9 @@ Guideline purposes:
 - `SCENE_STABILITY.md` - action completion, waiting decisions, and movement
   checks, usually paired with recent images.
 - `ROBOT_BEHAVIOR.md` - dexterous-hand pose, motion, held objects, physical
-  safety, atom progress, and recovery context.
+  safety, atom progress, and recovery context. A robot-behavior subagent should
+  receive at least the current image and the previous captured image so it can
+  judge motion, progress, and whether the hand has actually settled.
 - `TABLE_GEOMETRY.md` - robot/opponent orientation, betting zones, inventory
   zones, and camera/table layout.
 - `BLIND_BUTTON_RECOGNITION.md` - dealer, small blind, and big blind buttons.
@@ -273,6 +281,22 @@ matters to the next action.
 For showdown, use `loop_stage` as the main compact signal. Add only small table
 notes that help routing or verification, such as visible opponent hole cards;
 do not store bulky hand-ranking explanations.
+
+## Poker Reasoning
+
+When the router returns `choose_poker_action`, the main agent MUST delegate the
+Texas Hold'em reasoning to a reasoning subagent. Give the subagent the current
+parsed table, hole-card cache, blind/dealer assignment, action history if
+available, supported action space, and the blind amounts: small blind = 5,
+big blind = 10.
+
+The reasoning subagent should infer the current betting situation from
+`my_current_bet`, `opponent_bet`, `my_chips`, `opponent_chips`, community
+cards, hole cards, turn state, and blind assignment. It should return a concise
+rationale plus one recommended supported action JSON, such as `check`, `fold`,
+`call`, `raise`, or `all_in`. The main agent validates that recommendation
+against the current parsed state, supported action schema, and physical chip
+constraints, then commits and executes the final action through `executor.py`.
 
 ## Actions
 
@@ -420,10 +444,12 @@ After preflight, repeat this loop from the experiment root until the action is
    - If it returns `hand_lost`, do not move chips toward the robot; decide
      whether to wait for reset, request human help, run `state.py next-hand`,
      or stop.
-   - If it returns `choose_poker_action`, call LLM reasoning with the parsed
-     table state and hole-card cache, choose the poker action, use
+   - If it returns `choose_poker_action`, delegate Texas Hold'em reasoning to a
+     reasoning subagent with the parsed table state, hole-card cache,
+     blind/dealer assignment, action history, supported action space, and blind
+     amounts. Validate the subagent's recommended action, use
      `action_translator.py` if you need to inspect the new action sequence, and
-     execute the action with `executor.py`.
+     execute the final action with `executor.py`.
 6. Use `action_translator.py` when you need to inspect or create the action
    sequence for a new poker or embodied action. The executor also calls the
    translator internally before dispatch.
