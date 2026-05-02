@@ -215,6 +215,7 @@ Supported action JSON:
 
 ```json
 {"action": "wait", "reason": "scene_unstable", "sleep_seconds": 30}
+{"action": "reset_to_init"}
 {"action": "view_card", "position": "left"}
 {"action": "show_card", "position": "left"}
 {"action": "put_down_card", "position": "left", "face_up": false}
@@ -227,6 +228,10 @@ Supported action JSON:
 {"action": "request_human", "reason": "dexterous hand is holding an unreadable card"}
 {"action": "stop", "reason": "session ended"}
 ```
+
+`reset_to_init` moves the dexterous hand to its true initial pose. Use this when
+the robot's near-idle pose occludes the opponent's betting area or other table
+regions. Capture a fresh image after reset before continuing visual parsing.
 
 Run actions through `executor.py`:
 

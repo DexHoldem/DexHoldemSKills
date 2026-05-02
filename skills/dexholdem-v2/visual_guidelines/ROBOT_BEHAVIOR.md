@@ -37,6 +37,22 @@ Focus on the physical robot arm and dexterous hand:
 Do not infer poker strategy from the robot pose. This guideline describes
 physical behavior only.
 
+## Near-Idle Occlusion
+
+After completing an action, the robot hand returns to a near-idle pose that is
+close to but not exactly the initial pose. This near-idle pose may partially
+block the opponent's betting area or other table regions.
+
+When describing the robot state, note if the hand is:
+
+- in true initial pose (not blocking any table regions),
+- in near-idle pose but blocking the opponent's betting area,
+- in near-idle pose but blocking other important table regions.
+
+If the near-idle pose blocks bet recognition or other visual parsing, the main
+agent should dispatch `reset_to_init` to move the hand to its true initial pose
+before capturing a fresh image.
+
 ## Action-Specific Failure Checks
 
 The vision agent may inspect the current action intent, action-sequence

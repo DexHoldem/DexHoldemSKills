@@ -67,6 +67,20 @@ that side.
 If a betting area is partially occluded or angled, report the best visible count
 and say that the count is uncertain.
 
+## Robot Hand Occlusion
+
+The dexterous hand may partially block the opponent's betting area when it is in
+a near-idle pose (close to but not exactly the initial pose). If the robot hand
+occludes the opponent bet area:
+
+- Report which part of the betting area is blocked.
+- Give the best visible count for any chips that are countable.
+- Mark the opponent bet count as uncertain due to occlusion.
+
+When bet recognition reports occlusion by the robot hand, the main agent should
+consider dispatching `reset_to_init` to move the hand to its true initial pose,
+then capture a fresh image for a clear view of the betting areas.
+
 ## Derived Betting Math
 
 `to_call` is derived later from the two bet counts. Do not ask the vision model
