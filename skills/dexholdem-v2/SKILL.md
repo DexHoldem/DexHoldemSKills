@@ -91,6 +91,28 @@ chips, and the big blind is an initial bet of 10 chips. Use the cached
 small-blind/big-blind assignment with visible bet recognition when reasoning
 about preflop current bets.
 
+## Preflop Blind Posting
+
+At the start of each hand, before any poker decisions, the robot must post its
+blind if it is the small blind or big blind:
+
+- If robot is **small blind**: push a 5-chip to the betting area.
+- If robot is **big blind**: push a 10-chip to the betting area.
+
+This is a forced bet, not a strategic decision. Post the blind immediately after
+confirming the blind/dealer assignment and before or right after viewing hole
+cards. The typical sequence is:
+
+1. Recognize blind/dealer assignment and cache it.
+2. Post the robot's blind chip (if robot is small blind or big blind).
+3. View hole cards.
+4. Wait for opponent to act (if robot posted small blind) or begin preflop
+   decisions (if robot posted big blind and opponent has acted).
+
+Use `{"action": "raise", "amount": 5}` to post the small blind or
+`{"action": "raise", "amount": 10}` to post the big blind. The executor
+translates these into the appropriate chip push.
+
 ## State Contract
 
 The experiment root contains the timeline and the durable caches:

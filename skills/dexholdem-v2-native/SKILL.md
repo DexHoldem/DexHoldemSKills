@@ -58,6 +58,27 @@ Perform one visual pass for blind/dealer assignment using
 python3 state.py set-blinds --dealer robot --small-blind robot --big-blind opponent --source-state s0
 ```
 
+Blind amounts: small blind = 5, big blind = 10.
+
+## Preflop Blind Posting
+
+At the start of each hand, the robot must post its blind if it is the small
+blind or big blind:
+
+- If robot is **small blind**: push a 5-chip to the betting area.
+- If robot is **big blind**: push a 10-chip to the betting area.
+
+This is a forced bet. Post the blind immediately after confirming the
+blind/dealer assignment, before or right after viewing hole cards:
+
+1. Recognize and cache blind/dealer assignment.
+2. Post the robot's blind chip.
+3. View hole cards.
+4. Continue preflop betting.
+
+Use `{"action": "raise", "amount": 5}` for small blind or
+`{"action": "raise", "amount": 10}` for big blind.
+
 ## State Contract
 
 The experiment root contains the timeline and durable caches:
