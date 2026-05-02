@@ -1,74 +1,78 @@
 # Table Geometry Guideline
 
-Use this guideline when a vision-capable agent needs orientation before reading
-cards, chips, bets, turn button, or robot behavior from a DexHoldem table
-image.
+Use this as a short fixed-layout reference for DexHoldem visual prompts.
 
-## Inputs To Provide
+## Orientation
 
-Give the vision agent the current state image, usually `sN/00_capture.jpg`.
-No previous image is required unless the question is about movement or scene
-stability.
+The camera looks diagonally from the robot/player side toward the opponent.
 
-Do not require the vision agent to read JSON files or produce JSON.
+- Robot/player seat: bottom of image.
+- Opponent seat: top of image.
+- Robot hand/camera body: usually enters from the right and may occlude the
+  right side of the table.
+- Community cards: central row across the middle-lower table.
+- Robot hole cards: lower area near the robot/player seat.
+- Opponent hole cards: upper area near the opponent seat.
 
-## Camera Orientation
+Avoid bare "left" and "right" for player ownership. Prefer
+`bottom/robot side`, `top/opponent side`, `lower-left of board`, or
+`upper-right of board`.
 
-The camera looks diagonally across the table:
+## Approximate Regions
 
-- robot/player seat: bottom side of the image,
-- opponent seat: top side of the image,
-- robot dexterous hand: usually enters from the right side,
-- community-card row: long central horizontal row,
-- robot hole cards: lower area near the robot/player seat,
-- opponent hole cards: upper area near the opponent seat.
+Use these as rough priors for the usual 1920x1080 image. Trust visible table
+markings over exact numbers if the camera shifts.
 
-Use this camera-relative geometry instead of poker position names.
+Coordinates are normalized `(x_min-x_max, y_min-y_max)`, with image left/top as
+`0%`.
 
-## Chip Geometry
+- Felt/table: `(0-100%, 40-95%)`
+- Robot/player seat band: `(0-100%, 62-95%)`
+- Opponent seat band: `(15-75%, 34-54%)`
+- Community-card row: `(25-70%, 52-66%)`
+- Robot hole cards: `(45-72%, 70-86%)`
+- Opponent hole cards: `(35-55%, 42-52%)`
+- Robot-turn button area: `(7-17%, 73-86%)`
+- Deck at far left edge: `(0-5%, 58-66%)`
+- Common robot/camera occlusion: `(62-100%, 0-55%)`
 
-The chips are not vertical stacks. They are unfolded flat on the felt as
-individual visible chips, often in small clusters or short rows. Count visible
-chip faces one by one.
+## Chips
 
-There are four chip denominations, usually arranged left-to-right by color
-within each player's inventory area:
+Chips are flat/unfolded, not stacked. Count visible chip faces one by one.
 
-- red -> 5
-- blue -> 10
-- green -> 50
-- brown -> 100
+Denominations:
 
-Because the chips are unfolded, do not estimate stack height. Count the visible
-chips in each color/denomination group.
+- red = 5
+- blue = 10
+- green = 50
+- brown = 100
 
-## Main Zones
+Buttons are not chips. White/yellow/blue labeled round markers are turn,
+dealer, small blind, or big blind buttons unless they clearly match chip
+denomination styling.
 
-Use these zones as anchors:
+## Zones
 
-- robot/player chip inventory: bottom seat zone, near the bottom rail and
-  around the robot hole-card area.
-- opponent chip inventory: top seat zone, near the opponent rail and around
-  the opponent hole-card area.
-- my current bet: flat chips in the central betting area on the left side of
-  the community-card row.
-- opponent current bet: flat chips in the central betting area on the right
-  side of the community-card row.
-- community cards: face-up shared cards across the central row.
-- buttons: white/yellow/blue circular buttons are not chips unless clearly
-  chip-sized and colored by denomination.
+- Robot inventory chips: bottom seat band, near lower rail and robot hole-card
+  area, outside the central betting lane.
+- Opponent inventory chips: top seat band, near opponent hole-card area,
+  outside the central betting lane.
+- Robot current bet: central betting lane on the lower/robot side of the
+  community-card row, between robot inventory and board.
+- Opponent current bet: central betting lane on the upper/opponent side of the
+  community-card row, between opponent inventory and board.
+- Community cards: face-up shared cards in the central row.
+- Deck: far-left edge; not hole cards or community cards.
 
-Inventory chips can sit close to hole cards, while bet chips sit closer to the
-community-card row. If a chip group is ambiguous, say which zone is uncertain
-instead of forcing a count.
+If a chip/card/button zone is ambiguous or occluded, say which zone is uncertain
+instead of forcing a count or card read.
 
 ## Response Contract
 
-Answer in plain language. Include:
+Answer in plain language. Mention:
 
-- the relevant zone names you used,
+- which zone names you used,
 - whether chips are inventory chips or bet chips,
-- any zone that is occluded or ambiguous.
+- any occluded or ambiguous zones.
 
-Do not produce structured JSON. The coding agent will use this geometry when
-combining individual visual observations.
+Do not output JSON.

@@ -48,6 +48,11 @@ The coding agent can derive the poker stage from the count:
 
 - Read only face-up cards in the shared board area.
 - Do not include robot hole cards or opponent hole cards.
+- Do not include folded/mucked opponent hole cards. A fold often appears as the
+  opponent's two face-down hole cards moved away from their normal top-seat
+  hole-card position and placed onto or near the community-card lane, compared
+  with the first or previous stable states. Those face-down moved cards are not
+  community cards.
 - Do not guess face-down cards.
 - Keep board order left-to-right as seen on the table.
 - If a card is partially occluded but rank/suit is still reasonably clear,

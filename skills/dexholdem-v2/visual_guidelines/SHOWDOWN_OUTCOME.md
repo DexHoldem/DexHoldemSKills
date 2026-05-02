@@ -35,6 +35,23 @@ Focus on cards and visible hand outcome, not robot motion:
 Use the community cards from `COMMUNITY_CARDS.md`. Use cached robot hole cards
 when the robot cards are still face-down but were previously viewed and cached.
 
+## Fold / Muck Signature
+
+Treat the opponent as folded when their two hole cards are still face-down but
+have been moved out of the normal top/opponent hole-card area and placed into or
+onto the central community-card lane. This is especially strong evidence when a
+previous or initial state shows the opponent's normal two-card position near the
+top seat, while the current image shows those same two card backs displaced
+toward the shared board row or away from the opponent's usual hole-card slot.
+
+Do not require the opponent's folded cards to be face-up. A fold/muck is usually
+identified by face-down opponent hole cards being pushed away from their normal
+position toward the community cards. In that case no showdown comparison is
+needed: the robot wins the hand uncontested.
+
+Do not count these moved face-down opponent hole cards as community cards. They
+are folded/mucked hole cards, not newly dealt board cards.
+
 ## Stage Decisions
 
 Say `show_hand` when the opponent has made their hole cards face-up, or the

@@ -1,1 +1,0 @@
-../dexholdem-rebased/prompt.md

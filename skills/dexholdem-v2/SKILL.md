@@ -236,6 +236,54 @@ files. The main agent merges the subagent outputs, resolves conflicts
 conservatively, and writes the single authoritative
 `s_current/01_parsed_state.md`.
 
+When launching visual subagents, make the input contract explicit in the
+subagent prompt. Do not rely on the subagent to discover which images or cache
+files matter:
+
+- Scene stability: always provide `s_current/00_capture.jpg` and the previous
+  state image, usually `sN-1/00_capture.jpg`. If a robot atom was just
+  dispatched, also provide the last clearly settled pre-action image when
+  available. The returned evidence must name the compared images. If only one
+  image was inspected or the previous image was inaccessible, infer the most
+  likely `table.scene_stable` value from the current image and previous parsed
+  state, and include `scene_stable` in `uncertain_fields`.
+- Robot behavior: provide the current image, previous image, and
+  `action_sequence.json` context including `loop_stage`, `current_step`, and
+  step statuses. Ask for hand pose, held object, near-rest status, action
+  progress, safety, retryability, and human-help concerns.
+- Turn detection: provide the current image and ask only whether the physical
+  turn marker indicates it is the robot/player turn.
+- Blind/dealer recognition: provide the current image and use two-player
+  blind/dealer rules only when visible button evidence supports them.
+- Community cards: provide the current image and ask for shared cards left to
+  right. If a visible community card is unreadable or occluded, inherit the
+  previous known board when that board should persist physically; otherwise use
+  the most likely card string and include `community_cards` in
+  `uncertain_fields`.
+- Held-card recognition: call only when the robot hand appears to hold or
+  expose a card, or when cached workflow context says a card-view atom is
+  active. Provide the current image and do not infer hidden cards.
+- Chip recognition: provide the current image and ask for robot and opponent
+  inventory counts, excluding current bet areas and button markers.
+- Bet recognition: provide the current image and ask for robot and opponent
+  current bet areas, excluding inventory stacks and button markers.
+- Showdown outcome: call when board or hole cards appear face-up, when
+  `action_sequence.json` has a showdown/win/lose stage, or when visual
+  evidence suggests showdown. Provide visible board/hole-card evidence and
+  cached viewed robot hole cards if present.
+
+Treat `loop_stage` as a workflow-state field, not pure single-image
+perception. Start from `action_sequence.json.loop_stage` when present, then
+check visual evidence for compatibility. Do not change `acting` to `idle`
+only because one frame is sharp or still. Use `atom_idle` only when the latest
+scene is settled after an atom but the action sequence still has pending
+steps. If `action_sequence.json` is missing and visual evidence cannot
+distinguish `idle`, `acting`, and `atom_idle`, infer from the previous parsed
+state and visual continuity. Prefer `acting` for active/pending action cues,
+`atom_idle` for settled post-atom scenes with likely pending sequence work, and
+`idle` only when the hand is near rest and no action is visibly pending. Include
+`loop_stage` in `uncertain_fields`.
+
 Guideline purposes:
 
 - `SCENE_STABILITY.md` - action completion, waiting decisions, and movement
@@ -260,8 +308,9 @@ Guideline purposes:
 
 Every captured-state parse has a baseline visual dependency pass:
 
-1. Run `SCENE_STABILITY.md` and `TURN_DETECTION.md` for the current image.
-   Use `TABLE_GEOMETRY.md` as fixed reference text when orientation matters.
+1. Run `SCENE_STABILITY.md` with the current and previous images, and run
+   `TURN_DETECTION.md` for the current image. Use `TABLE_GEOMETRY.md` as fixed
+   reference text when orientation matters.
 2. Merge those baseline findings with `action_sequence.json`,
    `hole_card_cache.json`, and recent state context to choose the expected
    `loop_stage` and the conditional visual questions for this iteration.
@@ -306,6 +355,12 @@ must still include a `table` object, but it may be sparse apart from
 `scene_stable` and `is_my_turn` when other fields were not visually parsed and
 are irrelevant to the current gate. Include `uncertain_fields` when an omitted
 or unclear value matters to the next action.
+
+Do not store `null`, `"unknown"`, or placeholder values for required parsed
+fields. If evidence is incomplete, first inherit durable values from the
+previous parsed state, `action_sequence.json`, or `hole_card_cache.json`; if no
+durable value exists, fill the most likely value and record the field in
+`uncertain_fields`.
 
 For showdown, use `loop_stage` as the main compact signal. Add only small table
 notes that help routing or verification, such as visible opponent hole cards;
@@ -402,7 +457,7 @@ Use `down` when direct continuation is unsafe or unclear:
 - chip movement displaced cards, buttons, or unrelated chips,
 - chip movement destroyed the table layout,
 - the dexterous hand appears stuck,
-- command progress is unknown,
+- command progress cannot be determined,
 - repeated captures remain unstable.
 
 Request human help when a person must fix or confirm the table:

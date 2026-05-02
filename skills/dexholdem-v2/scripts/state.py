@@ -80,6 +80,7 @@ def default_safety_counters():
         "total_recoveries": 0,
         "executor_failures": 0,
         "action_sequences_started": 0,
+        "human_help_requests": 0,
     }
 
 
@@ -134,6 +135,42 @@ def load_hole_cache(exp_dir):
 
 def save_hole_cache(exp_dir, cache):
     write_json(exp_dir / "hole_card_cache.json", cache)
+
+
+HUMAN_HELP_CACHE_FILE = "human_help_request.json"
+
+
+def create_human_help_cache(exp_dir, reason, resume_options=None, context=None):
+    """Create a cache file indicating human help is requested."""
+    cache = {
+        "schema_version": 1,
+        "requested_at": utc_now(),
+        "reason": reason,
+        "resume_options": resume_options or [],
+        "context": context or {},
+        "state_name": current_state_name(exp_dir),
+    }
+    write_json(exp_dir / HUMAN_HELP_CACHE_FILE, cache)
+    return cache
+
+
+def load_human_help_cache(exp_dir):
+    """Load the human help request cache if it exists."""
+    return read_json(exp_dir / HUMAN_HELP_CACHE_FILE, None)
+
+
+def remove_human_help_cache(exp_dir):
+    """Remove the human help cache after human has helped."""
+    cache_path = Path(exp_dir) / HUMAN_HELP_CACHE_FILE
+    if cache_path.exists():
+        cache_path.unlink()
+        return True
+    return False
+
+
+def human_help_requested(exp_dir):
+    """Check if human help is currently requested."""
+    return (Path(exp_dir) / HUMAN_HELP_CACHE_FILE).exists()
 
 
 def load_sequence(exp_dir):
@@ -513,9 +550,36 @@ def cmd_require_human(args):
         "retryable": False,
         "at": utc_now(),
     }
-    seq["resume_options"] = args.resume_options.split(",") if args.resume_options else []
+    resume_options = args.resume_options.split(",") if args.resume_options else []
+    seq["resume_options"] = resume_options
+    counters = normalize_safety_counters(seq)
+    counters["human_help_requests"] = int(counters.get("human_help_requests", 0)) + 1
     save_sequence(exp_dir, seq)
+    create_human_help_cache(exp_dir, args.reason, resume_options)
     print(json.dumps(seq, indent=2))
+
+
+def cmd_ack_human_help(args):
+    """Acknowledge human help - removes the cache and optionally resets safety."""
+    exp_dir = resolve_exp_dir(args)
+    cache = load_human_help_cache(exp_dir)
+    removed = remove_human_help_cache(exp_dir)
+    seq = load_sequence(exp_dir)
+    seq["human_required"] = False
+    if args.reset_safety:
+        reset_consecutive_waits(seq)
+        reset_consecutive_recoveries(seq)
+    if args.set_stage:
+        if args.set_stage not in STAGE_SET:
+            raise ValueError(f"invalid stage: {args.set_stage}, must be one of {STAGES}")
+        seq["loop_stage"] = args.set_stage
+    save_sequence(exp_dir, seq)
+    print(json.dumps({
+        "status": "ok",
+        "cache_removed": removed,
+        "previous_request": cache,
+        "sequence": seq,
+    }, indent=2))
 
 
 def cmd_cache_card(args):
@@ -654,6 +718,10 @@ def build_parser():
     p.add_argument("--reason", required=True)
     p.add_argument("--resume-options", default="")
 
+    p = sub.add_parser("ack-human-help")
+    p.add_argument("--reset-safety", action="store_true", help="Reset consecutive waits and recoveries")
+    p.add_argument("--set-stage", choices=STAGES, help="Set loop stage after acknowledgment")
+
     p = sub.add_parser("cache-card")
     p.add_argument("--slot", required=True, choices=["left", "right"])
     p.add_argument("--card", required=True)
@@ -713,6 +781,8 @@ def main():
             cmd_fail(args)
         elif args.command == "require-human":
             cmd_require_human(args)
+        elif args.command == "ack-human-help":
+            cmd_ack_human_help(args)
         elif args.command == "cache-card":
             cmd_cache_card(args)
         elif args.command == "set-blinds":

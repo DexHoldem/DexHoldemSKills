@@ -1,1 +1,0 @@
-../dexholdem-rebased/vision_prompt.md
