@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Run one Codex perception benchmark: preflight -> codex exec -> cleanup."""
+"""Run one Claude perception benchmark: preflight -> claude -p -> cleanup."""
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import shlex
@@ -40,7 +39,7 @@ ACTIVE_INSTALL_NAMES = {
 
 
 def requires_openrouter(visual_variant: str) -> bool:
-    return visual_variant.startswith("codex_openrouter_")
+    return visual_variant.startswith("claude_openrouter_")
 
 
 def run_json(cmd: list[str], *, cwd: Path | None = None) -> dict:
@@ -57,18 +56,16 @@ def run_json(cmd: list[str], *, cwd: Path | None = None) -> dict:
         raise RuntimeError(f"command did not return JSON: {shlex.join(cmd)}\n{result.stdout}") from exc
 
 
-def file_sha256(path: Path) -> str:
+def file_record(path: Path, base: Path) -> dict:
+    import hashlib
+
     digest = hashlib.sha256()
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             digest.update(chunk)
-    return digest.hexdigest()
-
-
-def file_record(path: Path, base: Path) -> dict:
     return {
         "path": str(path.relative_to(base)),
-        "sha256": file_sha256(path),
+        "sha256": digest.hexdigest(),
         "size": path.stat().st_size,
     }
 
@@ -107,8 +104,6 @@ def create_isolated_problem_copy(problem_dir: Path, run_id: str, isolation_root:
 def copy_run_artifacts(src_run_dir: Path, dest_run_dir: Path) -> None:
     dest_run_dir.mkdir(parents=True, exist_ok=True)
     for path in sorted(src_run_dir.iterdir()):
-        if path.name == ".codex_home":
-            continue
         dest = dest_run_dir / path.name
         if path.is_dir():
             if dest.exists():
@@ -165,70 +160,6 @@ def recover_misnamed_outputs(run_dir: Path) -> dict | None:
     }
     (run_dir / "output_recovery.json").write_text(json.dumps(result, indent=2) + "\n")
     return result
-
-
-def default_host_codex_home() -> Path:
-    return Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
-
-
-def toml_string(value: str) -> str:
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
-
-
-def readable_problem_paths(problem_dir: Path) -> list[Path]:
-    paths = [problem_dir]
-    if not problem_dir.exists():
-        return paths
-    for path in sorted(problem_dir.iterdir()):
-        if path.name == "runs":
-            continue
-        paths.append(path)
-    return paths
-
-
-def render_run_config(args: argparse.Namespace, problem_dir: Path, run_dir: Path) -> str:
-    lines = [
-        f"model = {toml_string(args.model)}",
-        f"model_reasoning_effort = {toml_string(args.reasoning_effort)}",
-        f"service_tier = {toml_string(args.service_tier)}",
-        f"sandbox_mode = {toml_string(args.sandbox)}",
-        "",
-        "[agents]",
-        f"max_threads = {args.agent_max_threads}",
-        "",
-        "[shell_environment_policy]",
-        'inherit = "none"',
-    ]
-    if args.visual_variant.startswith("codex_openrouter_"):
-        lines.extend([
-            "",
-            "[model_providers.openrouter]",
-            'name = "OpenRouter"',
-            'base_url = "https://openrouter.ai/api/v1"',
-            'env_key = "OPENROUTER_API_KEY"',
-            'wire_api = "responses"',
-            "request_max_retries = 4",
-        ])
-    return "\n".join(lines) + "\n"
-
-
-def write_run_config(codex_home: Path, args: argparse.Namespace, problem_dir: Path, run_dir: Path) -> Path:
-    config_path = codex_home / "config.toml"
-    config_path.write_text(render_run_config(args, problem_dir, run_dir))
-    return config_path
-
-
-def prepare_run_codex_home(run_dir: Path, host_codex_home: Path, args: argparse.Namespace, problem_dir: Path) -> Path:
-    codex_home = run_dir / ".codex_home"
-    codex_home.mkdir(parents=True, exist_ok=True)
-
-    auth_src = host_codex_home / "auth.json"
-    if not auth_src.exists():
-        raise RuntimeError(f"Codex auth file not found: {auth_src}")
-    shutil.copy2(auth_src, codex_home / "auth.json")
-
-    write_run_config(codex_home, args, problem_dir, run_dir)
-    return codex_home
 
 
 def valid_chip_counts(value: object) -> bool:
@@ -308,63 +239,34 @@ def verify_run_outputs(run_dir: Path) -> dict:
     return result
 
 
-def wrapper_version(args: argparse.Namespace, codex_home: Path | None = None) -> dict:
-    data = {
+def wrapper_version(args: argparse.Namespace) -> dict:
+    return {
         "runner_script": file_record(Path(__file__).resolve(), SCRIPT_DIR.parent),
         "preflight_script": file_record(PREFLIGHT.resolve(), SCRIPT_DIR.parent),
-        "codex_version": command_version([args.codex_bin, "--version"]),
+        "claude_version": command_version([args.claude_bin, "--version"]),
         "python_version": command_version([sys.executable, "--version"]),
         "model": args.model,
-        "model_reasoning_effort": args.reasoning_effort,
-        "service_tier": args.service_tier,
-        "sandbox": args.sandbox,
-        "permission_profile": args.permission_profile,
-        "agent_max_threads": args.agent_max_threads,
+        "effort": args.reasoning_effort,
+        "permission_mode": args.permission_mode,
         "isolated_workspace": not args.no_isolated_workspace,
     }
-    if codex_home is not None:
-        config = codex_home / "config.toml"
-        if config.exists():
-            data["run_codex_home_config"] = file_record(config, codex_home)
-    return data
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--problem-dir", required=True, help="Problem folder, e.g. bench/problems/p3")
     parser.add_argument("--visual-setting", choices=("general", "split"), default="split")
-    parser.add_argument("--visual-variant", required=True, help="Variant under subagent/, e.g. codex_native_gpt5_4_mini_medium")
+    parser.add_argument("--visual-variant", required=True, help="Variant under subagent/, e.g. claude_opus_4_7_low")
     parser.add_argument("--run-id", required=True, help="Run folder name under problem_dir/runs/")
-    parser.add_argument("--model", default="gpt-5.5")
-    parser.add_argument("--reasoning-effort", default="medium")
-    parser.add_argument("--service-tier", default="fast")
-    parser.add_argument("--sandbox", default="workspace-write", choices=("read-only", "workspace-write", "danger-full-access"))
-    parser.add_argument(
-        "--agent-max-threads",
-        type=int,
-        default=9,
-        help="Maximum Codex agent threads for this run-local config. Default: 9.",
-    )
-    parser.add_argument("--prompt", help="Inline prompt for codex exec. Defaults to the benchmark prompt.")
-    parser.add_argument("--prompt-file", help="Read codex exec prompt from this file.")
-    parser.add_argument("--codex-bin", default="codex")
-    parser.add_argument(
-        "--host-codex-home",
-        default=str(default_host_codex_home()),
-        help="Host Codex home used only by the wrapper to copy auth.json into the run-local CODEX_HOME.",
-    )
-    parser.add_argument("--permission-profile", default="workspace_only", help="Codex default_permissions profile to use")
-    parser.add_argument(
-        "--ignore-user-config",
-        action="store_true",
-        help="Deprecated no-op. The runner always uses run-local CODEX_HOME/config.toml.",
-    )
-    parser.add_argument(
-        "--persist-session",
-        action="store_true",
-        help="Allow Codex to persist session files. Default is --ephemeral.",
-    )
-    parser.add_argument("--keep-installed", action="store_true", help="Do not cleanup active install after codex exits")
+    parser.add_argument("--model", default="sonnet")
+    parser.add_argument("--reasoning-effort", default="low", choices=("low", "medium", "high", "xhigh", "max"))
+    parser.add_argument("--service-tier", default="fast", help="Accepted for parity with Codex runner; unused by Claude.")
+    parser.add_argument("--agent-max-threads", type=int, default=9, help="Accepted for parity with Codex runner; unused by Claude.")
+    parser.add_argument("--permission-mode", default="acceptEdits")
+    parser.add_argument("--prompt", help="Inline prompt for claude -p. Defaults to the benchmark prompt.")
+    parser.add_argument("--prompt-file", help="Read claude -p prompt from this file.")
+    parser.add_argument("--claude-bin", default="claude")
+    parser.add_argument("--keep-installed", action="store_true", help="Do not cleanup active install after claude exits")
     parser.add_argument("--no-clean-before", action="store_true", help="Do not ask preflight to clean previous install first")
     parser.add_argument(
         "--no-isolated-workspace",
@@ -374,23 +276,21 @@ def main() -> None:
     parser.add_argument(
         "--isolation-root",
         default=str(DEFAULT_ISOLATION_ROOT),
-        help="Parent directory for isolated problem copies. Default: $TMPDIR/dexholdem_perception_eval.",
+        help="Parent directory for isolated problem copies.",
     )
     parser.add_argument(
         "--keep-isolated-workspace",
         action="store_true",
         help="Do not remove the temporary isolated problem copy after syncing run artifacts.",
     )
-    parser.add_argument("--dry-run", action="store_true", help="Print planned commands without running preflight/codex/cleanup")
+    parser.add_argument("--dry-run", action="store_true", help="Print planned commands without running preflight/claude/cleanup")
     args = parser.parse_args()
 
     source_problem_dir = Path(args.problem_dir).resolve()
-    if args.agent_max_threads < 1:
-        raise SystemExit("--agent-max-threads must be at least 1")
     if requires_openrouter(args.visual_variant) and not os.environ.get("OPENROUTER_API_KEY"):
         raise SystemExit(
             f"{args.visual_variant} requires OPENROUTER_API_KEY. "
-            "Set it before launching this run, or use a native Codex visual variant."
+            "Set it before launching this run, or use a native Claude visual variant."
         )
     if args.prompt and args.prompt_file:
         raise SystemExit("--prompt and --prompt-file are mutually exclusive")
@@ -398,11 +298,10 @@ def main() -> None:
         prompt = Path(args.prompt_file).read_text()
     else:
         prompt = args.prompt or DEFAULT_PROMPT.replace("<run_id>", args.run_id)
+
     source_run_dir = source_problem_dir / "runs" / args.run_id
     planned_problem_dir = source_problem_dir if args.no_isolated_workspace else Path(args.isolation_root).expanduser() / "<isolated-copy>" / source_problem_dir.name
     planned_run_dir = planned_problem_dir / "runs" / args.run_id
-    if args.ignore_user_config:
-        print("--ignore-user-config is ignored; the runner always uses run-local CODEX_HOME/config.toml.", file=sys.stderr)
 
     preflight_cmd = [
         sys.executable,
@@ -419,21 +318,22 @@ def main() -> None:
     if args.no_clean_before:
         preflight_cmd.append("--no-clean")
 
-    codex_cmd = [
-        args.codex_bin,
-        "exec",
-        "-C",
-        str(planned_problem_dir),
+    claude_cmd = [
+        args.claude_bin,
+        "-p",
+        "--output-format",
+        "json",
+        "--model",
+        args.model,
+        "--effort",
+        args.reasoning_effort,
+        "--permission-mode",
+        args.permission_mode,
+        "--no-session-persistence",
         prompt,
     ]
-    if not args.persist_session:
-        codex_cmd.insert(2, "--ephemeral")
-    if not args.no_isolated_workspace:
-        codex_cmd.insert(2, "--skip-git-repo-check")
 
     if args.dry_run:
-        planned_codex_home = planned_run_dir / ".codex_home"
-        planned_config = planned_codex_home / "config.toml"
         cleanup_cmd = [sys.executable, str(PREFLIGHT), "--cleanup", "--problem-dir", str(planned_problem_dir)]
         print(json.dumps({
             "status": "dry_run",
@@ -441,13 +341,10 @@ def main() -> None:
             "source_run_dir": str(source_run_dir),
             "isolated_workspace": not args.no_isolated_workspace,
             "planned_problem_dir": str(planned_problem_dir),
+            "planned_run_dir": str(planned_run_dir),
             "preflight_cmd": preflight_cmd,
-            "codex_cmd": codex_cmd,
-            "codex_env": {"CODEX_HOME": str(planned_codex_home)},
-            "run_config": str(planned_config),
-            "run_config_preview": render_run_config(args, planned_problem_dir, planned_run_dir),
+            "claude_cmd": claude_cmd,
             "harness_version": wrapper_version(args),
-            "host_auth_source": str(Path(args.host_codex_home).expanduser() / "auth.json"),
             "cleanup_cmd": None if args.keep_installed else cleanup_cmd,
         }, indent=2))
         return
@@ -461,14 +358,11 @@ def main() -> None:
             Path(args.isolation_root).expanduser(),
         )
 
-    problem_dir = problem_dir.resolve()
     preflight_cmd[preflight_cmd.index(str(planned_problem_dir))] = str(problem_dir)
-    codex_cmd[codex_cmd.index(str(planned_problem_dir))] = str(problem_dir)
-
     preflight_result = run_json(preflight_cmd)
     run_dir = Path(preflight_result["manifest"]["run_dir"])
     run_dir.mkdir(parents=True, exist_ok=True)
-    codex_home = prepare_run_codex_home(run_dir, Path(args.host_codex_home).expanduser(), args, problem_dir)
+
     isolation_manifest = {
         "enabled": not args.no_isolated_workspace,
         "source_problem_dir": str(source_problem_dir),
@@ -480,17 +374,13 @@ def main() -> None:
     }
     (run_dir / "isolation_manifest.json").write_text(json.dumps(isolation_manifest, indent=2) + "\n")
     (run_dir / "preflight_result.json").write_text(json.dumps(preflight_result, indent=2) + "\n")
-    (run_dir / "codex_command.json").write_text(json.dumps({"cmd": codex_cmd}, indent=2) + "\n")
-    (run_dir / "codex_env.json").write_text(json.dumps({"CODEX_HOME": str(codex_home)}, indent=2) + "\n")
-    (run_dir / "harness_version.json").write_text(json.dumps(wrapper_version(args, codex_home), indent=2) + "\n")
+    (run_dir / "claude_command.json").write_text(json.dumps({"cmd": claude_cmd}, indent=2) + "\n")
+    (run_dir / "harness_version.json").write_text(json.dumps(wrapper_version(args), indent=2) + "\n")
 
-    codex_env = os.environ.copy()
-    codex_env["CODEX_HOME"] = str(codex_home)
-    codex_result = subprocess.run(codex_cmd, cwd=problem_dir, capture_output=True, text=True, env=codex_env)
-    (run_dir / "codex_stdout.txt").write_text(codex_result.stdout)
-    (run_dir / "codex_stderr.txt").write_text(codex_result.stderr)
-    (run_dir / "codex_exit.json").write_text(json.dumps({"returncode": codex_result.returncode}, indent=2) + "\n")
-    shutil.rmtree(codex_home, ignore_errors=True)
+    claude_result = subprocess.run(claude_cmd, cwd=problem_dir, capture_output=True, text=True)
+    (run_dir / "claude_stdout.txt").write_text(claude_result.stdout)
+    (run_dir / "claude_stderr.txt").write_text(claude_result.stderr)
+    (run_dir / "claude_exit.json").write_text(json.dumps({"returncode": claude_result.returncode}, indent=2) + "\n")
 
     cleanup_result = None
     if not args.keep_installed:
@@ -510,18 +400,18 @@ def main() -> None:
         reported_run_dir = run_dir
 
     print(json.dumps({
-        "status": "ok" if codex_result.returncode == 0 and output_check["ok"] else (
-            "invalid_outputs" if codex_result.returncode == 0 else "codex_failed"
+        "status": "ok" if claude_result.returncode == 0 and output_check["ok"] else (
+            "invalid_outputs" if claude_result.returncode == 0 else "claude_failed"
         ),
         "run_dir": str(reported_run_dir),
         "work_run_dir": str(run_dir),
         "isolated_workspace": not args.no_isolated_workspace,
-        "codex_returncode": codex_result.returncode,
+        "claude_returncode": claude_result.returncode,
         "output_check": output_check,
         "output_recovery": recovery_result,
         "cleanup_ran": cleanup_result is not None,
     }, indent=2))
-    raise SystemExit(codex_result.returncode if codex_result.returncode != 0 else (0 if output_check["ok"] else 2))
+    raise SystemExit(claude_result.returncode if claude_result.returncode != 0 else (0 if output_check["ok"] else 2))
 
 
 if __name__ == "__main__":

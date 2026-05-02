@@ -29,6 +29,9 @@ ACTIVE_FILES = (
     "utils.py",
     "config.yaml",
     "pyproject.toml",
+    # Keep this cleanup entry so stale installs from older harness versions are
+    # removed, but do not install PERCEPTION_CONTEXT.md for new runs.
+    "PERCEPTION_CONTEXT.md",
 )
 
 ACTIVE_DIRS = (
@@ -39,12 +42,11 @@ ACTIVE_DIRS = (
 GENERAL_PROMPT = """# General Visual-Agent Setup
 
 Use the single visible visual agent for image perception.
-Use the visible reasoning agent for Texas Hold'em poker-action reasoning when
-the router asks for `choose_poker_action`.
 
 The main agent must not inspect images or independently decide visual fields.
 Delegate image-reading questions to the visual agent and merge only its
 returned evidence.
+Do not run helper scripts, call a reasoning agent, or choose a poker action.
 
 Write raw evidence to `runs/<run_id>/visual_raw/visual_agent.md`.
 
@@ -56,12 +58,14 @@ Then write `runs/<run_id>/visual_summary.json` and
 SPLIT_PROMPT = """# Split Visual-Agent Setup
 
 Use the visible split visual agents for image perception.
-Use the visible reasoning agent for Texas Hold'em poker-action reasoning when
-the router asks for `choose_poker_action`.
 
 The main agent must not inspect images or independently decide visual fields.
 Delegate each image-reading question to the appropriate scoped visual agent and
 merge only returned evidence.
+Do not run helper scripts, call a reasoning agent, or choose a poker action.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
 
 Write one raw evidence file per called subagent under
 `runs/<run_id>/visual_raw/<agent_name>.md`.
@@ -206,16 +210,6 @@ def agent_source_files(source_dir: Path, harness: str, setting: str) -> list[Pat
     return sorted(split_dir.glob(pattern)) if split_dir.exists() else []
 
 
-def reasoning_source_files(harness: str) -> list[Path]:
-    if harness == "codex":
-        path = SOURCE_ROOT / "codex" / "reasoning_agent.toml"
-    elif harness == "claude":
-        path = SOURCE_ROOT / "claude" / "reasoning-agent.md"
-    else:
-        return []
-    return [path] if path.exists() else []
-
-
 def unique_paths(paths: list[Path]) -> list[Path]:
     seen = set()
     result = []
@@ -248,18 +242,8 @@ def default_run_id(problem_dir: Path, harness: str, setting: str, variant: str) 
     return f"{problem_dir.name}_{harness}_{setting}_{variant}_{stamp}"
 
 
-def copy_runtime(problem_dir: Path) -> list[str]:
+def copy_visual_context(problem_dir: Path) -> list[str]:
     copied = []
-    for src in sorted((SKILL_ROOT / "scripts").glob("*.py")):
-        dest = problem_dir / src.name
-        shutil.copy2(src, dest)
-        dest.chmod(0o755)
-        copied.append(src.name)
-
-    for name in ("config.yaml", "pyproject.toml"):
-        shutil.copy2(SKILL_ROOT / name, problem_dir / name)
-        copied.append(name)
-
     copytree_clean(SKILL_ROOT / "visual_guidelines", problem_dir / "visual_guidelines")
     copied.append("visual_guidelines/")
     return copied
@@ -326,10 +310,8 @@ def install(args: argparse.Namespace) -> dict:
         raise SystemExit(
             f"variant {variant!r} does not provide {args.visual_setting!r} agents for harness {harness!r}"
         )
-    reasoning_files = reasoning_source_files(harness)
-    if not reasoning_files:
-        raise SystemExit(f"harness {harness!r} does not provide a reasoning agent")
-    source_files = unique_paths(visual_source_files + reasoning_files)
+    reasoning_files: list[Path] = []
+    source_files = unique_paths(visual_source_files)
 
     if args.clean_first:
         clean_result = clean_problem(problem_dir, remove_runs=False, dry_run=args.dry_run)
@@ -358,7 +340,7 @@ def install(args: argparse.Namespace) -> dict:
         copied_runtime = []
     else:
         visible_agent_dir, visible_agents = install_agents(problem_dir, source_files, harness)
-        copied_runtime = copy_runtime(problem_dir)
+        copied_runtime = copy_visual_context(problem_dir)
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / "visual_raw").mkdir(exist_ok=True)
         prompt = GENERAL_PROMPT if args.visual_setting == "general" else SPLIT_PROMPT
@@ -373,10 +355,7 @@ def install(args: argparse.Namespace) -> dict:
             "source_agents": [file_record(path, ROOT) for path in source_files],
             "visual_source_agents": [file_record(path, ROOT) for path in visual_source_files],
             "reasoning_source_agents": [file_record(path, ROOT) for path in reasoning_files],
-            "runtime_scripts": tree_records(SKILL_ROOT / "scripts", ROOT),
             "visual_guidelines": tree_records(SKILL_ROOT / "visual_guidelines", ROOT),
-            "skill_config": file_record(SKILL_ROOT / "config.yaml", ROOT),
-            "skill_pyproject": file_record(SKILL_ROOT / "pyproject.toml", ROOT),
         },
     })
 
