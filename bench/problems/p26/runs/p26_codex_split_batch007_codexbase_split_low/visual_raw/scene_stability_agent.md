@@ -1,1 +1,0 @@
-Stable. Compared `s22/00_capture.jpg` and `s23/00_capture.jpg`; the table layout, chip positions, player posture, and camera/robot arm placement are visually unchanged. No visible motion blur or object displacement suggests the scene is settled enough to continue.

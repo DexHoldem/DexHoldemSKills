@@ -1,1 +1,0 @@
-Reasoning was not required for this perception step. The dedicated reasoning subagent was invoked, but it errored because the inherited model is not supported on this account. No poker action was requested or committed.

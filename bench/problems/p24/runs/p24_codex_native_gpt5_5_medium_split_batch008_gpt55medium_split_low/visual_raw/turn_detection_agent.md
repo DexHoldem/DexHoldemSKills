@@ -1,1 +1,0 @@
-It is our turn. The small white physical turn button is visible near the lower-left/near player area, beside the seat `6` marking and close to the robot/player’s chips. It is not materially occluded, though the robot arm is nearby.

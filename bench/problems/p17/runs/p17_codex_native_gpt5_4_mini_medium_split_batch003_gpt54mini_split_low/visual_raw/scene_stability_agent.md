@@ -1,1 +1,0 @@
-Unstable. Compared only the provided capture; no previous frame was available. The robot hand is still gripping a card at the right side of the table, which suggests the action may still be in progress rather than fully settled.

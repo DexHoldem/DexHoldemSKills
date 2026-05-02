@@ -1,1 +1,0 @@
-Unstable. Compared only Image #1; no previous or pre-action settled image was supplied. The robot gripper is still holding the 5♦ card above the table, so the action appears still in progress and the card has not settled into a final table position.

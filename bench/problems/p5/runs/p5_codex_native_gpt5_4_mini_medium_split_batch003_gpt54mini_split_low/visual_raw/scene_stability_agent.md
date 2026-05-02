@@ -1,1 +1,0 @@
-Unstable — compared Image #2 to Image #1, the foreground robot arm/gripper has shifted noticeably and the hand position is still changing, while the rest of the table/player is mostly unchanged. That indicates the scene is still in motion, so it is not stable enough to continue.

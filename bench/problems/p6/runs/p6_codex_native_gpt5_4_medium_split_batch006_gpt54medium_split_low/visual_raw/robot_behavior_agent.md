@@ -1,5 +1,0 @@
-The dexterous hand is in the bottom/robot-side seat band, entering from the lower-right and hovering over the robot hole-card area. It appears to be gripping or lifting the robot-side hole card at the lower edge of that zone; a card corner is visibly aligned with the gripper. I do not see chips in the gripper, and the hand does not look near rest pose.
-
-This looks like a card-handling action still in progress, not a settled end state. The hand is extended over the table, close to the robot inventory chip area and robot hole-card area, with some occlusion of the lower-right table region from the hand/camera body. Based on this single frame, the action appears physically safe so far: no obvious scattered chips, no displaced button, no visible contact with opponent-side objects, and no clear dropped or exposed card on the table. Because the hand is still mid-action, I would not call failure or recovery yet.
-
-Zones used: bottom/robot-side seat band, robot hole cards, robot inventory chips, community-card row. Main uncertainty is the exact card orientation and how much of the robot hole-card zone is occluded by the hand.

@@ -1,3 +1,0 @@
-The dexterous hand is extended from the right over the bottom/robot side, positioned directly above or just beside the robot hole-card area. It appears to be holding or pinching a face-down card, with the gripper still close to the card surface, so this looks like an in-progress card interaction rather than a settled rest pose.
-
-It is not holding chips. The hand is not near idle/rest pose, and it occludes part of the lower-right robot hole-card area. I do not see scattered chips, moved non-target objects, or an obvious unsafe collision. Current state: still in progress; wait for another capture before judging success, failure, or retry.

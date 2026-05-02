@@ -1,3 +1,0 @@
-- Dealer: unclear, no dealer puck/button clearly visible.
-- Small blind: unclear, no small-blind button clearly visible.
-- Big blind: unclear, but a yellow puck labeled `BIG BLIND` is visible near the lower-right/seat 5 area; I can't confidently map that seat to robot or opponent.

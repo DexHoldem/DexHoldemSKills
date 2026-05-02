@@ -1,7 +1,0 @@
-- Hand position: Right side of the table, hovering above the felt near the chip stacks on the right-center area.
-- What it appears to be doing: Reaching/presenting toward the betting area, with fingers extended downward.
-- Holding anything: No visible card or chips in the gripper.
-- Rest pose: Not near rest pose; arm is extended and active.
-- Motion / state: The atom appears still in progress. From this single frame I can't confirm movement, but the pose is clearly mid-action rather than settled.
-- Safety: Looks generally safe/still in progress. The hand is close to chips and the table surface, but there is no obvious collision or human contact risk in this frame.
-- Occlusion / help concern: The robot body partially occludes the hand; no clear human-help issue visible.

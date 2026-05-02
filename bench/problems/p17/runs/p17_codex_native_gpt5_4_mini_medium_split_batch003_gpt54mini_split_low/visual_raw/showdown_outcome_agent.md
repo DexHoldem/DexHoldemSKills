@@ -1,5 +1,0 @@
-- Showdown is not visible: all community cards are still face-down.
-- Opponent hole cards are not visible.
-- Robot hole cards are partially visible at the right edge, but the values are not readable from this capture.
-- No fold or win/lose evidence is clear in this image.
-- This is not a decided showdown scene; the hand state looks unresolved.

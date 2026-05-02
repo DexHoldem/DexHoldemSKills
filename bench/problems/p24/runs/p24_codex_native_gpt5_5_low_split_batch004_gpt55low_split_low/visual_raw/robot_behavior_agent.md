@@ -1,3 +1,0 @@
-The dexterous hand is extended over the lower/robot-side chip area, close to the robot current bet lane and inventory chips. It appears to be mid chip-push or just finishing a push of chips, with the fingers near the chip group. I do not see a card or chips held in the gripper.
-
-The hand is not near idle/rest pose. Given the prior state says `acting` and `scene_stable: false`, this should be treated as still in progress; wait for another capture rather than judging failure or retry. The visible chips remain mostly grouped and countable, with no obvious scattered layout, moved card, or human-help concern in this frame. Some lower-right table/chip area is occluded by the robot arm.

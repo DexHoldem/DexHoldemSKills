@@ -1,1 +1,0 @@
-Stable. Compared current capture only; no previous or pre-action settled image was supplied. The table, cards, chips, dealer/blind buttons, player, and robot arm all appear sharp with no visible motion blur or displaced/airborne objects. Uncertainty: robot arm is still extended over the table, but this single frame does not show active movement.

@@ -1,6 +1,0 @@
-- Not showdown.
-- Opponent hole cards are not face-up or readable.
-- Robot hole cards are not face-up in this frame; they are obscured, so a cache would be needed to know them.
-- Community board is not revealed, so no best-hand comparison is possible.
-- Win/lose is not clear; no fold or collected-pot evidence is visible.
-- Recommended loop-stage label: `preflop` / `in-hand`

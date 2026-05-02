@@ -1,1 +1,0 @@
-Stable. Compared current-state s2 capture only; no previous/pre-action image was supplied. Cards, chips, buttons, table markings, player posture, and foreground device all appear settled with no visible motion blur or active robot movement. Confidence: medium-high, limited by single-frame evidence.

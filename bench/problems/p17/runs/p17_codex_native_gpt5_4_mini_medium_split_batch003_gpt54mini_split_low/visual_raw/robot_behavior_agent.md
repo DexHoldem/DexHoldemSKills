@@ -1,7 +1,0 @@
-- Robot hand is on the right side of the table, extended forward over the near-right seat area.
-- It appears to be pinching/holding a playing card between the fingers; no chips are clearly grasped.
-- The hand is not near rest pose; the wrist is angled and the arm is actively extended toward the table.
-- Current action appears still in progress, not failed.
-- It looks physically safe in this frame, with no obvious collision or snag.
-- No clear recovery evidence is needed yet.
-- Occlusion is partial from the robot body and camera angle, but the hand and card are still visible.

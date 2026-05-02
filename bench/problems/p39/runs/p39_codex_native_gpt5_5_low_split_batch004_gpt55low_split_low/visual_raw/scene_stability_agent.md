@@ -1,1 +1,0 @@
-Stable. Compared current capture only; no previous capture or pre-action settled image was provided. The table, cards, chips, buttons, and robot hand appear visually sharp with no obvious motion blur or active displacement. Uncertainty: without a previous frame, I cannot confirm that the robot has fully stopped, but this single frame looks settled enough to continue.

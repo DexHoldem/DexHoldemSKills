@@ -1,6 +1,0 @@
-- Hand is in the lower-right foreground, extended over the near-right betting area of the table and angled toward the chips/cards.
-- It appears to be hovering/reaching, with the gripper open or partially open.
-- It is not clearly holding a card or chips.
-- It is not near rest pose.
-- The action appears still in progress and visually safe from this frame; no obvious collision or failed state is visible.
-- There is some self-occlusion from the robot arm/body and partial perspective occlusion of the exact fingertip area, but no human-help concern is evident.

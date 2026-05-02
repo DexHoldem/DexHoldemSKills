@@ -1,1 +1,0 @@
-Five community cards are visible in the board row. Left to right: `Ts`, `8h`, a red `7` that is partly occluded by the robot hand and only tentatively readable as `7d`, a black `9` that is partly occluded and looks like `9c`, and a fifth card at the far right that is mostly cut off and unreadable.

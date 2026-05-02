@@ -1,3 +1,0 @@
-- Dealer button: unclear, not visibly identifiable in this image.
-- Small blind: unclear, not visibly identifiable.
-- Big blind: visible as the yellow `BIG BLIND` button near the lower middle-right of the table, just above the camera rig.

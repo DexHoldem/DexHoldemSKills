@@ -1,3 +1,0 @@
-Unstable. Compared `s6/00_capture.jpg` and `s_current/00_capture.jpg`. In `s6` the robot hand is clearly holding and lifting the left hole card; in `s_current` the card is back down near the robot-side hole-card area, but the robot hand is still extended low over the table in a non-idle pose rather than retracted to a clearly settled position. That means the failed `put_down_card` sequence does not look fully finished yet.
-
-The main uncertainty is that the current frame is sharp, so the hand may be paused rather than blurred mid-swing, but it still has not returned to a clear rest pose and the right side remains partly occluded by the robot body. Under the stability guideline, that is still unstable/still in progress.

@@ -1,1 +1,0 @@
-Unstable. Compared `s34/00_capture.jpg` and `s35/00_capture.jpg`. The robot hand is still in a non-idle pose over the table and the occlusion/pose shifts between frames, so the action does not look fully settled yet. Uncertainty: the felt and chips look mostly unchanged, but the arm position is still active enough that I would wait for one more capture.

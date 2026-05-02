@@ -1,3 +1,0 @@
-Robot/player inventory: 3 red 5-chips, 2 blue 10-chips, 3 green 50-chips, and 3 brown 100-chips. Evidence: bottom/robot seat band near the lower rail, excluding the dealer and small blind buttons and excluding the central betting lane. Confidence: high.
-
-Opponent inventory: about 4 red 5-chips, 5 blue 10-chips, 3 green 50-chips, and 5 brown 100-chips. Evidence: top/opponent seat band around the opponent hole-card area, outside the center betting lane. Confidence: medium; the top-right green/brown group is partly affected by perspective and nearby robot-hand occlusion, so those denomination counts are the least certain.

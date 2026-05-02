@@ -1,1 +1,0 @@
-Stable. Compared `s48/00_capture.jpg` and `s_current/00_capture.jpg`. The robot hand remains in the same near-idle pose at the right side of the table, the cards/chips/buttons appear unchanged, and the human’s arms are crossed off the active table area without blocking or moving objects. No meaningful uncertainty visible.

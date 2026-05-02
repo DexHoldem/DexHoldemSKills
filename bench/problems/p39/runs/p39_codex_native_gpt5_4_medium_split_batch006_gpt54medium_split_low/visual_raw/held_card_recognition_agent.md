@@ -1,1 +1,0 @@
-No readable held hole card is visible in the dexterous hand. The robot hand is over the lower/robot-side board area, but any card face in its grasp is too occluded to read, so the held card should be treated as unreadable.

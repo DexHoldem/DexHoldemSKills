@@ -1,1 +1,0 @@
-Stable. The table, cards, chips, person, and camera rig all appear stationary in this capture, with no visible motion blur or signs of active repositioning. I don’t have a prior frame to compare against, so this is based on the single image only.

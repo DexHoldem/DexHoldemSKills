@@ -1,7 +1,0 @@
-- Hand position: on the right side of the table, extended inward over the betting area, with the gripper hovering low above the felt.
-- What it appears to be doing: poised near a stack of chips, as if about to place, pick up, or adjust something, but no clear grasp or release is visible in this frame.
-- Holds anything: no obvious card or chip is visibly held in the gripper.
-- Near rest pose: no, the arm is not near a neutral/rest position; it is extended and active over the table.
-- Action state: appears still in progress or paused mid-position, not obviously failed.
-- Recovery: no clear failure signal, so no recovery need is evident from this image alone.
-- Safety / occlusion: the hand is close to chips and partially occludes the right-side table area, but there is no obvious collision or human-help concern visible in this frame.

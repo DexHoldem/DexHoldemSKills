@@ -1,1 +1,0 @@
-No readable held card is visible. The dexterous hand is near the table, but I cannot see a face-up card being held, so there is no card value to read and this should be treated as unreadable. The hole cards visible on the table are face-down and should not be guessed.

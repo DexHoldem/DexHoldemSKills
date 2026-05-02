@@ -1,1 +1,0 @@
-Stable. Compared the current capture against the available prior state in context; the table layout, chips, cards, and camera/robot positions appear unchanged, with no visible blur or active motion. Uncertainty is low, but I do not have a separate prior frame to diff against here.

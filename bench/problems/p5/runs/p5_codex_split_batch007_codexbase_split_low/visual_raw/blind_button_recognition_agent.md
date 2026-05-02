@@ -1,1 +1,0 @@
-Dealer button is not clearly readable, but the visible blind markers place the small blind at the opponent seat and the big blind at the robot seat. The yellow BIG BLIND button is on the bottom/robot side; the blue blind marker is on the top/opponent side, so dealer/small blind appears to be opponent.

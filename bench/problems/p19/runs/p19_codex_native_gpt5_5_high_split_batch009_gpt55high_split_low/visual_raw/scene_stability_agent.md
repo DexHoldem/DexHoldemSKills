@@ -1,1 +1,0 @@
-Unstable. Compared current-step capture only; no previous/pre-action image supplied. The robot arm/gripper is still extended over the table at player 5 chip area and partially occludes chips, indicating an action may still be in progress. No clear motion blur, but single-frame evidence is insufficient to confirm it has stopped.

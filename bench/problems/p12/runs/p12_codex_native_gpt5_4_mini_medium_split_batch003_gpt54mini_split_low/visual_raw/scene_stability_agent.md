@@ -1,1 +1,0 @@
-Stable. Compared the current capture only (no prior/settled image was provided). No visible motion blur or in-progress object movement; the cards, chips, table layout, and camera rig look fixed. Uncertainty: temporal change can’t be confirmed without a previous frame.

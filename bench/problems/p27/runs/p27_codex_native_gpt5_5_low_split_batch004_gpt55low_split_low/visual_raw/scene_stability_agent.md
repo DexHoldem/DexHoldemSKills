@@ -1,1 +1,0 @@
-Unstable. Compared only `/s22/00_capture.jpg` because no previous or pre-action settled image was supplied. The human hand is still on the right-side betting area and appears to be actively touching/placing chips, so the scene is still in progress and not stable enough to parse. Camera view is clear, but the active hand/chip interaction is the relevant uncertainty.

@@ -1,1 +1,0 @@
-Stable. Current capture only: the robot hand and arm appear stationary above the lower-right table area, chips/cards/buttons are sharp and not visibly displaced or blurred, and the human player remains seated with arms crossed. No visual evidence of an active robot atom or ongoing motion.

@@ -1,1 +1,0 @@
-The robot hand is extended in from the right over the center-right of the table, with the fingers lowered near the community-card area. It does not appear to be holding a card or chips, and it is not near rest pose. The action is still in progress; the scene is partially occluded by the arm/camera, but there is no obvious unsafe contact visible.

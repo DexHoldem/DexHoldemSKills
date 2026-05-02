@@ -1,2528 +1,0 @@
-Reading additional input from stdin...
-OpenAI Codex v0.125.0 (research preview)
---------
-workdir: /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
-model: gpt-5.4-mini
-provider: openai
-approval: never
-sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/.codex_home/memories]
-reasoning effort: low
-reasoning summaries: none
-session id: 019de58d-b5da-72d2-b723-4aacc84614ec
---------
-user
-Run the current DexHoldem perception step.
-
-Use the local setup, visible visual subagents, and visible reasoning subagent.
-Do not execute robot actions.
-Do not perform image perception in the main agent; merge subagent evidence only.
-If the router asks for Texas Hold'em action reasoning, delegate that reasoning
-to the reasoning subagent and validate its recommendation before committing an
-action.
-Run independent visual subagents in parallel whenever possible. If the runtime
-agent limit prevents full parallelism, run them in waves; do not serialize them
-unless a dependency or limit requires it.
-
-Use exactly this output directory: runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low
-Do not append the isolated workspace suffix or any other suffix to the run id.
-
-Write:
-- runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/
-- runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-- runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-
-codex
-I’m locating the perception runner and the output contract first, then I’ll wire the visible subagents around it and keep the main agent out of image interpretation.
-exec
-/bin/zsh -lc "pwd && rg --files . | rg 'perception|dexholdem|eval_report|visual_summary|run.*py|main.*py|router|README'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- exited 127 in 0ms:
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
-zsh:1: command not found: rg
-zsh:1: command not found: rg
-
-exec
-/bin/zsh -lc 'git status --short && rg -n "visual_summary|eval_report|visual_raw|run id|output directory|DexHoldem" .' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- exited 128 in 0ms:
-fatal: not a git repository (or any of the parent directories): .git
-
-codex
-`rg` isn’t available here, so I’m falling back to `find`/`grep` to locate the runner and the repo root before I touch the output path.
-exec
-/bin/zsh -lc "find . -maxdepth 3 -type f | sed 's#"'^./##'"' | sort | head -300" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-.codex/agents/bet_recognition_agent.toml
-.codex/agents/blind_button_recognition_agent.toml
-.codex/agents/chip_recognition_agent.toml
-.codex/agents/community_cards_agent.toml
-.codex/agents/held_card_recognition_agent.toml
-.codex/agents/reasoning_agent.toml
-.codex/agents/robot_behavior_agent.toml
-.codex/agents/scene_stability_agent.toml
-.codex/agents/showdown_outcome_agent.toml
-.codex/agents/turn_detection_agent.toml
-action_sequence.json
-action_translator.py
-capture.py
-config.yaml
-executor.py
-hole_card_cache.json
-preflight.py
-pyproject.toml
-remote_exec.py
-router.py
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/agent_manifest.json
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/codex_command.json
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/codex_env.json
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/harness_prompt.md
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/harness_version.json
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/isolation_manifest.json
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/preflight_result.json
-s0/00_capture.jpg
-state.py
-text_to_sound.py
-utils.py
-visual_guidelines/BET_RECOGNITION.md
-visual_guidelines/BLIND_BUTTON_RECOGNITION.md
-visual_guidelines/CHIP_RECOGNITION.md
-visual_guidelines/COMMUNITY_CARDS.md
-visual_guidelines/HELD_CARD_RECOGNITION.md
-visual_guidelines/ROBOT_BEHAVIOR.md
-visual_guidelines/SCENE_STABILITY.md
-visual_guidelines/SHOWDOWN_OUTCOME.md
-visual_guidelines/TABLE_GEOMETRY.md
-visual_guidelines/TURN_DETECTION.md
-
-exec
-/bin/zsh -lc 'find .. -maxdepth 3 -name .git -type d | head -20' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-codex
-I found the runner files and the target run directory. Next I’m checking how this repo expects the perception step to assemble subagent outputs so I can write the exact artifacts the harness wants.
-exec
-/bin/zsh -lc "sed -n '1,220p' router.py" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-#!/usr/bin/env python3
-"""DexHoldem V2 per-state router.
-
-This script encodes the SKILL.md per-state if/else flow and returns a JSON
-judgment. It does not parse images, choose poker strategy, or decide unsafe
-physical recovery by itself.
-"""
-
-import argparse
-import json
-import shlex
-from pathlib import Path
-
-from utils import (
-    STAGE_SET,
-    current_state_name,
-    extract_json_objects,
-    first_pending_step,
-    has_cached_command_step,
-    load_config,
-    loop_safety_limits,
-    read_json_file,
-    step_status,
-    view_slot_from_intent,
-)
-
-WAIT_SECONDS = 3
-ALWAYS_REQUIRED_TABLE_FIELDS = (
-    "scene_stable",
-    "is_my_turn",
-)
-IDLE_TABLE_FIELDS = (
-    "scene_stable",
-    "is_my_turn",
-    "community_cards",
-    "my_chips",
-    "opponent_chips",
-    "my_current_bet",
-    "opponent_bet",
-)
-STAGE_REQUIRED_TABLE_FIELDS = {
-    "idle": IDLE_TABLE_FIELDS,
-    "show_hand": ("community_cards",),
-    "win": ("my_current_bet", "opponent_bet"),
-}
-
-
-def read_json(path):
-    path = Path(path)
-    try:
-        return read_json_file(path), None
-    except (FileNotFoundError, ValueError) as exc:
-        return None, str(exc)
-
-
-def read_markdown_json(path, predicate=None):
-    path = Path(path)
-    if not path.exists():
-        return None, f"{path.name} is missing"
-    try:
-        blocks = extract_json_objects(path.read_text())
-    except OSError as exc:
-        return None, f"could not read {path.name}: {exc}"
-    for block in blocks:
-        if predicate is None or predicate(block):
-            return block, None
-    return None, f"{path.name} has no matching JSON block"
-
-
-def resolve_exp_dir(path=None):
-    if path:
-        return Path(path).resolve()
-    cwd = Path.cwd()
-    if (cwd / "s_current").exists() or (cwd / "hole_card_cache.json").exists():
-        return cwd.resolve()
-    current = cwd / "experiments" / "current"
-    if current.exists():
-        return current.resolve()
-    raise RuntimeError("run from an experiment root or pass --exp-dir")
-
-
-def command_for_action(action):
-    encoded = json.dumps(action, separators=(",", ":"))
-    return f"python3 executor.py --action {shlex.quote(encoded)}"
-
-
-def command_for_begin_next(state_name):
-    return [
-        f"python3 state.py begin-next --after {state_name}",
-        "python3 capture.py --output s_current/00_capture.jpg",
-    ]
-
-
-def route(exp_dir, state_name, state_dir, route_name, reason, judgments, **extra):
-    data = {
-        "status": "ok",
-        "exp_dir": str(exp_dir),
-        "state": state_name,
-        "state_dir": str(state_dir),
-        "route": route_name,
-        "reason": reason,
-        "judged_results": judgments,
-    }
-    data.update(extra)
-    return data
-
-
-def add(judgments, check, result, reason, **extra):
-    item = {"check": check, "result": result, "reason": reason}
-    if extra:
-        item.update(extra)
-    judgments.append(item)
-
-
-def cached_card(cache, slot):
-    item = cache.get(slot, {}) if isinstance(cache, dict) else {}
-    return item.get("status") == "cached" and bool(item.get("card"))
-
-
-def next_unknown_hole(cache):
-    for slot in ("left", "right"):
-        if not cached_card(cache, slot):
-            return slot
-    return None
-
-
-def table_missing_fields(table, loop_stage):
-    required = STAGE_REQUIRED_TABLE_FIELDS.get(loop_stage, ())
-    missing = []
-    for name in ALWAYS_REQUIRED_TABLE_FIELDS + tuple(required):
-        if name not in table and name not in missing:
-            missing.append(name)
-    return missing
-
-
-def uncertain_fields(table):
-    value = table.get("uncertain_fields", [])
-    if isinstance(value, list):
-        return [str(item) for item in value]
-    return ["uncertain_fields"]
-
-
-def collection_uncertain_fields(fields):
-    relevant = []
-    for field in fields:
-        name = field.lower()
-        if "bet" in name or "collection" in name or "winnings" in name or name in ("table", "my_current_bet", "opponent_bet"):
-            relevant.append(field)
-    return relevant
-
-
-def wait_action(reason, wait_seconds):
-    return {"action": "wait", "reason": reason, "sleep_seconds": wait_seconds}
-
-
-def safety_counters(sequence):
-    counters = sequence.get("safety_counters", {}) if isinstance(sequence, dict) else {}
-    return counters if isinstance(counters, dict) else {}
-
-
-def route_request_human(exp_dir, state_name, state_dir, judgments, reason_key, message, context=None):
-    action = {
-        "action": "request_human",
-        "reason": message,
-        "resume_options": ["inspect_scene", "reset_consecutive_safety", "reset_all_safety", "abort_hand"],
-    }
-    return route(
-        exp_dir,
-        state_name,
-        state_dir,
-        reason_key,
-        message,
-        judgments,
-        agent_required=False,
-        suggested_action=action,
-        commands=[command_for_action(action)],
-        context=context or {},
-    )
-
-
-def route_wait(exp_dir, state_name, state_dir, judgments, reason_key, message, wait_seconds, sequence=None, limits=None):
-    counters = safety_counters(sequence)
-    limits = limits or loop_safety_limits({})
-    next_consecutive = int(counters.get("consecutive_waits", 0)) + 1
-    next_total = int(counters.get("total_waits", 0)) + 1
-    if limits["max_consecutive_waits"] is not None and next_consecutive > limits["max_consecutive_waits"]:
-        add(
-            judgments,
-            "wait_limit",
-            False,
-            "next wait would exceed max_consecutive_waits",
-            consecutive_waits=counters.get("consecutive_waits", 0),
-            max_consecutive_waits=limits["max_consecutive_waits"],
-        )
-        return route_request_human(
-            exp_dir,
-            state_name,
-            state_dir,
-            judgments,
-            "wait_limit_reached",
-            f"consecutive wait limit reached before {reason_key}",
-            context={"wait_reason": reason_key, "safety_counters": counters},
-        )
-    if limits["max_total_waits"] is not None and next_total > limits["max_total_waits"]:
-        add(
-            judgments,
-            "wait_limit",
-            False,
-            "next wait would exceed max_total_waits",
-            total_waits=counters.get("total_waits", 0),
-            max_total_waits=limits["max_total_waits"],
-        )
-        return route_request_human(
-            exp_dir,
-            state_name,
-            state_dir,
-            judgments,
-            "wait_limit_reached",
-            f"total wait limit reached before {reason_key}",
-            context={"wait_reason": reason_key, "safety_counters": counters},
-
-exec
-/bin/zsh -lc "sed -n '1,260p' executor.py" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
-exec
-/bin/zsh -lc "sed -n '1,260p' preflight.py" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-#!/usr/bin/env python3
-"""DexHoldem V2 action executor.
-
-The executor dispatches deterministic robot commands and records progress. It
-does not decide the next move and does not mark the dexterous hand idle unless
-explicitly asked after visual verification.
-"""
-
-import argparse
-import json
-import subprocess
-import sys
-import time
-from pathlib import Path
-
-from utils import (
-    cached_command_for_step,
-    extract_json_object,
-    first_pending_step,
-    load_config,
-    loop_safety_limits,
-    read_json_file,
-    step_status,
-    utc_now,
-    view_slot_from_intent,
-)
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-
-
-def sibling(name):
-    local = Path.cwd() / name
-    if local.exists():
-        return local
-    return SCRIPT_DIR / name
-
-
-def run_script(name, *args, check=False):
-    cmd = [sys.executable, str(sibling(name)), *args]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if check and result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"{name} failed")
-    return result
-
-
-def translate_sequence_cache(action, chips=None, table=None):
-    args = ["--action", json.dumps(action), "--as-sequence-cache"]
-    if chips is not None:
-        args += ["--chips", json.dumps(chips)]
-    if table is not None:
-        args += ["--table", json.dumps(table)]
-    result = run_script("action_translator.py", *args, check=True)
-    return json.loads(result.stdout)
-
-
-def state_cmd(*args, check=True):
-    return run_script("state.py", *args, check=check)
-
-
-def remote_exec(*args, check=True):
-    return run_script("remote_exec.py", *args, check=check)
-
-
-def text_to_sound(*args, check=False):
-    return run_script("text_to_sound.py", *args, check=check)
-
-
-def current_state_info():
-    result = state_cmd("current")
-    return json.loads(result.stdout)
-
-
-def current_state_name():
-    return current_state_info()["state"]
-
-
-def load_current_table():
-    info = current_state_info()
-    parsed_path = Path(info["state_dir"]) / "01_parsed_state.md"
-    if not parsed_path.exists():
-        return None
-    parsed = extract_json_object(parsed_path.read_text(), predicate=lambda value: isinstance(value.get("table"), dict))
-    if not isinstance(parsed, dict):
-        return None
-    table = parsed.get("table")
-    return table if isinstance(table, dict) else None
-
-
-def load_action_sequence():
-    path = Path.cwd() / "action_sequence.json"
-    return read_json_file(path, default={}, missing_ok=True)
-
-
-def continuation_step_for_action(action, sequence):
-    """Return the parent-sequence step completed by this action, if any."""
-    current_step = sequence.get("current_step") or first_pending_step(sequence)
-    if not current_step:
-        return None
-
-    name = action.get("action")
-    if name == "put_down_card" and current_step in ("put_down_card", "put_down_card_face_up"):
-        slot = view_slot_from_intent(sequence.get("intent"))
-        if slot and action.get("position", slot) != slot:
-            return None
-        expected_face_up = current_step == "put_down_card_face_up"
-        if bool(action.get("face_up", False)) != expected_face_up:
-            return None
-        return current_step
-
-    return None
-
-
-def has_chip_inventory(action, chips):
-    return chips is not None or action.get("chips") is not None
-
-
-def should_load_current_table(action, chips, table):
-    if table is not None or action.get("table") is not None:
-        return False
-    name = action.get("action")
-    if name == "call":
-        return action.get("bet_chips") is None or not has_chip_inventory(action, chips)
-    if name == "raise":
-        return action.get("bet_chips") is None or not has_chip_inventory(action, chips)
-    if name == "all_in":
-        return not has_chip_inventory(action, chips)
-    if name in ("collect_winnings", "pull_back_chips"):
-        return action.get("chip_counts") is None and action.get("pull_chip_counts") is None
-    return False
-
-
-def write_action_markdown(action, translation, execution, decision):
-    state_name = current_state_name()
-    commands = execution.get("commands", translation.get("commands", []))
-    content = f"""# Action
-
-Based on: `01_parsed_state.md`
-
-## Decision
-
-{decision}
-
-## Action JSON
-
-```json
-{json.dumps(action, indent=2)}
-```
-
-## Execution
-
-```json
-{json.dumps(execution, indent=2)}
-```
-
-## Translation
-
-```json
-{json.dumps(translation, indent=2)}
-```
-
-## Commands
-
-```json
-{json.dumps(commands, indent=2)}
-```
-"""
-    tmp = Path(f".{state_name}_action_tmp.md")
-    tmp.write_text(content)
-    try:
-        state_cmd("save-action", "--source", str(tmp))
-    finally:
-        if tmp.exists():
-            tmp.unlink()
-
-
-def start_sequence(sequence_cache):
-    state_cmd("start-action", "--sequence-json", json.dumps(sequence_cache))
-
-
-def dispatch_step(step_name, command=None, prefix=None, command_index=None):
-    args = ["dispatch-step", "--step", step_name]
-    if command:
-        args += ["--robot-command", command]
-    if prefix is not None:
-        args += ["--prefix", prefix or ""]
-    if command_index is not None:
-        args += ["--command-index", str(command_index)]
-    state_cmd(*args)
-
-
-def run_prefix(prefix, config, dry_run):
-    if not prefix:
-        return
-    if dry_run:
-        return
-    rt = config.get("remote_terminal", {}) or {}
-    ctrlc_delay = float(rt.get("ctrlc_delay", 0.5))
-    if prefix == "reset":
-        remote_exec("--action", "click_reset_hand")
-    if prefix in ("ctrlc", "reset"):
-        remote_exec("--action", "send_ctrlc")
-        time.sleep(ctrlc_delay)
-
-
-def play_text_to_sound(payload, dry_run=False):
-    if not isinstance(payload, dict):
-        return None
-    args = []
-    if payload.get("action"):
-        args += ["--action", str(payload["action"])]
-    if payload.get("text"):
-        args += ["--text", str(payload["text"])]
-    if dry_run:
-        args.append("--dry-run")
-    result = text_to_sound(*args, check=False)
-    try:
-        parsed = json.loads(result.stdout) if result.stdout.strip() else {}
-    except json.JSONDecodeError:
-        parsed = {"stdout": result.stdout}
-    parsed["returncode"] = result.returncode
-    if result.stderr:
-        parsed["stderr"] = result.stderr[-500:]
-    return parsed
-
-
-def dispatch_cached_current(dry_run=False):
-    config = load_config()
-    sequence = load_action_sequence()
-    current_step = sequence.get("current_step") or first_pending_step(sequence)
-    if not current_step:
-        raise RuntimeError("cached sequence has no current step to dispatch")
-    status = step_status(sequence, current_step)
-    if status == "completed":
-        raise RuntimeError(f"current step is already completed: {current_step}")
-    if status == "dispatched":
-        raise RuntimeError(f"current step is already dispatched and needs visual verification: {current_step}")
-    if status != "pending":
-        raise RuntimeError(f"current step has unsupported status for dispatch: {current_step}={status}")
-
-    command_index, command, prefix = cached_command_for_step(sequence, current_step)
-    plan = sequence.get("plan") or {}
-    execution = {
-        "stage": "dispatching",
-        "started_at": utc_now(),
-        "commands": [command],
-        "commands_total_in_sequence": len(plan.get("commands") or []),
-        "command_index": command_index,
-        "commands_dispatched": 0,
-        "commands_completed": 0,
-        "dry_run": dry_run,
-        "can_retry": True,
-        "human_required": False,
-        "preserved_parent_sequence": True,
-        "parent_sequence_id": sequence.get("sequence_id"),
-        "parent_intent": sequence.get("intent"),
-        "parent_step": current_step,
-    }
-    action = {
-        "action": "continue_sequence",
-        "step": current_step,
-
- succeeded in 0ms:
-#!/usr/bin/env python3
-"""Preflight for DexHoldem V2."""
-
-import argparse
-import json
-import os
-import shutil
-import subprocess
-import sys
-import urllib.error
-import urllib.request
-from pathlib import Path
-
-from utils import load_config, loop_safety_limits
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-SKILL_DIR = SCRIPT_DIR.parent
-VENV_PYTHON = SKILL_DIR / ".venv" / "bin" / "python"
-REEXEC_ENV = "DEXHOLDEM_V2_PREFLIGHT_REEXECED"
-RUNTIME_FILES = [
-    "utils.py",
-    "capture.py",
-    "state.py",
-    "executor.py",
-    "action_translator.py",
-    "text_to_sound.py",
-    "router.py",
-    "remote_exec.py",
-]
-TTS_BACKEND_BINS = {
-    "say_afplay": ["say", "afplay"],
-    "say": ["say"],
-    "spd-say": ["spd-say"],
-    "espeak-ng": ["espeak-ng"],
-    "espeak": ["espeak"],
-}
-TTS_AUTO_BACKENDS = ("say_afplay", "spd-say", "espeak-ng", "espeak")
-TTS_APT_PACKAGES = {
-    "spd-say": ["speech-dispatcher"],
-    "espeak-ng": ["espeak-ng"],
-    "espeak": ["espeak"],
-}
-TTS_APT_PACKAGE_ALIASES = {
-    "auto": ["espeak-ng"],
-    "speech-dispatcher": ["speech-dispatcher"],
-    "spd-say": ["speech-dispatcher"],
-    "espeak-ng": ["espeak-ng"],
-    "espeak": ["espeak"],
-}
-
-
-def run_uv_sync(skip):
-    if skip:
-        return True, {"skipped": True}
-    if shutil.which("uv") is None:
-        return False, {"detail": "uv not found on PATH"}
-    result = subprocess.run(["uv", "sync"], cwd=SKILL_DIR, capture_output=True, text=True, timeout=300)
-    if result.returncode != 0:
-        return False, {"detail": "uv sync failed", "stderr": result.stderr[-1000:]}
-    return True, {"stdout_tail": result.stdout[-500:], "stderr_tail": result.stderr[-500:]}
-
-
-def available_backends(candidates):
-    available = {}
-    for candidate in candidates:
-        bins = TTS_BACKEND_BINS[candidate]
-        if all(shutil.which(name) for name in bins):
-            available[candidate] = {name: shutil.which(name) for name in bins}
-    return available
-
-
-def text_to_sound_backend_available(config):
-    tts = config.get("text_to_sound", {}) or {}
-    if not tts.get("enabled", True):
-        return True, {"backend": "none", "disabled": True}
-
-    backend = tts.get("backend", "auto")
-    if backend == "auto":
-        available = available_backends(TTS_AUTO_BACKENDS)
-        if available:
-            return True, {"backend": backend, "available_backends": available}
-        return False, {
-            "detail": "text_to_sound auto backend found no supported local TTS command",
-            "tried": {name: TTS_BACKEND_BINS[name] for name in TTS_AUTO_BACKENDS},
-        }
-    if backend in TTS_BACKEND_BINS:
-        missing_bins = [name for name in TTS_BACKEND_BINS[backend] if shutil.which(name) is None]
-        if missing_bins:
-            return False, {"detail": "text_to_sound backend missing binaries", "missing": missing_bins}
-        return True, {
-            "backend": backend,
-            "binaries": {name: shutil.which(name) for name in TTS_BACKEND_BINS[backend]},
-        }
-    if backend == "none":
-        return True, {"backend": backend, "disabled": True}
-    return False, {"detail": f"unknown text_to_sound backend: {backend}"}
-
-
-def apt_packages_for_tts(config, package_choice):
-    tts = config.get("text_to_sound", {}) or {}
-    if not tts.get("enabled", True):
-        return []
-    if package_choice in TTS_APT_PACKAGE_ALIASES:
-        return TTS_APT_PACKAGE_ALIASES[package_choice]
-    backend = tts.get("backend", "auto")
-    if backend == "auto":
-        return TTS_APT_PACKAGE_ALIASES["auto"]
-    return TTS_APT_PACKAGES.get(backend, [])
-
-
-def run_apt_install(packages):
-    if sys.platform != "linux":
-        return False, {"detail": "system package installation is only supported on Linux", "platform": sys.platform}
-    if not packages:
-        return False, {"detail": "no apt packages are known for the configured text_to_sound backend"}
-    if shutil.which("apt-get") is None:
-        return False, {"detail": "apt-get not found; install the TTS package manually", "packages": packages}
-
-    prefix = []
-    if hasattr(os, "geteuid") and os.geteuid() != 0:
-        if shutil.which("sudo") is None:
-            return False, {"detail": "sudo not found and current user is not root", "packages": packages}
-        prefix = ["sudo", "-n"]
-
-    env = os.environ.copy()
-    env["DEBIAN_FRONTEND"] = "noninteractive"
-    commands = [
-        prefix + ["apt-get", "update"],
-        prefix + ["apt-get", "install", "-y", *packages],
-    ]
-    results = []
-    for cmd in commands:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=env)
-        item = {
-            "command": cmd,
-            "returncode": result.returncode,
-            "stdout_tail": result.stdout[-1000:],
-            "stderr_tail": result.stderr[-1000:],
-        }
-        results.append(item)
-        if result.returncode != 0:
-            return False, {"packages": packages, "commands": results}
-    return True, {"packages": packages, "commands": results}
-
-
-def maybe_install_system_packages(config, skip_audio, install, tts_package):
-    if skip_audio:
-        return True, {"skipped": True, "reason": "audio checks skipped"}
-    ok, detail = text_to_sound_backend_available(config)
-    if ok:
-        return True, {"skipped": True, "reason": "text_to_sound backend already available", "detail": detail}
-    if not install:
-        packages = apt_packages_for_tts(config, tts_package)
-        return True, {
-            "skipped": True,
-            "reason": "pass --install-system-packages to install missing Linux TTS packages",
-            "missing": detail,
-            "suggested_apt_packages": packages,
-        }
-    packages = apt_packages_for_tts(config, tts_package)
-    ok, install_detail = run_apt_install(packages)
-    install_detail["initial_missing"] = detail
-    return ok, install_detail
-
-
-def deps_importable():
-    try:
-        import yaml  # noqa: F401
-        return True
-    except ImportError:
-        return False
-
-
-def maybe_reexec(argv):
-    if deps_importable() or os.environ.get(REEXEC_ENV) or not VENV_PYTHON.exists():
-        return
-    os.environ[REEXEC_ENV] = "1"
-    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), *argv])
-
-
-def run_state_init(config_path, exp_name):
-    args = [sys.executable, str(SCRIPT_DIR / "state.py"), "init-experiment", "--config", str(config_path)]
-    if exp_name:
-        args += ["--exp-name", exp_name]
-    result = subprocess.run(args, capture_output=True, text=True, cwd=Path.cwd())
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip())
-    return json.loads(result.stdout)
-
-
-def copy_runtime(exp_dir):
-    exp_dir = Path(exp_dir)
-    for name in RUNTIME_FILES:
-        dest = exp_dir / name
-        shutil.copy2(SCRIPT_DIR / name, dest)
-        dest.chmod(0o755)
-    shutil.copy2(SKILL_DIR / "pyproject.toml", exp_dir / "pyproject.toml")
-    shutil.copy2(SKILL_DIR / "config.yaml", exp_dir / "config.yaml")
-    visual_dest = exp_dir / "visual_guidelines"
-    if visual_dest.exists():
-        shutil.rmtree(visual_dest)
-    shutil.copytree(SKILL_DIR / "visual_guidelines", visual_dest)
-
-
-def capture_initial(exp_dir, skip_camera, source=None):
-    if skip_camera:
-        return True, {"skipped": True}
-    output = Path(exp_dir) / "s0" / "00_capture.jpg"
-    cmd = [sys.executable, str(Path(exp_dir) / "capture.py"), "--output", str(output), "--meta"]
-    if source:
-        cmd += ["--source", source]
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=exp_dir, timeout=30)
-    if result.returncode != 0:
-        return False, {"stderr": result.stderr.strip(), "stdout": result.stdout.strip()}
-    return True, {"output": str(output)}
-
-
-def post(base_url, endpoint, payload, timeout=10):
-    req = urllib.request.Request(
-        f"{base_url}{endpoint}",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def check_remote(config, skip_remote):
-    if skip_remote:
-        return True, {"skipped": True}
-    rt = config.get("remote_terminal", {}) or {}
-    rh = config.get("reset_hand", {}) or {}
-    base = rt.get("host", "http://localhost:5000").rstrip("/")
-    timeout = float(rt.get("http_timeout", 10))
-    try:
-        hello_payload = {
-            "actions": [
-                {"action": "click", "args": [rt.get("click_x", 500), rt.get("click_y", 300)]},
-                {"sleep": rt.get("focus_delay", 0.3)},
-                {"action": "pyperclip.copy", "args": ["echo hello world"]},
-                {"action": "hotkey", "args": ["ctrl", "shift", "v"]},
-                {"sleep": 0.1},
-                {"action": "press", "args": ["enter"]},
-            ]
-        }
-        hello = post(base, "/batch", hello_payload, timeout=timeout)
-        reset = None
-        if "click_x" in rh and "click_y" in rh:
-            reset = post(base, "/batch", {
-                "actions": [
-                    {"action": "moveTo", "args": [rh["click_x"], rh["click_y"]], "kwargs": {"duration": 0.3}},
-                ]
-            }, timeout=timeout)
-        return True, {"type_hello_world": hello, "move_cursor_reset_hand": reset}
-    except urllib.error.URLError as exc:
-        return False, {"detail": str(exc.reason), "host": base}
-    except Exception as exc:
-        return False, {"detail": repr(exc), "host": base}
-
-
-exec
-/bin/zsh -lc "sed -n '1,260p' .codex/agents/reasoning_agent.toml" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-name = "reasoning_agent"
-description = "Read-only DexHoldem Texas Hold'em reasoning agent for choosing a supported poker action."
-sandbox_mode = "read-only"
-model = "inherit"
-
-developer_instructions = """
-You are reasoning_agent, a read-only DexHoldem Texas Hold'em strategy subagent.
-
-Use only the parsed table state block, hole-card cache, blind/dealer
-assignment, action history, supported action space, blind amounts, and
-constraints provided in the prompt. Do not inspect images, parse visual
-evidence, edit files, run commands, execute robot actions, update caches, or
-open any other state file or folder for extra context.
-
-Treat these as the only allowed inputs unless the main agent explicitly copies
-additional text into the prompt:
-- `table.scene_stable`
-- `table.is_my_turn`
-- `table.community_cards`
-- `table.my_chips`
-- `table.opponent_chips`
-- `table.my_current_bet`
-- `table.opponent_bet`
-- cached hole cards and blinds
-- supported action schema
-- action history
-
-Your job is to infer the current poker situation and recommend exactly one
-supported poker action for the main agent to validate and execute.
-
-Reason from the actual chip counts:
-- my committed bet is the sum of my_current_bet
-- opponent committed bet is the sum of opponent_bet
-- call amount is opponent committed bet minus my committed bet
-- a raise amount is the target total bet after the raise
-- never recommend betting chips that are not available in my_chips
-
-Return concise plain language with:
-1. current situation summary
-2. key hand/action rationale
-3. exactly one recommended supported action JSON
-4. any validation caveats the main agent should check
-
-Do not invent unsupported actions, do not guess unknown cards, and preserve
-uncertainty when the parsed state is incomplete.
-"""
-
-exec
-/bin/zsh -lc "sed -n '1,220p' .codex/agents/community_cards_agent.toml && printf '\\n---\\n' && sed -n '1,220p' .codex/agents/blind_button_recognition_agent.toml && printf '\\n---\\n' && sed -n '1,220p' .codex/agents/turn_detection_agent.toml" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-name = "community_cards_agent"
-description = "Read-only DexHoldem visual agent for reading shared community cards."
-sandbox_mode = "read-only"
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
-service_tier = "fast"
-
-developer_instructions = """
-You are community_cards_agent, a read-only DexHoldem visual evidence subagent.
-
-Use COMMUNITY_CARDS.md and TABLE_GEOMETRY.md when provided:
-- visual_guidelines/COMMUNITY_CARDS.md
-- visual_guidelines/TABLE_GEOMETRY.md
-
-Read only face-up shared board cards in the community-card row. Use rank+suit
-notation when readable, such as Ah, Td, or 7c.
-
-Include how many community cards are visible, the left-to-right card read for
-each visible position, and which positions are unreadable or uncertain.
-
-Do not include hole cards, output a street field, invent hidden card values,
-edit files, write state, update caches, run commands, execute robot actions, or
-choose poker strategy.
-"""
-
----
-name = "blind_button_recognition_agent"
-description = "Read-only DexHoldem visual agent for dealer, small blind, and big blind button assignment."
-sandbox_mode = "read-only"
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
-service_tier = "fast"
-
-developer_instructions = """
-You are blind_button_recognition_agent, a read-only DexHoldem visual evidence
-subagent.
-
-Use BLIND_BUTTON_RECOGNITION.md and TABLE_GEOMETRY.md when provided:
-- visual_guidelines/BLIND_BUTTON_RECOGNITION.md
-- visual_guidelines/TABLE_GEOMETRY.md
-
-Identify dealer, small blind, and big blind seats from physical buttons in the
-first state or refreshed hand. In two-player play, the dealer is also the small
-blind and the other player is the big blind.
-
-Use only robot, opponent, or unclear as seat names. Include which seat has the
-dealer button, which seat is small blind, which seat is big blind, and any
-uncertainty or visible button conflict.
-
-Do not emit state.py commands, edit files, write state, update caches, run
-commands, execute robot actions, use poker position names, or choose poker
-strategy.
-"""
-
----
-name = "turn_detection_agent"
-description = "Read-only DexHoldem visual agent for determining whether it is the robot/player turn."
-sandbox_mode = "read-only"
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
-service_tier = "fast"
-
-developer_instructions = """
-You are turn_detection_agent, a read-only DexHoldem visual evidence subagent.
-
-Use TURN_DETECTION.md and TABLE_GEOMETRY.md when provided:
-- visual_guidelines/TURN_DETECTION.md
-- visual_guidelines/TABLE_GEOMETRY.md
-
-Judge turn ownership only from the small white physical turn button. Do not
-infer turn from dealer order, betting order, opponent posture, chip positions,
-or available poker actions.
-
-Return one of these plain-language judgments: it is our turn; it is not our
-turn; or the turn button is not safely identifiable. Include where the white
-turn button appears and any occlusion or uncertainty.
-
-Do not edit files, write state, update caches, run commands, execute robot
-actions, report poker actions, or choose poker strategy.
-"""
-
-codex
-I have the subagent contracts. I’m checking the current state artifacts now so I can feed only the allowed inputs into the visual workers and keep the main agent from interpreting the image directly.
-exec
-/bin/zsh -lc "find s0 -maxdepth 2 -type f | sort | xargs -I{} sh -c 'printf \"--- %s ---\\n\" \"{}\"; sed -n \"1,220p\" \"{}\"'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-sh: line 0: printf: --: invalid option
-printf: usage: printf [-v var] format [arguments]
-���� JFIF      �� C 			
-
-
-
-
-
-	
-
-
-�� C
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-�� 8�" ��           	
-�� �   } !1AQa"q2���#B��R��$3br�	
-%&'()*456789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz���������������������������������������������������������������������������        	
-�� �  w !1AQaq"2�B����	#3R�br�
-$4�%�&'()*56789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz��������������������������������������������������������������������������   ? ���B������y��KX��S��^1�M�� ����/�ik������~���� j<����������u)�:��4�|��(��b���Н?��i��j})��������S���:��N��Z�D]���4� ,�$]�� �� ��>�y^D��� �����OƖ�#��Y�� �T'Oƈ�(� -7�Yө��γ��� ~�+@
-$���?Z o���T��~�g�4�����?#��ܭ #� �4�R'Oƀ�� -)�% 6N��w�u�Q�e���o�7�Pd�N��z�I�8����h���)�O�(��H�
- H���i)��Λ@N��'��)�Pu'��E�]���IE GO��m-"t�k0%��?��Q@N��=?�~5I@]��� *JD�������AԿ�h�9����|,�E�ύ���f�Y�/�V�q�#� �W^/��5y(��Q�R�s�Vv���%w?gO�6M��W�:�O��k�������J�g����ᬐ��Z�Ư� A-J-� ��?�{%�PC�W�W�ԩ�|dϊ̸��ra� �g� �G�u/�Z��&������ŧ��� ���ҽ����|7d�f���kꣶ�ˎ:�N��q�?�~��˰�
-\�a�|~+1�b��C$P��U
-ǝ�  �2KGΪ�o���e�:�8o��_g�e��#�\ݿ���M��b�*�-F(b�����|A��e��P���ʺ
-	����wRy?l��b_�3XG�\��W�����Ț��������:����m.7�|y���+���� ]*}�ǥ�P�~�p�r�y'��2�/,a�<��z�x��Z[��*�g�����������������\q� �I*�������]A��s���K��-���og�X�7����d���mR/����ǟ#ҭ���*��� �$� ������9����`��~� �ne���?뤔 j�ރ�?��  �W�r��/���$� �?2��|K�;8|I��\�E�[/+���'����[~��4��Ԯ�y� ,���~e`�c^_���y�wQy��������hMy����󪜒�u��Vl�^o4wT�� �R<7�?h��u�#��<����H�� �y � �u��D7�~LS|� r��� ��|>?d��;������ �� Y�9?��?��g������E�h�� Y-xX�~Ω����
-{ĳ][�S|�m~p�D�� oĄ�|���&�O+�g�'�_��f�>ΞU|W� 7е=cŞ�<ǆ;�?�����.�2Y�x�NL��
-|a<�g�����U[۟�K���V�����)=uYw���1���_�R�~g�ԹF���o�TQ��+`ά<�[��+�ec�l�`��Z��(��Gy�ߝAT��*2�j��Ҧ�O�g�L�ᢏ�O]L��
-=�,_��� ��ҙ%���4~"��Ї�~U�C �	ԸYv��i�&��<pA��$q��p���V*y#ژ�
-�O����|Z|�wKs/fV��h�[���Y(���$��I��:VU'ͱp�Hٍ��1ʓIP��<�:֥��2$D�����Բ��"� [�.(����O�P�I��>�߷�6����<�$�ϲ��b���tJ�����*Ԓ	$�h���?E�B'3F?�P��z_�~�c�[��ϽT�}�W��Z�q�|�� =+�J���'L��?j�ϕ#�W�e&�U���9i�Ѵfؑ��h� ]Q�$m��Jt�lo�޵���c�L8�Қ���?:��RǙ*d����SOpw�Ocup`A�V�f�g�bO��d%������0�]�@�3����`���۰��� ���~��/tɦ�4g�e-�V�։4�V���l�>�y�%q6�V�A����x����%{���?�I�|]'��x�_���_��� �� ���m|1�h隍�ח,~lQ���W��
-�Ě^���i����K�G^nmm�p�S�-���������#��>Ѵ�簷��}��-�Y�'�q��� L��?�%}�ya�K��f����d�/��I_��� � �#��I���=.�}RYb� ��~_�� l��o���������]m���� ��I<�����x�Z8�NC�\�JxNs��5K;�k��D��xcT�״xu�	��y����:��?�Z��c�z�ᧀ5'� �7þ[��V�����Ǚ� ��� M#� �u�o��o�[C��h�Ų(���q�� <㎼l�,��ѧ
-�;�������i��֝� -)��ʼSp��+@$����ҝZIQ��(��ҕ:~4��ҕ:~4��QEi�@
-(����)��u���~�������1�v�� �Izu G^� �?��d�� ?٧����O��^��?���
-ŬK���s��_�5��_���� FG{�3M��hA9ɏ���T����M֯4��<���� �d����՘�Z�}�+c�����J���ʲ����m��,\%q2�Ԯ� ��_�� �U�o�Ks�L� �g�s���.�/�� �6��� <ˏ��^�z��ُÐ�K�w�{�O'����F�k�� �;8�џ��_�T�=i�R��6�(�g1���:�'_ZIE�?��EPE/�=�%�Z$���_N� �t�{��6��G�H������
- m)�� ZJ+0�
-m���P��GRQ@�E����_����i���}�Mh<��� lEj�Ziߗ�:��?2�O�=���$g�+��#�1��o��-7J�ς�ϥ�jW^_�����{�� �\��һ��->��o� �5�"���e��KX���Yy���'�&��4�˯����MS�7V��n�%�P��4rG���� �rW�Ӈ��Yi�X��z��?��+ʓ������O�
-�?ڃ�k����6>3�W�
-���urj��q���?맙_Ty^T�I�����U����N���2N�Gމ~�:�,)��������_��G����ZSh ��( �'_RV`Eڊ(����ޛRPhQE 9:��(��(�'_Ev����JZ�^�%�� ���(��7�ZP �
-��N��� [�T�]�J )��KM� �����t}��Pc�O�#J�
-��@�*e���$�� �2���G��T��߯�P?OƳ N��-"t�h~�� 2^�CT󼴊)����*���d��Z8��ټ�e���uR��րV��V���U�{�g���2�5�y��;��* �O&�~��N�
-�N��o�k˿i�\[�W���ez��U�~Җ�K�;k���u_)�p��d�s*���@�y~�6�'��k��� �?I����Ө�����1d�QE $q~(4
-<����� �TV`�Z?� �Z(����.�<�?uGO�g@Q�z)��ҳ���:� *:��N�� '���QM� ����'�{
-(�	(���� �:c��i� �҈��i�O�)�V�GN� ��Gޝ@��Ө���ӓ��Bu�(��W��N��:��
-mPN� ���� ���'_Qԟ�ր�Q/z(� ��)��δ�I���yKN��e0N��O��� %GEJ{��i�v��Oƀ�o����Y�h�Τ�1;��>�� w� ����\� M{^�O�G��{�.?��s�K)ʱ9�+��0���`���e����iԾ2\C�C=��#����j��n�� FW�~����*F�`����dV�E��u[B����,�#�"��l[� J�� &Ȱ�F�'噮q������}ʳ��'蝹�P��,��"�)?�{\��2̒���u2K� �cT��5���y���?:�o�� �^]M� -x��y����Ϳ�_��!,ֻ��Ǫ�T>c�k� ~�CB���Q���>��e���6*�y-��O=���� �Z�a��WF�K�{^��h� �yrd񿃯��y;�� *����<y���O����<���6�y��Ҹ?��x�ź<�x���Gҿ���/>/� E��|K���md�7����/.��?ǐŨ<�P쳼� [���8o�~�sPx.�=��˲��[��� �� ��g�9c���1� ��/�?��\��OC�^>��C�[\|��J�>�y� w_��+~Ohhz-���f�,��'�>���a4Q� i]�o�i\����1��s��C�����G��*���;=R��}d|��_��Y^ ��(�h��>��y��x�T��oo;��j���h:��^K�yg��������G����>I刪_�w���|�e��]Y�|�� {� -+`�xn��Լ+���Z�G/���H����𽮥�j�
-���<?�\iw_��Ky$��� �u��guQ����)�I����
-��G���b� �q��\w� ߿"O��^~:���z�=O�������������+�ox��_���v�7?����H�� �qנ�?T���&�o1."�Y_47ž��o�绶�^��X���\~_���?3̯;W�b�{�~ґ��q�ť��ۏ�g,��� <��H��y@� ��+������5��sY�wK� �I� ��\�5�7g�1䊿B�S��>O���+-�5�y�Mqַ5Y���Y7��zTg}N��4[c�֣�Ou����񮨻��JU]��>�'�W�IY���IJ�\�T�[���hrHv��~vx�#�I^�-,�=O���f(��W�EB�N���/�b�y<�$��%��=�D?��nd�L�iY�V"Az$�x�Cg-�SS%���nv%K�>_���o�@l^M�EW"�60=�������(mc�e��� �UN�;w��}G�аK,W
-(?�m[�d�e��E��m�	�ʔ~4���q������M��?tG$2� �:��2����Es ����5n�'��MC�#���YL��$�QK��P~�X���na�Tn|��I�)��b��K��m�SE+�I��od������OY��1K!�>�2�T��'�[%�aR��q?uޯ���Oޙ�:˂L�P�� ]��S�Ίu
-X���S."�Y?y>������o��ڦ���L~M�??���;ٖ6�d���[��7ڭ���i-|��j�>��� �-�k[��%.^�Z&�5Ԣiv�e{G¸��Yh�� &H�{����� �יx�-�5z���z��.�� �)c� �u��*{6z�
-w��|G���_�tx�;�*� ˵��t����G��?w$r��ן���O�v����'���e��d��#�� ��?�g��k:o���4
-n�X���_+g�'�0�?�I���u��7��|'�_�F�uu��\w�	1������� -$�� �����n-�}n�4�/�y�>�.�b�9!?p��d��ρ?
-t��ZDhm� ,���I$� ���I?�zeT��kX�a�?/ڭ��X�^+1�N�w�wN�*t� ���
-QRTt ����(��$�� �:o����OƴZo_�gC� G� -(jru�*8�ӫ@?����X� ֊��� �Z?�:�
-(��޴�:/�D}�3_�g�Hm~ iZl������_�s�8� ��}�� ,����.6����zG����%�� ���Zj�P<l�~�+�3�G�������Ͼ�N�y��>�j��q����:�0G�{פ�&�o5�R�G��̚��8"� ����8�$ަ}+�o�_�������u�Y~��G�� ����%sb�-+�����K��K�2/�-��?��iKޫ[����� ��f^���w>�{ӿ�:�� ����:��G���f2��%���(�� �:�Tt����u%GE IE:>�� ���T���(:w������ (��ڤN��f��E5:�� (��� ��izn����:��vw��Aums��r~�H���
-#�����/�S��
-����-?���������q��<�4��y���̯������ �ş��� �D��m�i������֥�/�r^G�[���� ����u?y8����#�O�G�|y����G�O;G�?7M�_.{{�����O�i_�� ��;�
-ƛ����$7��%����� N�� ���������|+�\>.�v�$1���� ,�#� �rW��?�6��V���z6�>�s�� ��� ǽ��䎺q�5]�G�N��?��"� ��~��p� �[��6�7��m�=zh��υ��/��_����������?��O2�����O��y&z���=�������SD���EPRQj+@#�*:�.�%IY�IEEou
-պMk7��V�KN� �t�+0
-s��)�PNN��6����QG���	*:3� M� J#Ty�`?�Lt�?��� �{�D��: w���QQ��v�)��I� -(4RTI��k0
-Q�>�����P �
-t]���Y�P/�2�j���?�s@߯�P?OƦ��i�IڀQ�ޞ�?d��;Uw��U��~�'�?�Wz������W.j�� W~��@�?�������"~��A/�ښO������P� �J�^�[��\$>M lA޸� ���_
-ߟ�r�aj���k��;���~[� �J����	�����@���(|�g����E�I���P������S���%�� �*u7��W)��_�T�����"�Ev�В�� ,��y'޳ �N����� �� ��Z�� -i������G�}�?�:�@
-)#���K@
-�?�(� T�ZZ?�EV�7���� �MM�� :�z#�D_~��~�� ,�� ���
-����S�� )�CN�?_³8�ө��������_�H�
-m�N��6���%GZ S��$~vx�����ӟ��M�"�@
-��J�� ��YQG�2�.ՠT���ihJl}�� �u'�4�y��:���D��Ts��w�4�ju�(�v��Oƙj���S��z��ZR�,1G����N�WȍI�>��+Ŗ�����O����}���χ~�|9��h:5��ggȢ����w�h>�/�OT��&����������U�W�\#�R�0>��������<�� Y���J|��9�n.��'�h���'?=}���ݜ���1�Y�'��������ZS�-a��ykg�?����zR�feˏ�����=V�ͭ���� �Q�1g�/�j������ ��I/�*���?���:I� -)�����C�K2@� �ι�j�w��L��o��W����|a�=b�Py��_���H����K�==!�-� �fhq��Z=��ύ�1��d��o�e��q���V��<�� hM��G��Z�1�Z�Vy?��zy�<f������X:��1������ʍTԢ���'��]r�im�o:I(�r�w�� c����� ���G���k_�2����q7���5?P��['�� ��t��M[�[��Y�J�4�� *7��6��h��o5����gu�	� �� �u�� �|A:Ϳ�'�+����5�����G�5��������G����4:]��,1�Y�[%��wSE��/ߏ䖺MSÞ$�G���d� �u�j>u��7���� qu$�Fc�.��n�S~џ �-F���_�O�� O�����G�G^�$�m>�o.���CL<��^x��G���7�� 眱�:����;�w�W��+�����u7���Fo�_����F���ߎ%����� Wo��ſ��� ��V&�� y���'�|�zΩ���J�s�� ��ᮣ�߉2����P�#�Y礑�$rI� �$�'������|�
-69�.>H������>�G��oXC$�:}�z�_���I��� �ߗ'����ux�3S�c�T����*���6���=�_p�Z���?��;<Ε�mDc�Wcq'�a�� ��/�iXs�7���^�*����o�0�-yM{FkNk	��H� 1K�����oW��[K��ؘ�b��M{xܭ)l.BdE�V|�K���o	��0�0�����Կ���9c~����rFe�'��jd�L��1R�k(����ʈ��Y���4��~�5$�i������w���-ts��~�'?r�{�K�c�� �Ҡ�wM�1+��Ii����eG2��%�]H�f�m�2�0vy���Xyh��Yן":�n-�WI7�IU�x<�μyu��E�h�����
-�ى� X+���fuW���;��{��w/ڏ���5~�!�42�t����N�<����ϭ>9��)=U�͊J�n�����IF�p�[�~j�?�� ���p��ǪK� �X*BĹ���j)�+� ,i��f7Yc����q3i32����<�@S��yy�U\�ُ����j��ꘕ��9���Rڙc�5�9ӹ�yu4߾�j�cQ�t�;O�ڴt8��&+���9����{� �*�WTt��)���a>�Cw
-l��Tu�_�/�y:����h����� \��u�ெ�ŧ����3]�����O������y�؟�G�=��+E�h?���J�ƹ� "v�{�/?��w��� ,��Y� �H��3�W��+�O�a~���G��� dȤ��W���i,#Ib���'�� ]?園~��k=2�;[8���-�G���~���l�?�������� U����g�b�W4�רa�a�r@�O����Y�K���'j�
-�?OƖ�'jm ���J�^��TtQ@
-�?֟Q�ӧ�Y�� �iL��M� �-h?�Φ��ޝ@~��6�o���QM��S��}�?�Q'j?�.pM���zuj_��]-vc��Z<S|��� ������I�
-��� ��k���tx�� �{[x� �^9?��}� ��9���>g����y��_���J�q������=�9� �ᾕ�O=d~ �O��~��_�� �� �~�����V�����N�9�� ���Џ� �� ������iz6�{� ��#� ڕ��2����a)������ �X��V�� �Y��~}��QE��;�YӪ9{Ԕ�/��Zo���րIE7�ZS�0
-D����'Oƴ|��EIQ?OƳh���	)�v�TO���~4������M~��:�{�tQR�* )��ΝE GRQj%�@��� �_��[Q��� d�����H�W�~���[�d���?��?-.?휕����M2<v�$O��-o��W��W� �k<k$|WA��T�f����m}w� �� �v؇�����4QÏ�2�j>�;4����X�2D�� �9|M�N�Z<�<j��*�o�;� m-{���4���i���w��ؿ��O�O��� ��� �+�����5��<9�A}����X^�K�;�y#�#�:�V~��SO�ƿ� ]o� �#��o� ��y�?	�~���$��������ۙ��O� ��?�w���� �9?�xY��R��C|%OgS��)�^�Q^�QY�Q� ,��� �.�Q@N��-#��ih���QM��������|�!��uf����,�� ��U�����G@���<o����)��t/������f��� 	��� A� ��>��Z�5(��b.�KިG�=_�}O��SG�Y���+>p.�r��}�z�D�P� �j��u��qG���͘� �՟8����Q�6g�[GD��1G�yՠ��ON��P�׬��|��=�� ON��2Ia��qVf�����T~l>gZ|r��s�� �eRTu% G/z�q-Y��Q��������@���_��R�OƢ~�� Kf?�j�����y�Wz�[������Vm�\�����K�ZZ���T�;S��Y�?_ ~��N�
-��~4 ʳ�Û�8�g� [�V���o@��P��k�����?�뾯���ڋ� ���� --dO��^NeO�aj@��ϒ��v���� �j~O�� mj�~�S�u���� �
-l}��W�uS�������(�� ;�ZS���Μz�ҳ��KEI��`���N��f�E;���'Oƥ��ޝ@��Ө ��ڝM��i��:*J��)���S�:u9�� �s��(N��:�#��Jm;�ZV�6��
-?�6���΄��SjJ fG��4�d�E>.� Kފd��M>���ΝE;�ZS������ ,��ʞ�?�O�F��O�F��
-��N��>>� Gޏ�gN��p
-(���U(~�� �**:s��)�꒣������ f� �'Ǟ8� ��T�~����/�x�� �u���^��=R�º;�5	|�X���}������O
-�xWK�䳋��� �I?�}� d�������͋{_��=7�-w�\?e���Ḿ���$qWs'�̵�}5c�*�&�.|�b� ��iz�1�T��� �V�%1H� �ҳm��;�A,�H<ϒ/7�ZI���9���Y�ȓK�$�{�g���Di�j�����_�W�yf������}���1��uy��6�u7�|�ʡ�
-<G��y����{�d_������5!���T���+�</k�\f��$u���
-�i�|�L
-/Z��w�(k��#����̛?�m�t�~tU�j��Ex�bO�e\���՚M��+��4m7�I���et>�|�?��� �Z��K�|��Z�\Z��r$3L��͜��G����� �T�B��~�[:Ǹ�+Y�/�� Ғ��� _�Uϲ��O�MY�����SX]�kq� =( �t��xs\ǈ4���/�]���:��7� ����x_ΏΖ���t�fk�'��� �u�z����z�S�{�1�-�� �:���I�#� ��)� �X���D�jRF�K� =j��a�X�[�2�z��� YS�T7R$�_~J��̻!��?��#3�����_�g��_��2;��ⴵ�6?&/��� �� ���ΰ|�e���h+�N|�� io��������O��j_��G��O��'�3��:4;�{K��G׬��4��-uK)�[�G��#��K{���ί�� �/4ms�w�v��(�񕵴_��;���'���,Uh{9^/���g���~-��l���a%��� ]#��|� ���~�ş
-�4����Y.���i'��b�?�>�g�k?��r���� =#�<���F�� O����n��������W���R��_�	�_���G�?�i�2=�r�I#�˓� E� �:�Y�F�[t�G��?�_�Ҿ���gGQ���?����W�5�R;o./��K�㼎7� �wu�xCT�|o����%���ב�i����� ��ׯ��{J*�6p��R�^I�7�u�^y��'�� Y�q�1Ec����O��}����[w����yV?��	x?�D֞"��>x������Җ6����j���E4�JO��Oa��⽟�? �<;~����K��2�����#���'�d��׷GE��&�U��ys�|� �6\�S�C���>ťݤ:������ M)/�9
-���䮗�S��_���������yQ�Y�[yg8��PCk'��X��&Y9%mFRhᬬT���?`�C�=���?
-$�>Bd�k�=51�~�d��*$���<yUf[Q�D�����X²�&5<��j\��6��C�~T�-tz=���ȇ�YVm����y����C�� �&}�*��e}���49MlL#{Y!��ZϷ�ͷ3�+��^�4����%�J�w����*��E:7G=zΩ��Dc�Ib�:̼����K[��B[G�V$�Yg�H�޽<4��+O��86��!��t���/���kSo2��岟��Hn�f��<uR���1�(��#g� 
-�#�%�$\Z���٦����Y�v�u�֪���"�=�<E���%9"�,S��Wa�b�_-��>�k%��&����H�;!o���9��ݞ+KK��g��9�-�y��H���W��l��r��$�mO�&6� k��G� �U���= �]C��Q�5\B�oN�CH�ƥ�H�]i�l��T�W���߄�x(���G�I�^��������+����4��KMݥ����lqI?���O.8� 맗^�o��\i�Ɵ�[�K���tح|�/��I'����yu�{]N�<� �/�#������_��h�>��� �j��E��q� ��#� ���.�z4/ٿ�;�e��]��K�n(��b�ˎ�{x��y#� ����������.b�]��[�Ic��.�
-B��q�$���?��K�+�_K����	�7_�� ��˿�u�f^�G�L�hV�����K�Q��;���M���u%���� �rGL��}� �C��i�9g�\I��+��X\�?�:��L��W��_٘���g,���p��ԋ�ZTr�c��Q_<zQ?OƇ����� ���^��J`Q� ,����苵 =:~5-GE IEGRP�:��Q'���+@M� ���o��@��u�;V`��N��+C2'������?^����5XO����� �q��ӯ�z�C� ���Y��<U,soO��/� $���&��8��p�.4�� 	��:@*\������T�b� �<�����~�?�н�C��_���n7�
-� 큯k�Oɥ�9�x�� �rIyg� ��
-Ff�����6��~o�>+��?���zw������ hW��K�3��|~�i��� �^��� � �M_�'�T��s�QI^~�-hf��gN��
-(��
-t}���g@��%� [C��hi��M�'���	)$�R�:m ���( ��Q/z ����J ?�S%� U@��_�U% 7���:�(�� o�������?��ŞD��}�������#� �{���� ,�� �rW�	��ǋ�x�X�a�D�K״
-J{-V��|����?_�|�� ��?���|7���Y�V���U�B�-��"����_/˷�?�g������y׻�c���fEJj���xE�֪���t+��/�H������ڟ�'?¯���	��.o�K�����~o�-�{}.�O�s�� ����J���w�?e�X
-��DOnvE}�l�O��\ޙ���?���x��z�փ��I>��}����O��Gwס��{�� rNxl?��ҧ�_�n|����<�Ax� �#�dӵM6��d��O��'�ӯc���	��k�_���I�|G�/$�^���(���I?wy� ]-�������N��L�,�Դ����"�{[���#��O�G$u�㰯S��
-hW��袊�N�J*:+@
-?�% G/z���_.:���t���h�bK�b� [5f�2�l#6�#����dx?����j�#�� <���{��� ���i~t6�A� <�{��ꡖ�qν*g��i�r?��b� 뤵��<� ���'AZ�?�r��>.�K<m⋇�A�����ks-x��?io��-���OI� ,�b�ON�<W��^9� ���n�G���Z��_4x�+Đl� ���_��x���i�}���� ���?
-?a�<���?�?�u��L9��>��?�b�O�k� �ΨG� c�.��Mv� �ʦ�O� �ԵHἿ��� ��̯{��#�����tߟ��TO�2��n�V<*��
-��C�o&���Vޗ� O��T�~�� ~��=?�	C��+���U���$����z?�� \�i��{�|?� O�%t�V�"�Z�/� �K4{�<��I#�� ]k��G��¸칧D�1����zo7�<I'�2�X��eO�f~±���� ࠚ=�h?���k]W�7���󿴓}~E�T�_�H|��2=���u������!kS�
-��w�O�k\�2�-?|���ꞩ�p�������.��I��d�?�|y���z�Qéx��I�yy��:^�gko�����������:�
-�l���� �d�&��>z�_��z���e|1�x�R��y,�I���/��ͅ�C�M������{
-�>��g��/�ڤ3]M��?�I^����P�A����dK�+|_�Ҽ�K���� xo�6� ˞?�t|#���s���jRf�.�����S���-�G���^�x�{��θ�~*�-Ǔ�'���Q��k��A�f��B'�t�_>)b� ��������������~ �D��c���e����3� ��P�J�.p>������ �|����A��?{�į��9d�|���i�_ꥨs�,�yg�����M���^G��[X�f���dS|��o�.�O��f�?�_��P���N9a�:d���^����Cu7�� =k����n�� ]�����$SS<�z�gu�%u��ֱ��_B8s�M�؁��Oơ��i��Ɨy��=�����e^K��*ZӒ�S����P�Y�+J�+?.�$Vt����抹������pK� -��N��uoI��U������!����kb�F��� ST�t���Ȭ��^l��>U�P��f�g�kJ_�T
-���2E�ټ#�yUk�W#� �y+�����O��I�x��?�e�J�>"Z��Ě������� ѕ�� �J�8� z�����#�D�r��iN��
-\���iS��M�	?�S�� T+3A?��ΛN� ������m	�� (��J?� 7�>��E����� �t ����ވ�ӫ0
-(��ހ$� �t�(� o��?��Ώ�i@���ǙNi)��ҳ����i)��� 6�� -)����P�:^��PNN��6��m /���~�_${PQ/z���Z ��m�v��$��w��h��(� zt�ih��?��I�� �t�+@�U	��h��(��ޝ@/���w�)ՠ��f���ԕ%fG��Eix/�Z��Xx'K��/�T���o� -$���7
-03�R�*>�g���� ���kU�縋�Ѽ��g�����W�^�� C�i�`��^��iv~���mopE��:�t��˥�ɯ��.��`!F乖:�?�37�>n�y�˲�ۋ�&?;ɮW��K� +�~����������<���e�孿��|�:O�(���4�?�~v��H���K���g����� Eg���������,#�� "I^9�c@׼/"M����� -d�� ����/��y��=��/�s�-M�CK�P���O�k^W�}R���5+����%�Z�� �gC���SP����ǝ)[��E-��'��R_�j�d���-��^~�M�#��χO��V?��$��T�� �r�g�C-��j&>��)ʛˮ����^���|Ǐ� "W��~�D��������`s�Ǔmx�|���򼪧%��� ,k���o�� ��a� ��W
-y��?�&���Z��Pm�2����#��}�?;�J�q�ȣy����.�%����� ���}�6�$�lz�-�ẳI����T�����[?�E*�eA�͍SK�_�+��'�a�kXk��^�X� ��mĿ�ƴ���mK��4�ɲ:~�u5��O�$~d���4^[�-�y�<�uO�C% _����K8���~���*���N��MĿ�� �rS4�f����<�}Y�"����O�ϒ[h��k 3n?�� ��YW�Cg6��Y�=��[.����?��O�_*D�Y���ꥦ\*O�V�	���ڣ����A���y��_�?�?��� �9?�����ת|(�:������ �C���Y�
-�F��?�:<���Z������:�� �� �m�-|TԾ	��i5
-�e������?�����q� ��XO�谘�^�$�3����C�x~o6����/�g����'���J�?|>�l|`��Zj%��_����Z�J�P��T��yfؚ�RYK/�|G�� ��.����j�=��!�� v��� �+��߇8;{Xmn?�l[����,?%f�}� ơ�_��������:<�`�I8��� �J�CEԾ��z��G�ld��"޽�;��~�-��_�u�?>C.����kE� ���?�I+�EC�|A.���;���k�g� <�X�����b����ƃ�O���$v�:y[<۟�9\��y)���+���=�NsX�7-N���-�w���[�A�Ɋ�=3�RyY�r�NTx��U3�,rp�f+���ի{�d�D?����km�$�����6͡�F=���!M�b&w����*��w�}�Q��� Ti�}��P��ij�D��5M��I�hf[�a�/�<���O��-��������KQ��K�亏� F��۷3]kh��qW�b�:�,}V�%#���Z����W�k�i�i7�I� -zn�k�%܃�)��yZ���D>x��]�}NGo��̨{C������c� ��N8H�H;j����v��U��y�ӊ��$�H������7��9vT�
-�3A4Y��UMw͖�� ��C͙�5�����E�ݧ%f_�Muu�,����u��_*�&'����]E��~I����-<�:Ri`��
-�a��}E/vJ�[3��d�&�iu�h� �+���&n�?7�,!�xl�K�c��q��~�|10�c����η����?��O��]o�4{]?�����<G%�嬖��������O28� �ߗ'���z��i���5�6z�|�.�9w��U��#A�K?i��{�Y ����d��� ,� y��W��/�ֱ�A��k�@��]����G%���z��~g��I� =?�G� M<ʹ�|/Լex����t�C�}�������9$���Y�����.�Jk�;i�;?������&I�)"��_K'���������ezG���x�>/|H����}9,�8�K]6?28,�� W��I<�/�� ���� e	� �T��o��=�>U�_f�O2�9$� W� L�����9�?�:h���������28��g�s�?��\5*rS:��g�[;].�F�tϲ�ql������ W� =#� �u�^(����Uq>��T�K�t�"�es� -$��y�C�
-bM�� �9y^T��?���7��_�Z��"��g��c?g��$� �ryrW�t�n���^xw�6�k�i2Yjv�츏�rW���MN��i%���i|�� �y�>-���vA�#S�� ����\���?�'���|��m�}Wc],gէ��	��U%9����W�g�DRd�����~4ʀ
-%�E�� ���
-m IG���.� N�?Z��� -+@N��3���- ��iG���P���Q� �?:�E 7�YӨ��3
-l�r��iL~�� >���?sͯ���C_>#�߭�_��t^�x�Q�M��oRԿ�������_���
-u��������+��i��k�>�������챎�_u����Ú�����ug�
-�	E��� ���q� ��s��(���� ��i�QI� ^��I� ���3��� ��?�ֿ|��޿M�~�z��/��>#j� ~���� �rW�������]��}�o��t�L��U>�>���(���̒�(�)%� [@	� -)�Q@
-� �t�*J ����IQ�ހ
-o���T� Tr���Jm �v���� �%#��h������@�?e=�~4� �����Pu'����P���c�M�O�� 
-<I�S�V�����K���H� 霑� ����G�����^��*�������?�������7���'�w��Kk�+�w���������k�����f���� �8k�	�� 
-!�<C�T|4з��ᥬ���m�5M�d�����g�s�+�=��  ���b.��yؚ��k�~#�������b��� ��7�� �W� ��_��'ûX����̿��49$� W� n�~����~x�Shڪ�&��m}�7~�~6��~:xc���i?�L�7��m���P���>,�� ���&3���g-:��O�.�W7��ׂ�>|'���φ��ڴiq�:\���9?土��9?w]%|�N�^I��QEv��"�L��Zeİ���f��������T�]^G�ӫ��Gŭ�:|��^G�_~؟�R}���:n��|�� �_6�s�
-	� ���:>��>��'��� Y_���2x��>�6��jO��YG���`2�O~��_���|��<m�P�/R�!��Z�/����T�F���=������J��&9�Z�4��f�,�a�G��k�G�<�i�K6v�_�$1C���� g��58|�6}��?*�/�'����j�ږ���'�� ,���u���+��~�s��M���w���ʮ,^:��(3~�� �K�6����^��� �^U}����U�O�,��G�?/��W�h
-�4�t�(S�ug\��K��a��Z�;�;�OٜĚ7��9o��4H��>4�?Òyr~����l���� �W�wŏۇ^��&�.�#��u��eΥ.y���3��K��|(�|����5x&�.&J�O�� l�y���+������y�o� ���L
-8өT�����o� �Cė����_�����Iu���?��zF��KjZ������?�a�)�:)�S���<%��w:m�0I��9k��9�߀�KH�����^��ϋ�k2<1M��U�~Ͽ�xZ��FԼ�V��W���I?�i7�)r���ST�����W1y�{�[��_�P�T��a�?_�'��<�n��˲����y� �9#� �u��y��\�)�3�����z����M�C'�����x_ͳ���f��?�^igyk'�k5u^��~��m�� =k�>��_�_xJ�?�$��z�^���GM��!�&IO��W��$�a����g�^Z�� e��z��p�Q���?�A��hi�ũo���T����y�%�K_
-�F��yf��O���/���W�>��yk�͚O�k]��-^E���'����]u������,�x�^���y����-t���4ؤHe��� �p�4�^>��w�k��I�-{E�{�
-�+��Үa��4� ��w�i�^#�>�ǚt�t��o��(k�
-�Cu4���N�ŨuH��&��ЩL��?��ryַ�+���g$7W��~"����w�G���Q�)�9)�����G�?�+�~�վ��/V�cG� �R� �O�g_����	��5\��ӯZ��� "�s�Ҟ��Uj���	�!v��G�?�g%y���}��_�����I���H��֦�����d6��� ��C
-��*�#��<e��&>�Cq�{?+�?+�(�>�y����� �^w�_����=������Ŀ�\y�w�W���=ԉ�W�7�����Z��Y_��+[��M����۟xh~<��A4�쮟��=տ��W���=J�D� L�?��]���KjQ[�2�_����{s���M7��e�:5[?/Ίh���h�K���?��ii� ����y���*���g�RKR?���m�_�k�������o����:��٥���� ��~Ơ{J'Б� �*�o�*�t�j���
-���>i��j-|y�ß���\d���?hO��@��?�"�� E�^o$_��³�{<T��2������� Z**��p�?_��%9:� ڒ��
-t�������J )��C��i�����	(�� �J?� MEGH�? ���>�~��g@��މ~��Ҁ�өe� UJ�
- m6>��o��Z I� L��� �Ⱦ�H�
-����ڒ��� ��қEIj )�E�����(�� �:u5:�� )�� ��Q@IQ��� T(�� �T�� 7���9�����YT���+@#�)��K@�:����$�֥���� أ��g������ -)������� ,�s��������g���T �KQ������?�� �W�#��Z���~�����w�� �q� �J�߃~���
-7��Qy�� ������� ��]}��a�Hb��O�e_��}�|x��ř����jd6qCu℆)�J�u@b�~+����׉Z��8�y��jO�{� ~8����Õ�ו�\����|��5O�G��7�m���W�{_�G�k7��<��i]&�����
-��qo���IS���*xF��}b�Rx����y�����A�-zX�G�&�����J����,sY��~����<9>�p�K����� ��T�@�$��� ��� �� <��g�}���r̛���ҟ'�����]r��^x#�)���� FV�i|D���������iry[?r��|@��CC�X�䴻�?3��x�*f�Oo,>_���q��g���Y���dO*�i���ߊU �u��Z������䮟�����7G�J��<��?�}�?hO7���ΨH��&���k4rC� <�+ź\�g����� ��h��-�� �/�7�d���nuH|�&Xi�E���� �4�Y>�Β�*礋X� �Y�����ݽ`�y���Γg�]
-��Kg�˿}c����yհ������?�\�������kq^|����%���?�|t����Z��f#�d�\~�4�t�^����5뫏&+�� �\��k]������������� �RyT�+�JY��M3�Sy��qM,뤠���,1q4�D� f�� ��O��YW��M���� ���[say6������絋+�t2y?��/���� =?�h=�E'�ܬZ��2����͜ry����Z[�� =#�[�f�_&��� �)�c����y���uO
-�%��7���1�� ��:��Y��k�jP�� Ǵ�R]E� \�?�?��w� 4��BmbX�s'�� ��r^ ��:]���>�%����O2?��'�C�O��>�	?h�(�, ���\��|���Ak���3X��%bz�8�y�뢛���\��&����Wd�_��+��P���M.'�!��Lν>s��<[4R?����� ]|���a�-�jV�qƗl�/�i]'�-o"��m/�����%� ��Ҹ
-b�X�|7s$��� �*��@��Υ?�eǆ4������ �U
-τ��xlt���L��&�?'���֕��MSLKKmE�O+�Y�]*5����I���Ҧ�?���� \������� ,�vZ~��X;�K�#����O��j���Q����w���S��U��R�9�^�Z� ����G�<1���l�����li���u�i^�hb����s����⎢x�N6F�0�lʳ���Z��yr��˫���A������_����;���� �?��U�i/ڵ�a���d[��⇿T���H絏��<�1������c�$3C��U�G��ao����x��(�Ҧ��D�K�Q�k��������p� �OM'��I#���θKX�7M.0k��!���?���D��̯:���n�>�� =.��05�÷3��h/m���BH_���V<��������hsE���ž�h63y�(� �r�G���3�P�N�:K�2k�ǂ_��]ek�4�Z{�+緗et�?�u���R��� �?�W��QIy
-� ��H����y��{:��:Җ���i�#�sm�H���\�1|������ַ���� r��o�7��P�U�����9cK[߲� ���$rI�'���E�r��x)�uNJOͬ����s����� ,� �����O���&���h0A}���Oڿwy�^�zu/��$�itx�nl��u�I�r�H�� ����T-��>&[jV�	���ϰ��X���H�?y�I'�D����^�����������&^�����f���;�y?��̏�g�� <��ms���u�cA�A��}sX�<�,%������'�'���
-?���/4��|'�u��_a�̏̒O�����֟���wY�䶼����O��*;����� W���� �����s��U�@��
-�_��>�o6���ɬkڅ��SW�/��\I��9$� �������>��C��c�����/�gM�����G�a��4�=������ y���� <뤷� ���C�W�R�?�Y��~/�Y�?�p�x�Xة�8f�dՃ�K
-֠�o���� FV {�ya��o?�ח~�>(�5�� ������O��%���� �rO^��Z�:��rE\�i.�� ��I��O>kx��� ^�g�q'���J��*~�R;���<}9��_£���,}(��7������ �Jm=�~4�{�8Ƨ_L��U%hE9��'_M� ���s��(X� �
-��L��IY�R'OƖ�?�B�Zl�����=ihJ*?8�ӣ�@��u6>���*:(�S㦩���_ź����×�� ��W����������L������5Hto��z��B�O��qu�5�Y~�⋙d?9����� ���^g��w?�'�ݪf����S^� �J�� ��������x/6�/�E�D�
-à� �5��`��T��/�� �����.8����y�J���� ������h��� �@���#�#� jW�g�� f=<����G� ,� 
-(� �TW˭�T*JD���֧8R?OƖ�� ,�@EPEP'Oƥ��~��2^�����( ?�RRG���(�� �IH�?Z (�� (������~��-7�Y�h��OƘ��
-(��YPEKހ,P��ug���b�/29#� ���_�� �s� ����/��i2G�����g�wo�����o'��˯��k����~
-�ߟ��?��_A��>�����K�� W�'�� =#�ܑ׫�㾩R���O��?��Ryٮ���6��w6WW��/�����s���7�5��?�3o��ғ��b���u-.?��$i��/�h�����B���G�'�_OzX�\�<��]3��� �w�+���o؏Ꮐ�-��o�D��d�_������I� $�i������ �m�Ǐ�~��u�� ��;�b��!�� ˽����\��ξ鯊�S�O>s����,������x�Ky���]`l`�X����KG��Y��.*��� ���Ba��f���?�~�_���� �R�ۆ��]�a�ysI����]~1|W����B�-Σx�K���견���<�\UfG��6���rmcX��G���;ޫ�� k������r�<��
-y���(w������ ��<y�Y�ڦ�������Yם~�����kŖ�ơ������I������� e��φ���o��y��>��,�%sW�_�������=57� �_����4�.t�(h��!��!��G޾.�J�=�����._�k����yWa$��y�ƍR��~h|��eE/�#C�#�
-��A^h�)
-�y���[�Mup�K7��W�_�V�I���ֳ<��k���W��X^y�����ױ��V֡��~-�I���G���橲o��ey_�?���?�rW�� �â��y�^&:�*v�_�o|3�l�%��w�Ȋ��SS3g��ܬMr+ϟʯ
-�*>s�'��ۏ&!�Wڿ�?�`��a��/3�o�Yb�#�I?�|C����Y�C�_�rW�/����i|a�h��� c��u�� �O/�y� �J�{/g���)�?�P�f�Dz'�/�O�h��e���������'�s�:���/6O&����4hmu�t��𼵎��� "G$u���GW8~����ѫ��\c���u	a���B;�'��e��������g��j��3|���W�y�y��嚺�@�\ۏP�Y8��4=z��D�[9yZV��e[g��k�P���f���]7Y���6��kY<�:�O
-��kI)f��v��g­6�7���C�Z���<�_1�� �U���7Q�2�[iz>�n�oN�'���O��Ho�H�� ��}z��SG\�>C�w�����מǬ��
-�<�|͕u!J�����S,~tU�I�o�zĿ���L���5�6�� }�W9���ꟼ� ]Vc�?w\e���ʿ�� M�0:��O�՘�J��?w�����{@U��W>�����rQ�0�%\�Y�� t��4z��6�W���{U�}S�gI�� M��j�y�󫞎� �����@�ꗐ����s���'�������Je���:��������T��Z��׏3Ԇ����W�o��¼���o�^��PZ� �X^�H�O�� +ŧ� Z������~����`F?�Q� -)�%|y�� ���l��� ���S��MN��:��J*8�QA�����)��қY�%7�ZR�[�I� -(ԉ�񥢀$��ڛN��� ��� ��/�N��l��N��)��ҀM�#�R'_�iM��� ,� ~��:��+@
-*:��:��YTt��i@
-�)�� �����Z ʒ�G���`2.�%"t�i� T�I@GRQZ��(����@
-�LI'���/z+P$��)L�?�B��:~5 >>�E�鴉��`?���TO��IDP<���<�R^ֵ�����n��F�� 	��xWJ�H巂�MJYI?姗���� "W���њ��|��B�K��_���&�/���� ~��� ��C~	�Zm�>]Ω����t���������ag�?'�g������S'�Fg�Y��fs��|���Gp�Ǆ�(���>�i^��y�������������<�j^0�K7�5+yuc� ,.?�u���Z���Q��x�Xt��El�ėM���"O���W��� ������/ߓ�o�WX��� }�{\�:��G�Ӭx��h��细��i�w��ҽSC�񅮜��Gu
-_������K���*��� �\~��yo��MsK��#6�M��w�M`�K��2�4:�@���� �J�ω�Ώ�7���{��)�z��/ڬ� ����������+C3������M�o� ���[�� ���V~j��z��o����,����%͟�����_�Χ�^U��4�~e��->_�sX>�!�KK?:M�o���->Y��O�� ���`V�D^Tl�ʷǙ�E���?���O��W+o��q�9��(�[��Rh���?�ly�]G\~�/�n?u5t�z���M*�3͂)>�4�$�� ���Y�n���	<�;̇�zU�B/6??����?c}6� g�?�T@}B��_���Y� �Z͸C�vl�+ȅ�o����K�ۧܮ�0u��(cy��cX���?:)�:�5b�λ�ޱ/ma��ֆgq~mw�_�ʟo(��4�sX�M���d��&J聙4�Y��ZU�;� ��?���U�s�:Xj���
-��u�P�kבG���+�ZUi/ᗛ���� M�����ʱ�
-R������_�#�I�{i<���r�:礗ɷ�χ�Y\�]��;?�&)�����o��h������?w'��� ����\:���|�w�qo�?��^K���_
-����ǜ��_�O�{�����Y���~���_����_���N��ƞ
-�F��2F�Ŭ�R� Ӽ�G�����ו������W������%q:���W�k��n�K�'g������\��#ɖ���O�f�a��\��2����}u��]冹�R/�y�Mfvf�k5�o	�$K��X�.���yl$I����o��'����uXe��u
-�� �� �]�ۇ��6rW�R�|��g��<R�������(��!���� ���R��H�$��̵� ���9�X��H��E�W����1�Gg�|�|&'��{?��/��Ɠ�:�*�� ������+��
-|N�'��"��'��E^��� �?j�țR��o�C�<^O�=,&a�� ��'�4x���'� "�>���e���Ҧ����o������gOH|9���<����L�.���7����̟���u�{:��c�њ���
-�a�-�J絏	Cņ�ug���v�J����MQ��=���� ��<i�/�M
-,�a����� �rS�����Dr�v��C/���&�<���wk����-oi�jioykg�v�� �����~!�n/��w��c����O��T��#�>*kڗ����r�4�|<Ѭ�t��2'��g��U	a��
-�����Ԓ�:��i����h�l�|�K�y��T����5����\�9_XX��,������Ψ�sJ��^�H�2o�t0��3Zg|1�����Yך���y�a2}�9w� �J�~��X���yΛK�/d:�2F�� '���񇌵/�D����K��������A��K^������}'�!��w���KĚ��]7Q�����ou'�o���8��䟻��AS|�3�_�|�|�7���ǖzoĻ=b
-S?e�N�k�]ĒG�� �q��O��:���M�=b��M���bx�D���y����q�� �I$�#�����6���~�x�<9�{�Ú�_<z����$rӵ����?�iW�?�߉��R� D�o5I~�⋙mcI<?�I$v��G%���� �r�?��ZN�?�yu)�i�C�n��/�������~�����~��G��3˸�O�i�s����}�4�~-�6�Ú�?�څ���ޗ��#��<�� w� =$�����~,h:��_�z��� ��zU���\�V�n�k$���y��?�I�����$���[�Ag���vv��/>�n������ 2��z�:�������R�:O�Ͼ0� �_J�|[g�C���p�$��ZI~\������o��p��:n�f���O3����� ��eex/�Z������Sç�#��,����du�
-�xoF����i�� �^W��+�ڐz-Ǌ4�t;o�<�$_��)++O��[�;�z��$�}��^� +ec�l� ��r�n�4Q���M�̮JK���o��]&�
-���&� �[?��rVr������|��F���� uZ^$�̊���c����9?姙'�\��K�d� o��-m��_*�a�?{�H�5�U�*������g���H�~��=���~�,����O����_���I~�}�r�^���`����� �{��G��H���i_?I�W�\[�}C3�a���د�`a2(��T�H�*: )��Σ��:���҇��Siߞ��G�S��Qԑv���TQ@R'OƖ�:~4� ?}�KRS�31���ii��A�?OƖ�(3<�
-O�ͣ~���?��,p�O���:�B���4��z��o��^:_춚o��k;� �ݽ��R�mO�u$��%�5e�T�y����?��P?�J�Q� ��¡��Z�Qv>�7����k�o��!����<�y�~��|���gu��|�f��a����B���/�i'�_�ŝ�6�}�!�[��W��� `��ݦ[� �t�|�N�����;I*:*J�̎�����(�� �J?�:� D�����:��U2��?Z ��Z�ӧ�Dq
-��@�u%G@y'ޣ�� IQ�ӧ�L��YSӧ�L��I@Q@�ފ{��ih:"�E QE5�� �%�L��U>^���Z�u��٤��E���H���O���_��S��"���;|Z����|�b���>/���k����i?����?���?���M���������9ḊH.��b�����9+�����fEJ~��?
-?���������cU��[;H?�`X[���%� �}Ǚ�}�O�gq� �<��ΓΊW�_�_Ϗ���	��:� h���M6o�U�3�{����d� �$��O�g��?�g� \������ ;�� l?���
-��������� ��� ���iq��� ��ݚPu?�a�S��NC��F�[w��e_-~��f����ח�W�_�{g�OY�_C�if� W~)�X?lɵ�B���.���]��U���[�ש��'~ڟ�>���%��R�Hc��������.���y��桯����W��*F5�� ���g⷏,�{[7x|���k��t˽SQ���1�dZ�[� �O�Ű�gg�k:o�4�<�dU�/OK��=iP���	�� ���o��T�ʾ�����f���X?�g��8a���]o���]z����N��L���(��j���Ck���>4����y��:p�P����
-���+�/ړ�ó���M��M��_������;
-KbW¿>7�(����%{0���dN���Rx��0�����Y?{\�ÿ��k׉����g����n��l?%}E��~��[������c}��L��P�s1��Ѽ/f�]Y&����/�����<-�c����Mn�v�� �� [^\0�j{�;�^�3��o+�����u�����	j^�O6�4����_^�-�y�|���j�9'S�|��^iw��\;&��}}���i�����T�Z\E�]G� M+�>�G�t�&�z��z����q�4������*���Ι�9���Øu����Ϟ�K��Q�����E����?�i_
-뚄7Q��_rH��~�:?��$�sM��U�o�5K;
-R�|�d�|Q�8� �mN�I��Ώo���R_�mYW��R�ά�o溒���P��Oٜ�*G��j��B8�y���y�⑑r�_�b�G)���1�P��w��Dw^W������ʭ�][w��7��e��m��������D���玾i���~7�)�z�-s㞱-�� ��DJ见�PʥzT���
-�i�޿��|��|XѴ}R��,&��3�ϯ
-�ў*��x�)+��� ��,���� �X���s�+�C�����O'�*�z��%P�_�~�/�iN���j&�w_�� ]Vm�� uX�r�5r9MPq������ �� �����(�P�����W-�I���� �:�����������C� �&|�o�ήz;��� �6� �~��T�ߏ�s���U�{� �mY���M� L�z��8��� ����@�����R���TO���N��2f����<����K��^��"W�����k��"��^���u_=�E�������!Ɏ>�����A� ,�H���Η�U|Ϣ�zu�E��g@
-�"�E�W�����A������G(���(�N��?����Q@
-� �_�S����ր?�>Ԕ��gM�?_£� �t�:?�f���ވ��� :��
-?�	��ӟ��M�?� Tt��i@��� ,��v��J%�E IQ��#ڒ������L��%GE QE�ʴ � �TKޤ�� � � [RTtV��֤��|��Y���<���.��* _8{S�� SL��_® M�� =�^�'�4�������/�{� ��� !���^��x_��(�>!]C��>/��� �I?y'�ӯw�2���yٮ+�	������faؑ��U�.���?�S�_�H�C� �h�%�O&��i�d�?�R�Ғ��Q���g�^?���<�DԼ/4c���<����� =+�<�?7_���o����+���k
-��e�}iL�c�� �[=R���#�J�>O�g� �?眕������LS$p�� ���</6��n��kϒX�� �|y�O�����Ry�%�a�K� .� ��z�p�t�v~"�M�� ]��2�MB�c�G�p
-�e�'���>���/�u�j)���K;� �%dhV��V�~z�/��ZȓK������]Y���7��ט�\�e���Xؠ q:}� �/-�?��ko�G��4�z/�$^D��ι�/ɖ���8롼����n������� ��MCB����'�y�	��^u���ky�y��hz�2Ɨ��TU'�cx�8�E\��k�b(k���~����Mp���}����Z�}�� �U�GC����.��CU��ގI����H� ��=����h���*�>M�i�E� B�\�~�
-[�� �[�>O�T��,i7�� �dv�Z�����T�E=�����W��]H���T��ʏ	��+�:�7�i��oP�k��>s�S31��_+�X���qk��ފ��-f�y��6��"� ��V�3!����,�%Cy�����(������T2��6��Z��b�h��ma�X�]^y���+��<�['�zV%�P� �� �u��e��{� ���� ��~;�O�󢼬�)f�ެ�����Q΀ގ+=gOK=f�'H��E� -+��_ß�M=0��67��_��o����e_�Y�/�U�?�� ��*߲��O��>f�:_�u-2Y��%���� �ryq�� �$�:�ƍ~�� <���������B�����/���\�G�{x��ˎ�iX:��\\�͜�\������(�:��`k����B�o-��{P���j��Ȭ� ���� mk��,/1B�Y�3اP�/-yT��� b��jV�� �Z� ��]cY�� �3ߪ=��������)����1M� �:�O]^}�����M�� YԢD�_���uE�zԴ�ş<7�-� j��s� ="� ��� �xbO�X�/:�*�KC��n��if�}V��a�n^�'���|���Ӈ�b��5��k�'�_���	���+���"�q�����.]� �Ҵ��k�/�.{kyu,�_�#� �u��s�h�v�y>[�]��}Z�V�ǅ��$��G� ��Ulk��p�$�o�_�E� =+?��q��|��/��Q�Z�u�����i�]�����4���kX�k���#R���J�m{K��8d� ��i�����c�*���(cw���� �� ��:E� �|w�]/Ğ!��A��+�#�����4� ��T?<ql��|=^C8{\E.c�F��h1�2i���E����UmB��Z��t��(��U{����gY�a�l,�������y?�}�O�	�����3j�Ö~��K���� ��$��xꝎ�u*ρ��3���m#E����K��G��J�����Ǘ�\>#���I�5�[� ��e�$����� ������~��v�5�����$[%��_�� �q� �:���tۯ���� ]+��o������>6�G� ��M�P��~�{���Q������$q� �O/̏�Y��:��Y|7mgu�8��9vǭ��'���i�47���3�_��m/�3��O]�B�������o��H��� �L�:�$����w��SN��)X'Kȿ����ߙ'��y���J����>���OA��#�Id�le��^�o��V����k�s��/��Ɵ,�R%��<�<�$_�ҹ��Z��_������A🇾	�#G٪��ź|R�����oq�ğ��ȏ��W�x��t�A�%�R{��� ����� �:���_�?᤿m�� ]k�wm���}.�_�s���>������'�t��/.a�|�}g�*�L���vz^��}�4H� �ih�Y�ȟܨ|�e���~�T�f?&��Y���1��~z��yy���� 6�����%?����V|�i|D��/�����Xҹ��?�<��� ͸���u[K��	4U����O*��7�]'�MS�� E���ƑW%�?&[��[�� -c�<�f��i�i6Y� �� ��g�!���;X���yk"E�� �;����� #��6���[4���� �R� �9?�}��Y���m_�i������焿�����]�.��,?���$� Ȟe~i��a�����%����{� ��)�����ژ�
-�����QM�� v�TtP������iR�:�ԏ���d�R'_´3� Mh���	)��Λ� -i��� Zo���QY��?Z(��I%�Tu�� �m��|�ޏK��Ǘ����� �W������_�_�]=c�Ӽ'�y��!�+��I'� �͍>/��_ԾP�\+M�?����7�
-���Ƙ�->��>�F?��>���c�O�� ���� �����]�a��P����,_������9���ܼ�� n��O�"� ��� ࠟ	t�+��G&�� ����N:���|vyR��@����e�G�h��v��$�~��-�f��񥢀�~4��Ε�~4�IM� �t� (�~��2^�'�}�:?�G@Sӧ�L�.�%Tr�� {��ij:+0$��J��
-����YPӧ�I� ,�%hr���{�$U�����( ��GV*��PE����ZSh� )����Y����?����������>�c���.�m���g��?��� W$rW��o�_�� �����&��Ϥ����z���Oc�����X^G� =#�?��� �H��a~��|�� r���~� ��~#���hK�x��������� N��O��^�[�����*S���|����+o��h�قoy�i^-��|������?���w��~1|AԾ ���^�&�Ē��y��G�����º���:��,�W��g����H듕��;��a0��`x�����H�Tu���^�-�}>2k�vE]�'���xԾ-|L�ԥ�|�;yu���i_�߲7�7�~��+=�U�o�_�P��~����}��*�A����P� ����1~ү$oC��4��򭼘����Ca�4�6�
-�~t�����7�Z=���l��� ���S��U;C���7�Z|�鑧�� Mk��������.&��R�?�x� ����l\�7�g��ͯ����X��}B�篢���c:���=��G�k�f�溽�+�ѭo|Q���t=jo�$"o���'�� ���I����O�;a!��:�~�+�k;X~y>J����쵬k�v�+'��W%����x�X��.��O7�_���oٗ�[�4�C>�g���Z�K��ؿd� ~wꟳƥ�x��j�H��궟�{8�� ���� w_����ߦͧ��kg����~~����^3��w�Ȟ\�<_�λV�_X�R��s�}bO�_��%f���A��4� �-i,n�u�x�Y�+4�W����O�� �� ����:�g�A�?&Y��7���k��B�Zg��8�o����>��U������cT��
-ճ��[�Ӟ4���˧��̓�$_���e|g���F�C��/������}�YХP�hex������o.�[����y�����t�~��j����ΆJ�ou� ,j����Q�Q��o��/�%P��Y��2�wC�L�5���L�C��U����44�� {�Y�3�o����YV��/���T����ɠ�~2�:�^,��e�?w-q�X^\�_L�d�g�=C�J��W+�� ��Ep�j��U���j�=�S�|/����ʆJ�τ��F)w/߭��?�th��?=u�z|6�f����i�t�{3cO��ƕ�G��?��*h���q\e��T��~���������|����������ڿx���w_�����������4wu��~������ �c����J|wY���� �6�1����us�_� �J�;��m@�_��Ω����;� ����K�����~�o�(�������W�3�7����_�?霱��D��5�����&Z���z�'�}w���^T�N>J�������}�O�E/�iN��>�%~sP��:������X�
-�'_NN�� :�"�RVf�t�Z�� (����?�B��� ,�0$��:�( ��yL��}����)���:��mQY�Sc�N�'_´���gN��YPj����0O�����^�;�Y�i���P��� ,�� QG�2�� %���3� ��
-(��Zր%GD]�J��YT�q����o�W݀Q� Mh�^��?�Q� ,���ғ�� �ݩ(� �
-mS��_e���_�g����w�o�!�}6����}�� ��\~�`�g����4O�����F�_���$� �q�_j����/����ռ7�~<I�|[���(���y���M3\�������Ο��o'�_���u&[ǆXw��o�֏��WK�m/�w���*��"�d6�J����E53T� J�&��k�<Y�\��Z�� g����փ�{y�}gȑ.>Ic���eC�.n��ޒE^{���|>�:������������=S�_�u��6>��Y?��O�I�� �?�gL��G�|_�-�-��n�����
-� ¾7��-a��E��J�|��GƗ>+�?k��� ���� =?��Ҳ4=�;�hi��v?���=�Y�WO���?�K�S~�H����?��\e�����d�� =jj?�
-A��V����=oA��I��� m?wL��6��x?��T�'u�x�h���K�� FGT7וx�r����W�g,����(m|Q4?�����^U�7�}�� ��=C��O�C(�t;� �ۧ�4�:�^l�α�hebc���Vt�g�!��GU�����jh�q'�T�����"��yU
-:/&?;��� �\�9�!���YWM���] lG�M'��� �!������L�~:���ʏ�����:�N��J��,`��Uj���՛yky/��T��cT���!�?c�7��o���,/%�"�{T������~��kc36�(q��{C��F�T�=\�K?��h� �P���)�d�d���ń�U��E�X����t:����*�A�[�����`P�>_��IP�k7��������2KY��7ά�.&�� ]T��7����(�.�����Vl�S|�T���t�τ�|U��ѵ��u���Z5����?真��J�h?��[x�T����X�+o��o������G%}o4�_��2�^������j�)�:�W�L�/�|=�m��P��t�V�H�yonu��I'�3��y֮����wY���u��V7�e٥�麤�\G'���#�� �u��#��o��y�S��'����9+�xKX�����<�q����Y�� �+���?���T��^h��Y��� O��?�\yj�4�f;�����G=����}/ᥝ׊.l� �aI�ԉas{��2y-����$~g��.�~�������Ň�.�$���e�cĚ��4k�b�����ԕ�� xwSl����?�uD���Ƈ�Y��e����d�����xoX���K�c��I�� [�Z�]y����I�Y��_�o�y_��+�+��?≼o�{mz���o+e�^o���� �GY�����]C��� ��a�\}��Ὅ������Dq� ���l����K�R�5?��R<V���9$����X��kiq��� ��_����o��I�Z=��,_�7�i�Z�ÞԵ赍6��;
-��f��O3� !�o���_�<��O����R��G� =?�%j��o�>t��Z����Ǉ?�����w��_�G\�*T�i�Ž�7_��	*�ń�f�7�^����?qkm�丒I<��� ȕ�g��:��΃I.� �id� �u�x?��X^[M�����u�d��y���?��W���> �W��j��y�}בumm~\�y��� ����J�}/ᦛ�+�a�>�������������q��_�?`� ��_	��o���wz����_�Gk�I.#���~���WC�)�7�'�+}h� ���Y��� jWt᯸x�^���|%�z�� ~����>��\|��E�{�I$� ��_�+{��⨴t�&���F���_#�J�+���?����7�?�/�9s�x�x~�^f�$�]sz���h���KX���� �� 2�^��S
-P�+��*���é7�Q�'��nuK��͟�b�T�5(����� ��:�����E�?��?����SR��?��_2�m� ��<ǆ��^&�� �V���ӥ9��&\�SO� ���oA�O�OZ$?��T�� ��g�� �*��f7�K��䷊?7�7K�#���� �3��"^X|f�ݯ�.���R?/� E������Y쿵Ę����^�o� ��?�H�0Fǅ� �0��0���lt�%�u�Ko��� ��8� yS|X��� g�~���^=��I��#T�ѭ��q�/#���8��� �I'���=�� �7t	j�:���H|CK��-����2H� �� �:��?�%ׅmc�|[��Q�͍���{;Y�<���?�$� �~]�\�L1[�	�������ēL��Vz\W2K� >q��y��:��ɋ�S�����sA����+�-7O��-lm���q��,��� <� �����!�g� ~I� �U���Q��� �8���o���j���������Y)�sz���o3C��m�?���j�d��ή���O���f� n�{��⋯�x����o�Vž��l�(|��oÒ� l��k�;��%�]�����D���˞�Ұ�I����Z��%�3x����?�u[ƚ��Π��������U3P��Nhn�� ���t����P�����{\����+Ğ��P����uԟ��?���]��,ֻ8�� =|ڡ�PX�Q�;�������o{� l�ϳ�� �璾���[��������O����?__��4�c�a�v�QE@�?OƇ�����޴3:~4���:� (�� �J�:� �)����REڛ� -)��ր�?��L�( ���~4���^�KޚՁ�� �׾��oG�����6�� $��� jW�w�{���_]�����+17�gkg�I�� Ž|��{��[�U?���G�KS�f��� \>����?�M� �߅M����
-�����?�
-������z���4�������_��}~,��������o�?���H����P�� �rW�U��5���� ۏw��OQ�ON��p���-7�YӫC0��(��ҝE R?OƖ��~4 �{�D�� k��)����Sh �'_R�* (��5��� �^��� ֊}G@IEG@QE�QZ R�#ڒ��.��Z(?�@���'��@	EV�QE W�.���y���������O�z���<��E� ]+��-�Ú�y������,�I?�|K7���D��_��Z��L/�1<�W���|f�� �!�^*���.I�?�\}I$�d�j1_b|�J�ҡ$]��� �&��+ϊ�-���=��r����W��1C%�	e�W�O��Z�Þ�u��8��"���zW>�����N�O�e�6~
-�1Y"yqW��]Cao�y�CC���tt�/�ˊ���G��?�sM-����Ox����v��-.i��D���O�s�қT�N�a�|����e\��?m)��.t}/R�?�e|C�_�2�R�&y<��)���� 5�O��ڕ��c�-y��Z��Ǔ%{����e�
-Y��XuK�� C��>d�R9k�>�P���<�j��0��g�����_��u[k8��ď�my_���2I-�����W����Y�����]7�� L����f+�L�:X/!������5���.O�U���l����
-�P� �Qx/��o��������jK��%�����6׫��~g�T����T�wZ|�wq$��_����?���x��o��|U�����2*/�� ���zWݟ�MKFҦ��� ����� =+�� �ty|i�Z�_�r������
-�}�<�IS�~wY�}�%��ͺ��o���/���|d��9��`H��Y\�_I����d��X���J�.?�-����� ���g�x��/�&�&I��������:*{*� ���S߁��h���U��ɬ��bO�� ������/��o\C��|�ʹ���ė�M� =+εO�:���}��ZrR�\�k�O�o��������[����M_��*����u��;��Ԭ$Hn��+�x�`�n}%K������4R8ẛg�]���7T�&��$�+�p�L�����#�P��SGޠ�h;��;�:|r��� ڼ���5O��m��'���=�fhY�%��O��TⰆ)<�
-'ڇ��#��4�.�7��j��S�����7�~M3���3�� �j: ��4]��r�SGu�� �o/�1�����ڼ����ˠ
-(�wG�����P�}�M��.I(���~��ޙ���g�
-Y%��Mo�VlwTGu�� ؎�ʓ�$�����c���hb4�{��'��P����צAަ�� [�T1v�.gd|Y���_���J�_Y� ��� �����^m��� �H��OE�\<?��̯�xҟ�3�xv��2���KE7�Y��u�$� ����ZT�g�bh:��
-m T�v�� )�� ���kE II���Zg�=�?�IM� �t�7�J�	��N����t� �gA��)��ʝZ ��}i(�'_MO�N����fd����z#�Z ꒣���(����Sh����%/��)�����uR����*J����_E7�Y��{J� �����W��t��gM� (��:mh�S_��N�.�Kފ��O���:s�(�}�2Iy@���=��o�)�����vv�:~4��kG�1��� �[����=��'�o�ώ5_]C��.��V���O�I� �����_C���(W�'�Z�Ҧ�.mR)5��x���ˮ�X�O߯����d���.���:ek;�|�;�� YU��D��7���o/����u�� Ķ/���� {Y�]y���b<u�G�ex�ɺ�4TY�n�����uZ��T;����a�?��A����^Bܮ?�g���4�Ԣ���mz_�4��ټְ� �*��-~ե���ϒ�C�g�^iw��k3y�g� U/�3�E�dSZI��S�>�x�k� ��>�����?�z׆��u�<ٓ}9�H��OK�O|/�4��_��"O����� i�]�_��?
-��Y� f�����m��䷮��xs\I���Z��
-�> �I��[��� �o�G� -#�U�Ľ3Y�$�lS�H�O6�ir�^8�}�I��:�}+?��Z��o�,_��O��]��.��y�����u"�9+@��B�yT<�3�?�Үx�_6I�������Mu"����=g�Q� fK����d�#�����K�<�u9a�mq]�r�,^uEsH�%�n?��W<�6�&�=P�>l����U�;��7�� l��na�P{�f� WC�Y��ϟ���o,D���)�������j*4������o%�O7��1� ������"��w��)�Z�Y�� U���dz��g�u
-My5���&��|�-���c3J�T����[+��,0ۼ"o���i��!� Y�4wP�o��Ӑ�ͼ���YU;�����|��6���h?������̬�Z����W#�o1���iE��t�� MkC3���in͚�"��lG������j��"+��~�W? :��g�~�e^Z��WUyk����J��-|�� ��N��`�l���6���M������H���J���d�e2VF�'�t�?3�S|��k���Yͧk>[�I� ,���&�
-ԏ4S|���Z���oܬjt�X��Ɵ�犼�okj����>#�+��4WY����9b��|�9c$��W1�O��|y#ì�Vy?�QyrW/!���9�n����:��$�
-����Z��%m�㕧��G�S�{/�|�_��J��O�'��z�ΰ׵�O�eי�D��?��_����OU���Z��Q�NmT��J�:��_�<+�?�hڜy���ͩ������įW�G�g�&|%�}Ϗ%���g� �f׮��?���� ���^��M�m� ,���ˮJ�T�ѡ��_�,��Z�����;��m�T:ͬ:����H�~/*�xO��*����
-�jW2������?g�W�RT���M.��� �_U��� !��D?<y�
-���7���ğ�N�Z���ω��͛�jVwRAums� ,��rG^��?�i��C��o?�#��!?fpb�ԩK�����%�I��|2��?�u�g�Y�'1����^KAנ�'��֔z��;�>x� �v½)�_	W���]Auf���+��o��Nʚ]gR��?}X��l���t��3���㺆_��ȿ��Um>/&?&Y���j�����&_�P�[?�[t�έ-?�Q'�� �V?���8�[8��:�3,ɟ�� �� �T[�7�P��%�ɨt��^<>u.C2oJ~���\�Ǔ�|���-��?�� =+���/�s�ZS4:x����7�%4��/��ʛ縖4�t����H|���|P��-?J�b� ���� ?��&c�K�F��Igu�	�K��ˋg���VI|�+{P���Y� �ĵ��g���>g�߮�P�f����?*���C���7���|i�~�_`�{�h�� WU������}��	4��\��ڹ�1j3]� ���G���W=��T���&�� ]�����^_��y�O����,�F.�E]��,�[�=W��_��X��,�� �~d�?�%yw�|?�ͯT�lHn����YW&����iJ����|gg�ϳ�7��1�$Q� �9#� YO��u�<9� ��h�Nļ��Ե� ���~�O���뒒j�r�p�S�ԁ����0��:���_���H���QA��� �>>�
-I�z������N��h�����}�3�����O��	*Jb��i�P/z(��YP� -h�w� ע��,�
-iJ���?���?kObl�z��E� l� w� ���qMz����� �G�F��S#����� .$�+���+� ��2z��?�g�3J�r}��՝�?EW_�jׇ��oS��׷��O�O�6_��}���e�緰���� ��^I'����Yl���~l� ��~���c��� ~MSǖ��K� ^�q�� ������W�f��c�}��|��-W!S
-)��Ε�~5���QE QM� �t �Jk� ��*J��
-��� ��h����S���M��(��l�r�@��Ө ��'ju QN~�� :�/��J( ��zu IEGK��� }5��?_@7���S� I� -*˯*���޹_�(�A���y��ʅ����(��g�����{���x����t������kω5/]]��K�<����)�R� l�M��K�������ўO:\W��_��/_�R�_�i����$1��O,ге#�� l
-:G��vKs�~�9+���7��'K����~:kZ?��_���_.?3�Y��� �9?�c� �)�b�x��[�� <�a�Z��,�b� Y�W��P/�'Gď�''�u=.�mc���.�� �__x�w� <�#� ȟ�+��T�c�ǧCW����������Z\��o-��]~k~��G���KԿؗ���� ���B����W�3R��� O��4�~�]�Io� <�� ��� �O�i_4�@���^]L�O�^6�,=>y��6)����}q�+���� ,�Ϳ�kCgk�}(�ΖO&*���tl�f�/��>�>�dI���Kៃ'��O�� ���~�=�|�b��]rV��^H��t��N���y��O�?��_���O�	i�/����[I-|+�-�� G�a���寽������� W
-{�!��r@�1���T�jy��|���k�۹d�o.�|��J������W�f��q_<�\����s�Km3T�� C��"��y�^�I���<�4���/�2� C��ݼ��|��v� ��˯|4��.o4�Jt��/>��)vI'�3��>0���w��1^���R� �:��� ��|K� �������Ϛ��H���*���agK�9]/��ע�������� U�[|��J�/�#ǰ��K� E�|�]�W
-���9W=%��� ���i��p����B;�~�/4k9c�e�����$P��V�������7�Ŀ	f�G����q�*�f� �5>ޭ6g�|�q��h߾�W�?�CĚ
-�A4�W��x_M���Mr�$�Ugu�ʆ��Ԫ|a�j�/����j�W�xo⎃�ƃ�ﯚu_������eCg/��9'��+9�iT���3�{�;�� u5�Ty���7��^��H.�z�4� �������,�i�ӝ3֮.���T?�k���0h�� �g��?�Z5�����t�P���񖥪6z���������
-dX;䩼��L�ϛEf��Έ��2/;̧�ހ�O��٢/�TE����_��
- $� ��Qn<�))��h�K��U���O�o+� ����2IG���IE2Iy@b��O�O�ت��)��� �T}%�{�㚨G(� ]�T��%���?f��Cj�桯8�;�Y��?-M��/�r;�?�e}>�?�����|q�C� OR=|'��a�3�	�r���H�?��L� �U�S�� �,�����	)����A�$]�� ����iN����(�����QG������ze��g@�*:o���Г�Y���KQ�fM�r�Qӿ���'����?_8��f$�?���� �JT�����N���΀&��N��KA��~�:�� ,���� ��GޝE ���Sh��)|�qIEfN� ���n��m@���{Sk@$�'_£� �tIڀK���J+@� ,�G��Trv�I� ]����)���\b�����ٙ��
-O7�Q$��'j`?��6��^x��o��?x���v?��O���̪��z_�o�y�Q��b_���݄�R� �I?w�C�+�Ȱ__�)�9q�����ϭ�����l�!�8c��(��P�l��J��F+8a�9%�{������H�{�ʼ�;�f�9���Gb^]~��S|�֭����KX:���oy�&��k]G1淚����$�`��h����z�ڶCk
-I������5�
-
-]��4�)j��,�c�� Y\���Q��~�o/̮��:��M����L�󯋚]����}�4�� ��W�o�������%��Ėj�6�g�^9�R^0{?;䒴���� �������X>��4ma<�ϓͫ�'�>�C,��ʙ�i~U��"_�H����7�+OM�F��%��^~�e������^���� �F��u#��׼��4�x>m6���/�R�H����w�_�=��4x�/�i���� �+0=_X�Ky45g�q�$&��%�/&��̭����p��i.���ƞO�#�� ~:f��y�Z]��K����;�؊�|7/���� ,��ĳK'�깧�My� Y� L��_�� 㕥��yRVf���� 6_�M�ty�K��T2ip����̧ɣjqF� ��fyQ�1�^Kw�^]>�Y�O�� /�YV��]^<�ÿ��Rn�����B����6�s�<�ҩ���G�ܭ�C�CT.|��Lu�%��if�+P��xV�3{��Q �ٲ��.��+�ZU	/��|�:�jM���Ҵ��d�b�����o��L���e+�S���x|�����Z��o촚�G�y�4�Vܖ�m�b�����k0)���� u�#���_��k��#�?f��CMykwk��1y{�Pѡ�7�cT���'��l������� L�b�o�$>v� 2���4�3��-f�?�Xw��2�oŖ�]������o��z.�a
-��t_�zVW�-l������ʯ_�{��s�]s�M�.?���׵�2����4i~�I�� ��u⇃l����I�ו��)���ΏJ��C�<Q�s���7�����e���<��gx��>(�T���$�(�U�ߙ,~U���?�gusT��o���'��*�~�[R��^�����?�k/�����T0�l9��Z��i���_c��x��7�q�� =?�%p�^o��� �Ik��s�����X|����Λ�w�\�����V�7�6D���<r��K_�����>��}�&�����4^_�%|[�A���-���+��J�n�A�m� c��+�x���#�� �*��)�/��+F�w�� �85��s�#�ˎO��$q� ����>���G�He�}���Z�M���?
-�F�~�����<wzV�k�_�_���G���ٻ��צ����� �5+g���� ��ZV��l�2|r��}��3韄�4x��
-c�]�\�� ��c����fT�U��� <���~-״�����`�w�R�d?l�����yח3z�C�� �P�$�/� ����<�뼏T�����6I� <��?�Z�Ԏ�kY���/�� ��G_I�'񕞳��S�� >]ua+���67��s���h��_�~w����UeG�}��� ��]j�a�ɯX�ُ����n�C���4�"k��U��}SP�KQ��3�Z]C-��y,2�� s�uZ;��2��&�������뛒Xf� UZZ��<"o����Y<�7�����Ӽ�cHb�����o�,������� $�� �֮�/�q�}��u�� �O_�E�w[?����3&�� ��ɭ�R_�XY�'�$����� �_j��^<���[�@_<o��������2~��?��%c��_�Ѿ��M�\������;��o�?�n�� F�]��r���a�����:�/���Bi��U�}��O�����\�����5�s�*ގXn��?�u5
-	�=���?��Wao(��<�����<_�/�e�;� 6��� �u�{�nh>V��_�P� �Ǚ��K� �-� ��x��r�Z������7����;[=�:\_ږ��̷����?>?�i_(��C5�Mܒ-�W�}���e�������c�����E�������DS_��G���� �
-u5:��`��iM��� �M� �t�t}�'�ө��cD}��� ���G�S�ihJ?�SS��M�	)�]Ck��/܏疒��*k?�?
-�O��ϱ�sP�����%t�y��2*� ��� u���j:��~K�?�ҹ�������j�E�����?�efj�W�~�zq�G��2|���*'���	E��0� �Z�� ��k�/�Bi���l�#�	� �~�/�� �R�~}sǺ���t���o� �+�� U��˟�G?�	� �6�����4�����P����O�_�~}�� {���?�%�RTt��iY����o��� u7�YӨ��G����?OƙD��^���iC��)��
-��:�'jc��k0�*:������>���: ��zt}���$��ޙ�zZ t_~�;S�)% � 3ډ;Si$�P �?Z(�y��ꎒ9Ef��N��N��hԕ ��P<���_����7����KR�����)+蟉(�A��Y��o�;�W�u$�4�K�� [���r�/��$W���~~�� 5��u-z���]��כ?_u)�W�Jbu�+�ֈ�ʕ=�Q0?Z������ů��n�,��[��W����ˏj�D� �7��>V����7d��� �����67�\?9����~�~�� �߇>���~_�y��S���|���A���G�-vKm'����Y���?��^����oß�>r'�~Z������\��'����,z��g��v���<9���M��y����dW?�ҵt�*:,�|�<�~�iy_�� �Q_�����Z���ڥ�M���N��k��&���� ���ia�+����#��>s��G�?*�6����O�Ckq��\���ۧ�k��k�Y!��y�ai��0�W��� �?�4�.�q������
-h�z���ia�<�������o-�e��\��ݿ�5Y���o�o�ʯe��?��-|I�����4����V��_�ҟ��{K���!��yv~�����G� ��o
-� iyw6� <�K� M+�hK
-��C�^�MI!��B������G]�~�r�!쏕> |_Դ�.a�ϒH��|s����j�M4�|��?���#�����1#� U/�3��� j�_�<>ufm�3��Y����άG�ҙ%��+�����7��E�^������1�*o+�T//�ޙו'�4�~����>I������ ��K��?����7M�?�1�Iܪz��/�T�$�s_ʆ��<y���K�|��.x�j��Je�]��Zɟ>J��Y׬?崕�h6r� �d�
-��� ���h|�1��F�%����J��ڔ1'ڪ����e��MS������|5Bzvvl�� ][�Ľ��[W�I�٢�U��u+_���V~�
-PӞ��z�tۑ� �=_�Y���[W��k�Ex��g�Ė��j>��>�{�wP� �j�9a���t� �Z�q~���� ��r��O�\�©�=3�9�?ؤ�B��^�/���+oi�_��:�gV�z/�T�ͳ�l�� ��g�P����IM����$� W�����-����EL� ���ZS�D����^����X�nbz#�ʠ���_�U�W�
-�^y�N�?�����~ _���(�� !�^�o��ſi_��o���� jI_#�T�����G�Kފ�o�L� S%~-_���T�� �tQG���b��J�>�
-=:~4-��ӫ3A��қE/��( �SIE T�9:� �QL��U?�Z�j(�G/�(z*9%�.�%7�Y�e�L�y� o � �kON��2���@��h~���4��Ҁ�ߊZ*: ���~4�y�ހ
-D���)��� ��;�������f���D�֛E $��-"t�i��ʴ��ΝE3�� ��Λ/z3� M� J%�@�QC��i?�6Ik@�����KޙǗ��2Nա�Iژ�?Z( ��>��M�� +�_��_e�w�x�X}�j�yR�8� w�ԯ�u?��
-��&��?��$����� ��
-���=������%��zI� -$� ������c���C�x���<���.�ym_r9k�O7�X����	����:�g?5(x��=� خWT�|������� ,���%� G�|��5MB��(;����P����V�LSl*����� E��[��yZ����a�y:�?'���ʮ��~2�-������.�%����$���ʮz��w�V�4^J:y��� ��r(o��h��x�ƍ�٬D6M��סx_���:�-���Oij��~t�����O���7��� [� L��5�;�&)�J�߇���≴�f�ḗ��׭[��i4_;�U`2/:Y�x�Éa��ƫ���g������>�5����� <��4���� h_� ��[y"� ����J���l��ը<��ZW�� K�uK?�g.� ��^{��]A!� ���`�wa�s7��:����_%3C��"i��c���i<A7�u�/�y����Z�.$�w՝_�>?J��K�������a��4�s�۷�ҊD� W����a��O7��� UU��$��K�Uh��nR����Pg2�ͬ7V�y-�Vn���&�$r=SG�� �4s�~�-(4!A'ڼʭ$��'�쫗�y}+6�)��Ɏj�fs1�A��c{8axҰd����<���,/%� [7��ǼѦ�2����G�C,�LP�ח_����LRc��*4�� ?����0� �J�g�����T1�C������	�N�#��3V����ʪzů�4� ����.ʳ��ɧ�}�C�֓��h����u��~�!�z��_�k��\ơ-�����!� ���R��5�B�B��� ������P��f�څ� �w�r� �G�6���3��Cb�^�� �� W\�<e�X���=bk�-���j��I��xb����r�ω<[�9����x�^�F����|P���p�p�yo^��+���0��qm�#�u�����/�����P� ��� �8� �������iS��3��W��ğd�޿�K]�� ��+˒���� �?�i^��h�o������8ඎ-�G{�t�7Ú;�XCi_��(�yu��,��n<�:�s<�����9]R�h�<�T..����K�����ȼ���fؑ� ���N�t���#�)y�ǲ�疾��o�G�戚���|�V�m�� Y|o�(o�~ǣM���k'���H�_��c�z�7�]�7�� ��Յ��3���>շ�f����g���?h�~	�����?ñ��ѵh� ��O�� �rG� �#� ����mz�vڔ3|�o�뤸�M��&��N�Jg��b�Uy��?���$~Ͼ-O
-�K����]����zj��9?��P����q��_��>xo��=KᏌ�f�"��q~��O�gq�4�J������ |����5�}�O�⹶� �}B�O�w� �:�X_g�a��4���?����(�(�]c�G� -#��>����8u�/��� -c��ZW�~�!�����?�� �o�\��u7��u^W��f��xx/U��m�X��z�J�{u�W��/�]�6~w�
-��^�o/�Ǔ����-iH��v���4�y|�?�j�KRc�o,�\yե���خ��	r�Xb������� {�*k��%��Ь���l�fV�.���?%f�,h� S�U�B(e�%�q���@:9a�� L�|�žZ�49f��2o�'�-t�$�&��}��C��ȿ���땳�ɏ�@'���uD��� ���-���� ��/�|���#��K����i��;Y<���� ,����K���r|��� =$��g2��k
-��0Eg�u~K��cP���C�|�� �:��Y����7�U���xK�-�ͱ���V߇�:��M��x� ��?:��8��#�˭�
-��Z��Z���Z�A��_���� ���t���o�h��,��l� u�� ��T�]�����f� WRs�;�n�&����� ё��7���5/�7ϣ�w��I�ӯ��/��� jCgk�?嬵���͠�|�U���^]G{����O��W���i��Ϫ�*��8�;�Y�rv�W����'_M��G8��ru�)��(� [Q�� ��=i?�"��i�%%��Ө����Y�q��P^m�ck3h?�Ϗ�(�G� �b�������^�������)V�� ��a�9|���v��O��� ��z�?C��xx�Ç?g��3�S]��q� ]*������>n�(� ��Z��W�M5nT~
-S��Y���� ����� ,�9� �/�WK���id*���Z����s�����/�?c/�����}�����K8�� FW��*���s�/�����;/��o�N�
-����ns���	(� ����iN�fIEGEhN� �t�( ��YTt��g@
-�'_�gM��'juD�? Z��YQEh��ڢ�?_@Q@Ij���
- uIU�H�P��ʏ�e@��^�Kހ
-����
-"�E%GE �Z.&1F�Q\����sC�if� �T%v�~ݟl��Rԥ�ؖ���Z�y� j��ڏ��ڏ���<��ʯ���ڞ�7�}R����̋�|�z���XO��/�Ӑ����S�C+��=�p�]y�S⮕��w�K����������M�_����)�k_���I�ٺo���Λ���w�� W~�|l��g����T��ȫ�|G��?V��`i�:\������m��l/?�~}k��泪>�u7��Wg��=�<Qsy-�'�\4�����*\�:���O+���o5�$����.k�A3�+���� �:�����3���7῅ᵷC����Ti4�׳xK�� ������P���#{���y�
-w�'�ko\O���<�ע�v�wZ�-zT)�m�8���� ������ �}�
-�����_�6�R� I��d�I_7�X��K���4kߵ[I\Oýg�_|X����M��V����׫?e�:p��ܟ�g��m�M��~�<�އ��i�� ��x�ÿ���ź�WSyw�� %Օ��$u�� j����
-Ke�q�[y����+��𿃼Gq� 	�/ ҼO[%���E��3��u׳�3.����y��,:��� 	�<����.�c�� ���Y�|��\��E�N���W�gC��	��X��� ��+������<��� ������ZS$�V@Y��_�EıK&�GuI�l�fn?�V��RT�M����L�̴f��UY�|���R�� ��Щy(��c�^l���u�+6O�������SG� <qP�T�H��Л�����(���� �kY�5���M� ,��E���:�ˏ����>�����4k9�29f�W<�� <~J �q�{9c� SY�
-��5��)�I/�(������ SY����L��G,4I2��=�P<��A����SIL��׭�פ\��r����d𽟙W
-��g7g��XI��J���(^���O��S���EǓD�J��xt6!�<�f�[?Y�� -���Ø���%2�@�(����~�=C���[gu� -��6�՜�W����k'�f�����^�� [�H�Th{��Q��W�Y�F���2���g�.�_����U4���3/�{�5J��_��rDk�:�=?����ů�f�y� L�J�x;ם~���"�Կ�ԟ�� !���>|�g��T��@�K��Qԗ�yR<4���W�8������*:+��J����&��:���4$���wKA>�w����>m:�
-'ju��� �)����K��J�
-maK��
-?_E;�ZV�bs����� -)�������gN���(�.�S_��I� ,���㖊��� ,���֤��?�� y�ڟ�z�� ?uE3��Ԕ%����}�o��)c��x� Js��)��;P$��%�����Q�|�j��)�I5�1�~5�����/�O>8h:D����rɨ��;��H�� H��ʯ�`?	C-��~$K� /Q����?�I'���� !���E�����ʯ�8#�<��s�&�:��C��&�+���7�� �ҟg$�_�-S�<��;�?�������|����u	a�<E\�,,����]�ņ�o��޸�iw��Nw� eiq^Z�y��O�<����f���yX����P��/+OI�?��C3��4����O�u�ktW������SM��J�u�Y��&"����x?T�!�)����~��߮������-�������J&����k
-s���?�i^��� �zχ἖#+�]r�t���� =j���f�	�)f�|�<U���Kg� <k�|Ak
-��&Ԣ�������O��]������W�I|�Y�E��Y� E�T46�a5֨�K� ,�z��� �hz����Z�� �u�� �f�O7��K�#��|ڰ<���ڛ��m��~�?�`�C���E� =kcC����M8����CP�/����%��?�ZUkx�R~�̤io�_�K?;��h��_��T4�D�7�� \�W�� �2��Vf�7���jʹ��'����>c�ST�y1��7� �Zɯ<�c�=P�����	����ʭ?j
-MC���%P�%y0�g&�+KT���%f�]y�		��r����&"��C�����uC�]M|V�f�P���i�w��c�� o�� ,�n��ʷ����d��+�a��%i\]�� ������y�R�������o�tO����%������/�7�5CP�l��M<�B��ic��+��W��O��P�S�F�
-���+�|q�(b��Ǘ��ω<�K�g�<��:�]c�?�W�.����wp��������}��=��L���o+|�Ͳ���-�� � �?�/���f�亹�����I��:�����R׭����Ğ{�� �
-&]��� �9'� ���ξ���<��C��~
-�m4�;x�ume��xP�f��ҧ��9��^�q�'�/��G�<I�G�y��i� ��9?��4�x�.�����5�g�������}�7�� �ʔ���:u*����ďC�� �*�-n�d��ߎ<Q
-�Ǔ�|�מ�ϛ#��bG��Z���=�"��uR����<��,�猵�}�XG��_���~ x���?�:4��8�����W��*>a�hlxOÞTp�ܯB����dK�'� ��o��hmm���<Q�2���SR�|�l�)e� �t�o��9�ip[M�k�b�/�i^������OO������z?���J.<*KT��U���#����^��5�Ǟ�&�↥ci�\q]o�D�Մ�S�X�x�O{�Y�ƓK?�� -k��)'¨|[�M����� ���w[/�� ��i�yr߹<�?��}��a?�I?�`��U�}���_�M��ǒ�D��O��#�� y{� yH�����\��n�����һ���X\$�M�W��w�U���������?�~ew�d8���)�p�G��G���C���8����ҽ�����Vi
-�ߎ�!���{y��Cg7�$��� ��#i��y0�������:���b�{C�b���w�Z�x�߭sz=�:��tS�*�4� �[���~�OiH�*���^B�Ŀ��YW���y'��^�ʼ�o���+Jf7��,�MS�� ���4�B����,��3� -*���O�h�zo����� l�.ձ�	|�B9G�{��?��H���e��|���_�/�O��� �����?�,�����u�g��?1�� ��R��,6�O��D�7�
-�Ck�%oxn������k�����ߒ�� X�M�K� .�l� m��d�"���Ί��٣O2��d� S� mjo�^Zۼ�oO+�Us��O,2�	��I�K-M�lsi�O��%�M./����z���/"�g{�� U� \�o��}��!��緗���߶Ɨ���'�"����%������� ��^ߥ�SX���ͮ��������0���@z�~o�3����� ўE|����O>C��+��Ε}y��I(�:~5��?���KM��6��BJru�)����Ph�� ru�)�v��_� -ir'�}�%� [L����ӧ�O�_��i��Y��� ��;S���6N�����Y�K��䳖o���=�߸�$� �+�:���u������?�?<Ep� ����_Q�>���#�w<������~U��e��Q^�e�S�� Z*9� ֚��KS𚛕�f�?�\���-���
-�����4�/+�zy���^cq����%?������G?rO��\�� �;y>�� ��q��E?������� ��4������Ve����wg��`�=�D��Sh���(��s��)� QE,��)��ΝM�� :�Ԕ��� d����S� 6�(��)��Τ~��6� ��( �=�J�
-H�4 ���( �(��YPEEڀ$��J��Z�`IQ�ڊ$�ˎ�B�[w�Z���
-9�Ui�
-~jW�)�8�u�� -+��⮛��
-��Ky~\U�-� @��u/��<��~��,������������ƽOgH����
-G⯎o<I�]� yu�W
-�
-}ĦY*:�����W��͟	�~(|K�Ѿ��m�ou\
-���׉im�$�`J�0� �l~�7��m�
-kM��� _,R���J��W��ȼ=?iP���{�_�|*�u��o��k�ۃ���Y���ԾH��������>4������G�$�����k��/�U���K��W�?iX�=���d�<��y�괒���X�U��G��7�W�֓������d�b�K�O�����Z�</گ+��k�]��� W\���:(@�?���h1]�����~�^li����[;� �QN��2�_�����
-�|T7�����2�� �u����U�������ڥ���+��>��^g�~�������%y�Ǎ{�r��Ma�� �_�ҼCK�u�O;K�x��Z�� =)�)񖥪Y��Z��`f�x�RѵDԴJ{[�� �Km/�*ω?imc^������M�����2��b_'}q:Ʃ��<&j�so�� hjMܒ]�N9|�e���ƙ?j��	��e���G� <qD�T���iN�_.:�O�l�c��^����� �<G�� 6j�u��v����'��ǆ��u��\��wһ(`}��J����� ,��"���/ê���־N������	�߾�M.�����Y�R�]
-��ꤺ�j����C���� �Drמv�#��f.�}��PhY�_�b��ST�͒����ϭf��~�3�?��C$�ZA� ��� ����M�~���~����V`>��$���S� S/�t�����X�	�����U�y�wY����U��y@d� ���V��m>Yz�:��� \�oݥ3���2ڞ�
- |qC����.�^<��?����.c�h�Ǉ!��P�ÞWJ��O�K��1q�ɿ�V�F�����s�S$��Y+Np?�ȿ�U9?֚����qxs=���
-�BG�x'� �{�޻t��W/����w� �����^.si��߁���P>l���PU�G�g�Y� �ҿ�� �B��I�������W)�T�9:��� ���3��� *J��ZS�J*/7;)k0
-w����q�� �Z �����qL��:� ��(���QEhM��g�:�
-(��
-)��ΛY����W��Sh���
-m S��6� l����i(�?_�iM�� �J�QE Sd�N��KZ'�}��GG����)��L�w� צy��A_��PI(��51�~5����:����� >�jSEl�E�� �(��K]_���)�y��A�e�嵝�����s�� �]we�O���� 9�"����g׿�g����� '˚��?�K� =.$����k;��a�sT��<��>�!�����K�����E�����V癏�K���ECgs���:ǝ��wX�&����8��;�+g��Y�$��X��S��P�~�]R��w����uKb��!�J
-$���ǚ��]C�E� w����M���T5�f��� L����kYo�VM{͑��k��.����[?��W1y��c��+@1?��<�'�z��ܳXl�����y����hr����Yž�ɾ Z���"� ��=y�wP�>$����� ���uKXn�g���W����h�}s��.��%�|�����C��)� E�� �0�����V���P����{i�?��&U��[��w���5ID^N?�E\g��?����v�� �ZC� <����C�>&�?�֦���C��֡�%���h���� ����/�o�ET$�kX�o੭��l��v�
-�e�,�� ��@����O75�g,�����l�>˳��o-�.b�ҡ�������7wO&�n&������ \�3/�,�W��Ui%�Y<�fGy*k>(� {����K1��Xc��43u{Xb�� J��z͐C�m�w�����"�i�5��S����{W+�
-Rin�� �U��� ��&����� ~Yk���[��i�ǫ�3+i�K�<��ζ���;&�o��	����������?����c�&�Y���Ƴ5�ٱ}��u�w�Y��&���5O�~�q��?p��4>�B�F���e�?=Co�}K�Z���_��?����y�Io�M�~��\?��Z�t�l�4���#��=��3|��~l�͎��O��7?��J�N��X\~���-��O�U��|�� }7�Z{Ohm�_�V� ���Mb�o/>u>�Y������x隤�rټ���TT�3��/���J>H�Ⱦ$x�����f� ����D����Y�ǯ(�G���Y�y+���R�?fs� �f�G�+��u/�ͣ�>g�#�%�� ��?��z���ɵMhs� $��γm�Can��
-`\�p��l�R$>L��д�[t��� 	M^|P����6�
-�ȑžYh"g�⅟�o>����O�iv_��q� ��ž��ꏩj��=�Ļ�� �����u/�??�����o�a� L�� ���ҽ����-��8Һ���@�����W`<%�C7�׶G.��+�o�_}ˈ�us��y?圑������3W-���q�8�� YX����x�A��k%΃�kO��,����?��y_�4��WR}�__O���Y:���jj�7��?{P�n��a�J���tҦ|���:�W5֛���ʩ�{������ƿ���k~z�McA���<�v=EC��᷊!��He�e{ǅ�o����K��U��ZO������_
-��K�HebyU�\� x}��=��mQ	f��Z���=��
-|��;�e�-���i�� l��X� �½�$� t|�cgT�����ߒ��&���E_�%����1������(�y�y�}Y������Qyk�G��jkya��}J_�o� ��S�� ��!�}�g����(� X�Z����gI���|��g��?�c�˨b��G���J磊k����Vu�� ��?���m.(mc���A��g�mӟ��� 	E5���ia��|�������� k���O���'䎝CH㵼����F��ʙ��cY�6� ���0����T�.����g��G��>�п��C��!����g�C��;[��Rb��x� ��c��U��g�Ο��ͮ��v�f��i��#� �������G����%?���_��c�1C�>��I��|y�� Ȟ]f��Zθ�� ��*��u�
-a,�G��V��O�Qp����|����K����Ȫj�����|�ož��ˆ��wk��O�G� �䎱�� ���5�t>�����=OoF��.� �J���W	�IN���h�̒�zu6>� GޝE;�ZP���֣�(4
-�o�D~M/�=�0�z���ڤ�¿>����4� �r)��Ũ]K�t�<q� �+��2� ��"�Wŏxs�� �Oy�� �K���"���:N���O�<'���y�[� �5� ��jh� Պ�(?i'�I[?��}�� �>$� ���7�l�����5������R�R�?��0� �n���h^x�_����O���;��Xf/�	#L'�ܻ>��OU�?��~��|���ӣ�LN��>>���:�(� )�v��@Se���( ����O��7�>� Tr��*:��_N~��6�
-)���:� �(��
-o���Q@N��6�( ��( ��}�% S��6� �^�V`��O��sK���o.�5�f.��j���
-�k�?�/yZ�y�W��k�	B�.�$�3��+G����?y�]R� I��d�G/��������Ě�α6��e�-v�?Ɲ{�� �o5�SRy�Iu��7���z��=
-Xz\�<<]hGRG�0j:�������ǖ���������#��u��s���=��	��!k?�!���� N�K+yt<����������?�v�v�~[��^{� ����߄���]#�ʏ�� �u���4b������?4�:��H|����韌��U
-{R�ċ	��ݥ�R$���� �-��������FԴh>$� �;�� ��������U�����
-U0���IԧPո��!�h�5B9�o8{W1�C��_k��A�{f��b���k�>	��w����ɵ�Ұ��CJf����q������7Z{׎hW� �^��xf�GI���J��gNҩ[�>#����Z���'��|�g�F��X������m>�}������I���PKV�.�����������ϝT<I�/��� ��V�9�<G
-�n|��$�|ۏ;ή{Ǟ;�����?c�[t�}��9���=*̗�ם[����W��Q7���ه9��usSG,2�o�?Y��~#�ʨ�f�Cx|�����w��=z)�ĳVV�7񸫇���Z��r���a0���5�^ �o�#�5��饸O�קO��*P��W�� Owp��^�����>���J��5�G�y���ҩ�B��%�28��*h���2H�s�MN��I���<�*_��h>?��*h�fe��������z��Κ� �d�E%fh/��*h�wU��O��h�	��T���ƜU8�4��2�4��wP�/�G��� ��m>/�_��qˍ����4r9|�*��ڡ� �S���f��f� ߣ���C�z$�P��h�%�~���o7�Uk��~�,����|����}Vc�cO���9���q��Ϳ������_~��"[}����?��%j��궹���l� 祬�^~>�>�߇�2>Q�?u#�U�r*J��~������$� r/�����P����Ə8{W�u�5:��:��x�`:�l}�� ����ފ�� ����O��� %GJ�� w���y�?�B�N� �t �(��J<��Q�@QE$�� -%"t�i�P�w���GY�%y4%q���� �T%IA�����̱Q?OƖ��Ij:)�v� ��)_��Q��u��������8���z�IM >Ii�Ji�MM�h��L�_�b����� �E >IE}��J/ğ����=:�_�g�$� Ȓ�:����[w���G��c�c�g�!�=���sqa��� ��q��?�e}� �~��{o�>{���!�����SOy����z�o��K���Sy�[��wR}������Us�� ���W�����.������me\E���o;��YVƱ7P$�O�\���):y��ր&��K�ϋ��ZۏY�Ti� -+�(e��SS4�f�G�f��4.kC(�ĸ�|�����cĵ�k�e����A�����h�������7y-�V� ��M��ʺ�y�TH�yu��Z�,|ֆ�9�<��}�,G��(y1}��C�E�ߞ����G��X���ڛ[��?��Z�4�|��h�͕�|L����~�l�`S�7�Z_���yw�� m+�򡺑����^u�T��&���Y*�|Y�chך��[ž��<'aW����Z^!��xb��W7�?��e��� *�n.�ջ�/ܩ�`p��^M�� �uN�\�W�A�c���Ҳ�����Ҩ�F��o��]M����:M����A�[���4^g���?���Mo/�"C�IW-� u��Y�q^�Y��շ��� ]\��������$�md� ]&���+�Q�y�
-�^w�2%��Z��[��Ίo��NO�i�)��5� �qk4Q��t���XM�$߼���Eo�I-c�j�y��Q 9�R�x� |�z\�_���+�of�{ϒ�&��Y����m��ϓU��:�D�������V�<���|��V�-������A+��'�/�6�G�� -k��ǝp���T������ �u���[�|�z�ҩ�Xx{:GO�6��T�������]CŰž;�\Ƴ≥� ���ֹ=��
-aq�?*��|���|K������^K\߈/�%�O�IQ�uӠzF��Bi5����ʶ5ߊ�lّ}�+�|?:^�6�u��� ���^x�X�]��"����EG9�N�#�<Iugoy,߾���?�s�$�:��׵�z����s�M�~�1������\1[��.4��Y���Z_����/ܩ�4b��Yև/:<�S���-�x?��{X֤��\�F����%��Y�� <� ��{7�K� ��fſ���J�t�>o�/5+�~{�i@�r��� �p�ZzLa����MK���&��u[C���4��k�P�Y����/��by������SA�o�:Y��K)����9+�o�O�����觟�:��<�h���?��� ]+�?c?� ��8l�}� ~Ye� ��N��Hߒ���:ڏ�p�\��g��Z��.���w�� ��Z~�7��ʛ�_a���~����� �:�� 'P������?��$��O�W�>(Ѽa�ǚ���yr^h��X� ��G'�#���GZ@�����?:Z���Mַ�,>[�L��G��� �Qq�]~�Π��uMʓַ�,ֲ$2��&����ڳ���p����l�7�Mky����-}���� jxn���U����K��i���O��#����i������WN�<<ʟ���_�����r��;����tusX��^e�����s�׶|��y�Ko�����`��}�1}��.��W���ܬ����o���Ϡ�~��j��w��f�� ]�_��J�e� �N�.���b�縗����:�c�X�E���^q�����P��ZVqy��0��37�?� _� =>J�{_���c��k4Q�1~�ˮ�O�o���CWP�7�/Ί��Z՝ɚ�λ���֨^KW���->Xb�>��$�����vK��yh���]Ck���w�� -b�~����o����c��u�Ci�̑������Vfe� �W�R�&�>J۳��-b���n�k�΋O� E� r�����=���|��F�� �J7����K����5-H��cK��� ��\�� �B:�3ڽ���Ѿߡ�{�u����=RM.� ���G�G'���� "W�y�޿�/�3y������`K��j��?��H��?�>/��Ij w���QM� �� ꒢N��KK���h���*8�Ӫ X��S��L�}�%_9�'�����IL�%�_���Z-g�� ���n?��A��� �~g�ԯ���l� ���S�����6� �����=�q���S�jT��'��Y�|�"����O�&���~��A�|��?|'>�M_Ğ��?��d���
-�2 ���Ɔ�T��	[y��Dy�"�Z?��}����/�R��?i�>g�|^y��B�@���Au"}��ȏ� \��>�i���oo�>
-���_���_������� ђW���2���9F�W��s����4ޟl���՟6�M_��� m/�������Z���g_L�/��ע��{�V�� �Z�mM}���
-�ݴ���w�� ni��Hu�b�w� �rתh�.�}n�Kf�*�.rY��� ,�d�2��?ڃἿ��R�޼��� ���C�}��5�os[�&(t������/��GL�T�|���O��_���WkE՜��X��/���<P� ���� �ֳ�ߴ��_��~��,?�ڤ�� ��5�W�xMs���������X��#��~�^;�Xy�l��|���[}Uw9ϯ?�,��~t�|���� k�z)gG�g��� Y[?h��O�7����ʨ�5
-T�>#x?F�ɿ�`�� �e^|x�{k� 1�?��~E�d���n������G��<���l�eP�ůڢ��!�|7�Ο��%i�^C�؟�z?Ǐ��Ρ��k�&�ۼ�n�a��W��'�5���K��-�:���-nc� ��e���O���źZC��}� �_*�TiNi�oY��G�?�ԣ�����_=|s���h�O+_��� 	�F���l2�y�P�/�G9�MEqu
-�~t�r��H�ɩK�V�%c�e�G��Q�9���Ay$_�����ơp=P���[	<��f��Y�?�k��X�����ڇ�o�cx�T}J_��F��?2���� ��&5�=�WZ�����'���Z�G��>ɥ����q�)<�o#�������� iZ�Ӥ�����V���/�W�&�ԝ� !�G��S�~����Y�n����uk�>��k�kK�4W�_�� []�� �H��!���� �a:��=��:~5�i� �����<������Y�ϕ��	¡F�IU~���ms���mG�6��?;���Q�@7�
-ST�O�󥚸�C�ǀ�%���{��kOۛ�?</sy��� ��ʖ����R�$	��̳�j~���K�kɦԣ�_�ֿ
-� l� ڻğ�ks,�Ē[y����t?����⿍�,��-I�������ξg���_k��S�S<�^,����b��������5�t}�I撻������{� ��t+'�k�v
-��� �W� �>����x�T�� }'��ؿ��J�?��� �M?),�U��{� ��Yb� Y_�����ᳵ�D��9̩���a0���m�?��z�
-��>_�S����a�����y]��� U^?�Jk3i�<�e��YW����*���q� ��4x~�M�d��c�/��_�Z]��'Z�/ۣ�֥����w3����O�W����W��Η!�?�y��嚇��T�ҹ�=��\Y�{N�/���9��k���z��.����������I�3�� ���k^��X�>��ʼ7�^n��W�:\�ţ�?�ʱ��N���Ŭֺ�3rVwB+~+�>4h�j��� <�ȼ���?~�i� ���%��������n�����6o5y/��S������u�S�Z��GuT�̑�����Ў� ��f��o��YQ��6�M/z�
-[}fo��Vc�&?�ۭP���Y3��Ɲ��/��ȉ����Z�r�,u
-���t��Z���*���� ,(�F��� SV���Y�����YT��񨣗���{�f�������ҬGހ&�����>?�B��D�
-���&�RɁ��g���N�E��� ���� ֊ <��mޒ���Z~5 +��)�Gz"��a:~4�� ��?�B�/z |x��������"� [I� -(���g�����C��Ju�����|���G/��%���ڏ��\M�oZ��{T�����^гo�i��T��1IO�Q@��ڡ�� ����)���ga_�>��� S%G� -*j��~��Os�_E�]b����J���[�b��4�a� ��+����{<UC���wKފ������WϞ���Sӧ�P������tb�'jmq��	���Q��)� IE7���PK��g��u %0��o���ޚ�
-����P��p��'_@��ڒ��� �J ����o����� ,�� ���(A��7�S#��&�	��C��*8�Ө ��+0
-Y%4�3ڝZ R��⒛�{V`?����3ڙ$���ML��Q���ڣ�S@y�ړ���� ^��=��=� �jd��?}�P�)��-GM�=��j��)������: ��_�� �7�Ɖ���ޚ��o��{� ��� !�%~�Ga�[t���H��|y��6o�`K�7��$�x������+����G�_��}���[���ρ�_���6��c���O�iX:��-�^�:�|���e� �u�����[y�P��'ƚZ}�7���+P���LK�Ĭ���K� -����cg��|� ��Ko��z�� g� E�c��'��� ��\C"C4�w�3P�}�?�}���Sir'�7�� -j���������8�~J�u��*O&#�Wg㈦��o���%��ɭ
-``�]�-����w�M/����.���*���3��\��(�#��?,~�Ṧ��x�z�$�T�yk;��<��M=��Ii?�R&���?��$i�K7��l� ����W�SK�_�� =-dJ�O����'�{;�� �e{���V���H�����M.�͛�\U�
-�%�:������� �Q��ZS}��� ս��A� �*��Xj��Z�"\�-:u
-9��`3q��+/��1�3k>�����E�h���qVa2��-��͚�.�̏��
-���� �U���W�e�t1��Ҭ��4�!���U����:�o�� �)�J��/��l�|��yR�:�o�9dǝ����+?3�uf;�\[����/*<KZR��e�+6K[���&�d�hfMy,� g�եf�Z�c��U��7�oU��� �� ��"�(�&��%�(޴���F��{�|��cZ@�������_�P�5O�>f�:�_j�K8��<����.��Uˊ���Xү9��M\ޱ�y[�cķF+~��kSK_9R���ek��h� c��U�����ME������� ��Pt���ԯ� s߭+M_�]~�ou�Y�*��<[
-����|� r�X�o���� �b��M/�WLS���۫˫ǚY��%_���O:X��u���l�$� S� ,��|�W	4�W���+;Y<�㒮[�U�ѿ}�c� �Z�Υ?h}3��C-�~l��?�G���.��/�Y����?�ֽ�E�pC� Mk��'�/<Gy��a7�� -d��g
-�� 	� �\=���_�k[����J������P�O��^-�.��4��eh��?:Z���ޞ����ˏ�iv1����z�:��a�8M�����?3ͮK���7��(���m��������������S���g=J�������]��%}�C�}/��8�i>ǠY�6���\g�<y[���4I"��c���K��y��	��"Cx��y�=7�?��U�y&�^W�3�O/� FIYZ�?�n<�I�Īچ�����%�Dq��SE'�[�z��o�߿W��y�c�$�������@��f���இ��m�C���+O�k]�i��ε�������C�� w��^��]�B����ȗ��הx^/�ۤ5��f��-���g/�]	�:�.���z^�w��������O��ڇ�dy��i�LR~����l|�Oݛz|�Nk���� ڼY7�,���]Ο�����וɪ}�U��r��G���̞uM�E��	��{Ų����\!�>�(e��o��-ffC$��ɭ->Xb������P�"MU��z�� ŉ��ɲ��o�t����_	��ux�Z��+J���O�����U=R�K��k	�x����F�����z�Th=��Z��Ȟo�b��;;_.���~c� �*����v~�� ��� Ӯd� ��� �:�y�Z���YT39�SY�����>x��ݵ��i_��?�c뚤�Z��|�� -e��4o���7�*`l[���g?%ihڤV|��M��ZďK�j^w�����3�ZTڄ�K�[i����e����#�3|A�����4�'���z\[���� "G|s��Eg�ܸ�|U�n���7�O�ϒ�*����@�&x��1��z��Z� ׼��� �H��p>Ҕ+@�^�_����
-�?�B�Gޟ��!>̳�~���U�� ���Mz�	���֚�
-O7�R�O8{S���L�_����|y��� �JnO��% 7���T~I����}�#�G�u�V�,���3� -+���0������/�	�'�D���z�_*�&��G-~8�k���>.��7ɬk����9.$��|*�,��G���� `iz�:]�~�䎾��E��A� �.]�t� ȕ�~ӟ����
-<y�MzI?/�V����?�9^c�;T�������+�h{,F������Bx�K�o�۟:�AH�O�eX:������R���-C����|������3\7�R��j�5�4oI"U�G>-h'������ �]��I�y_�ڬǬ�Z��Ȧ��t�>�T��-|H��jY�Z?��� �u��� � �ƚV�����ė�{� --�� 夕��>%ï���� ��Ҹh�?��
-ҝ
-T��<UI��?�߄��W�=�{����	��Yj��/��o��h�]~`����K�?�ς�O�[�G�����;����ծ���%��H�� Y��6~���W�/ï�?�H�|*���?yr�=Y����֯�O������� �7��ǈ�Gg��jWQ����yq׿
-�gK�򭊧W������ȇ��t��~$��I���W�� �2�q/��^L
-*��:�c��_��l�7��ֽk��Q�����?���Z��9f����yU��/���?J|��1�vCx�?�4�Z�����q��5��� ���m�M���oC���D��ԧ��� �r�0�`iO�Tg�f��?j����]W��Q��-A,��mv�*���w�Zx�(��u�I���K]l���+���y� ]k��ΩѩO�?W<S⟆:5�^Z鶿��*���=׿rl�G� �U����s���ğj��Z����>��\C��/���%3�������7u��w[z_����h��<�PxoT���17� �Zҷ���خ?u��Z�t}��9�n�����y���ḿ}�Ǿ�+J����?�k��||�^~پ�� �*��`�k;]6��?&ʹ'�o�3�+��/�]G��*���}_�mW�j���B��G��̰�L�Ú��J��Qg,~tW�7�%� ��?��4�GU� �|�'Ɏ��A��R�����L������<o���j��Utv������8�X�_g���
-Kg�r���M���??�-P�>-h����F��֯�V�{DuRXAk�f��=׀���Ʃ�G7����������?��\�]x�
-�� �?6�4� l��+��%΃�-JM��9k|.[���3�zTϦn_�#῀�{�t�>�_���y���Ǐ�oǟ5K����y����_�\gď��+����y���I/��:��.�����JxJ|�<���h-��d���U�c1����9����,��6I�O��_R��� �L���o5�t����Ws��\�9iӭP���7�/�T�:F����$���ʯ՟�'������[k�(��y<���_�+���	����vחZ4s��� L��o	�&�Öi
-��qׅ����ա��C����\6vi�vP��G�7��&�|Yuy��"����k�<��W�/�^�Dx����^yo�W�����y��_���+�x#R��� G������v�#ϝz��~e~ٚ\#�ƥ�Ef��%�/�^Eo��]o�M�-rmK���K� -+���i�.��y�ݐ?OƋ��O���4� ��'5�+s�~
-���v~$�� HJ�~��Zrf�r_�į"����W�gg�/��:��;����ה|'��u�W�1i����)��F��D�S� ,�¾&h3x_ůe���-�W��>2�(�����W�|dס�-����u���k���3����Y׉�D�<ۗ�ίH�f�����^$�G��9�e[�W��<ޕgOѦ�����(�ә�ei�4������� ~�3
-i[�p�ޯۈb�+
-��B���C�M\���� SI�C�Ry�ڑ�� �����z�IM/�� Mk0$~��Iz���ۊ#����J<��P�)�IڃB�wUf��'_o- j�)�� �*ͷ��3W#��&�?_���f2��<�j��~4���4�*�9�O�g@	'��L�<�j�� |�J�/�T�?�F�	{�<�qD���� -(o8{S�� [P�_� ,�JI%��2Ih�Z ?�����6j� ֊�� �N�y�O�8��?Oƀ?�T���q�(N��͎�~g�R� ��5D�?|}랡�Os�_��e���� ��[� �:���i^��H�y^1I�祄u�� ���8��&:g�4����G���i��񥯖=���ҝQ��ޝz�	�� �������#� ��(�Qӿ� J�?��L���P�q��~��2� �o�6�TI���~4-���~�� >9��t�ihJ*:(���T~q����+� >/���y�ޛ� -(�y�ޣ� �T�* ��>�y�ޣ��J _�~(~��2���� ,�q�����GM� ���~4�%� {��j7�R�_@
-�j$�P�-I�z <��Q�-���@���&�Tt ��iG����@S�W�H� �
-��������4�$Q�I?�^������>����'��o�Ia����\O��H� ��� ����5Hl���O7�YUo��>
-�W�xo���O������O�� ���>bI_��.�}:'䙭�c�2���ĭ5=.��� ����:Ŭ7�~tUB?���Z�O�6�>��C�?唵�Y���غ�^E�����.� �V�O���o�-a��浛��Vn�ga�u7��K��4��Y�dy�����o��ky�	��5�����?�L�V���4�$�Ǔ�[�\����z����ͭ�;Y�����N].������@^ ����O�מ��Y�/�V�z��j")�I%��sɻ�暺9�BY��P����¯����*͏����+��$��~O��U��� ��?s˪w^�uy�%�a��������4o�q5/�p�E����W��7��#�w���{�4��_��\��I����]���}._;��� �J�����ퟄv��� .wRA� �+�xt���:|�Wď�n_�o�o����r�J�qk�[�:Q� -j��K�?~Жp� ��X�|��駗'�'����x�� �%�4_ʪ-lz�/�Q�$���>>$����yS��m�i�o� ��8� ��3'�/4���hwSE'�u� j��}���!�Oޟ1$�3���ֵ4�f},�]sz]��\�O�=��5� �u�Y�C4��yt�iJ��6��� |�Q��<~�W�~�(�U�%��R��� �*�Эy�� �4�<�.�ɵ�c���Z�SE%Cy>g�h3(I,�<��L�_�՛��~�>~�h>��cxk��ϋf�c�����J���ȵ��� ђI� ,��\���7��es~T0� ����ֹk��f��>��=�����x�X|��֭���$1MX�İ�׉^�Z��N��G+�H����+�_�<������y5�k���P����s\2��o���2XAm���\��b��Z��5�|����+kPڧ3W��}���uY�5�7|>u`�]~���砲�qC���j���~uc�k؍�j��5	���߹%hi�\�׾�q�������i�o;{�=�Sy��O;�O��%W�4�:�L�+��qM���� �z7ڤO6���SY�I�˨k����eHb�䎱4=�Þ���&��V'��?�}�� �_�g\��Ũb�� {7�X�w�x�XO�h�~Z>Co��
-�T��*��Z� �J���:
-���� �j?�z����#��4���V�xl/<���ꫠ���>#Y�h�K5x?�>(jjL[�6��;�ǳ���&O��\N���ifz�fY�=��g��+���G���~��B�f��̳W[�_�un�T�=gPK���4��zVž�
-Կ��̮��w��!�
-�t={�C�u��Տ�vr���j�~
-ĉ������mm��^k�U���o*O��%z^�a���(|��'K����4�����>Zy��=��vf�iqY}�Y�;8�ݓE5j�q@n	~�{G�<��	���<a��������.ȿ뤟��.��C���v�/��.�A����|��8��� ����
-�ޓP����u/��ȿ뤟��[��ƓVo�.����,���>.���?C��X��~�u�J������Y��4ڕ��$qo�������kP��Iw�S|X��ygḦ� Y�����X�j��� ���9�6����>ZM��-+��W�M��ͼ� ����_?i�������+{G���"Mm�ħN�N����]�� e��yu��	������d�~/2��?�Y��SΖ� ��?��^��?�:���c��� UZ&$�ښ_������?��l_����v�>xuC$w1� ��	+��4k;���h>Do'��ķ���Đٙ��'���ZV�S���Mg��o� ,��M���
-�K�e�������}�"M�H��� wO�4)�uO�� f~�?�i� =+09�%���e�?$������å�h��$;6k�~o�4���˓� !�}o�l4��Ŧ����ͯ��<7g/�<=�|������ L㸎O��u�\U�����d��e�*�9wUjt������Oӷ,�ڞ�?�ߩ���	�wN���Q� ,�r �ru�)0?牥N��0RTt����`-q��� (���Z���-��
-��K76z5���8�� �G��_�t��Y����e�q�:���
-����|+ky���E"K� \��OT���W�x����yuZx	՟�?>��_����Z~��	���{k?L�?�꼯�w�k���"��W�x�^�(���=o~͟��'�#��߹���U��<'&��T���������?����4j���/-~䕃���k��k��!�l}���5�� ��SM����t�R_�SU�K��n���SP����C��׉f��(�� �y���M��)������{=S�3^�jt�����>�=��GZ_��_�96�������]oďأ�>�q�xs^����y���W���*y'3haq5)s��x��T?_s�?x6������ �X��P��뫞�O�Ƥ*���Sd�N��޵FdU���>_�k�΋���ɋz�u�.^ip� ����yk/�}���|�� ��.&��c
-�ԯV�#���#x�K�΋R��]&����Vy�l���Ih�귞��OP��� �αjS��W�� ��M��!���� ����w�SG��R�Cu��}��ڗG���|��ֻm����d�jI��������/"� Ux��Ɨ�CĖ~�R��� j�?�Z�鮏�KM���� mj� �4ޱ����ǣ���$����$������-�j���R��+���/�~�xo�Ú��ɺ��?�\���4xG�e�+�~�~���n���[�4R_�S�ַ�����3�ϳ�?no
-�� �2����%���)��9������9�4���Z�_���(���Ēۼ�kjO�e� =#�N��_|���>��g�C������� �־u��� �����3WC� \���4�p�tȕ�>��D���J���iۓ���Jg�|T��~*|P���W_�C$���Z�Y����e������u��Ί�WOTwO��~��M��P���r�x�\���� x�D�J�d��� �q�����c��
-B�mf����Z��/�F�߇-��6
-�� �Y+�o����/��-�$?�ʼ|ua��	�=��[� �P�%�E������s}��� �߃�f�z^�	�󯖾��>�,�캒���/���n��֤����[<V#��S�*���ugkC_�����~+�� �h�?��j_���7g��� �-sӡ��=��r���ήcƷZl����%x���P������Z�$|i��O{ȵ��� �Z�<���5+���Kg��SW���SOͥ�0�&���D�l���_���Tף����X���۲� �~�Zo�礒��������SFt!�*�����ksƟ����a7�m� =�u�z�*T�����27��կ����9{�ǁ�~׬%g� .˧�C߾��ZZ�*��K��O�5��>)�tt� �U[���O�y��Ї�yΊ�=_�]���]>�k�����;� E�����={ʳ|V<��%�~���K<V����u�>(ׯ/�������T�TsC� =+�.b��|5�S9j߈%�z����A��w:��޹�x�#���Lf�aU~8��-�Ԍ�#��t�7�RSd��&�?���V�=��j9|��7���^o�֏7�Ph?����ZI��j�2J(�C���<�q@c��U��O�w�b�&I|��f;�*:����e�Pż�l~uv�����d�(~�e-S���={������YȞg��?�W�.��o���� ^���x��?�~5$�_�b�����Ԟo���UO7����Л���I� ,ꯛ��������	��N��	��"u�)�MD_~�&�_�C'j�?�~5
-���ƴ���L�sL�_*J%�� � 7�P�
-�:~5'��q@��]���5r��������?�
-��L���w��tS<����� ������D� ?��Z�/�^��LZ��=����exU��s_�qm?g����O�R���S�W�I� -i|��_P�!���y�ڒ9j@�EE��_8�����:��jh��ΝQӿ�f���� ��y����� ��*?�kG����� /�=�"�E y��� ����ڢ��%�_�%���Ph�� ��o�����p���� �:m I� ����ڢ��q��E I�����^� I-5��?_«��t$������$���I)��<�qG��)(|�qL���N���V�-GK�jI{�EGN� �� ��>�3x��O��'�H�㺗���o���u�׵~�����ߏn��koek'�4����:�.��o7�;5��03������p�/��ʬM>6G��.,>ա�1yn��ھ�#�������IYX��n�M/*3���'�4o��&�$���~�"C�H� �Ҧ�%�ٳO'�oQ'=�Z�El�_��V��|Y
-���#� U�ס^EyuC,�:�A�^E��w����*�;=:��� ��u��ip�G�y����o���� C����ʶ�%��?��OٚŞ�y�H��x�?�l\x��-i���D�u%c�\�H�E���ڎ�
-���sy{�%���-����`�����λ��9t��M� ,�����b������t����}��|�)�}��q��?���ۉn�����hi^Z�Q��MT,�MG���� {y�U;��~�j�hI�h�z��s����Cyk"K^���F��?��� I���_�� ��������J��/K����G�l� ���
-�Q���G��)T4���Zh3�Q�o�V��o���Z�K� N���28�7ė�v�����zGǍm{ᾫ�� �dx�����7�~#� ���G� ��qf�� ������"�-�6��qF�N������� K�YZ}ם� ,hϕ�����+�C$_��M��7����% j��Se!�
-س�����s�c�Z�/���}j��C�<�6=h:M?T�h���(��e���\y>ZA�-/ɖ��ufhMe�ݖr�� m*̖������\E
-��tSQ�1��_�� �Yh��k4R��W�:��?s�|�g�<���O�� ���mCT��,��_���	����������u��B�Y�cxb��o��ΪחSE����T���N
-�f�T�>w��VU�����o%�[;�q�����_�y��X:̰�~tS|�f��ʑ�����fhP�&��i<��q:����9�J��k?j��߹\����򨁡6���U�|���^M��o6�U�9ZO:�>!�c�2yR��˫�p��d���j?i�8�� ��I��;�b�s��5��6��_�Q�>UV��Z���Jĸ�/n��<��vLa�}������7��x|���Q5�iy)^!��4R'�+bOC��?�kZǑ��� ����������^��Y�7Syp� �*�|P��D�z]�os� -e� �u����N������{೏��I\ŝ��� ����z�=��� xt�\��Ϳ̖�����?&_�sv�����ĭ�Y\y7p���Ҩ�޷�� �5sK��	5Mg7��u����үb��5�Ο���2ƕ���PJz� ��1���ɢ��������ά}�g����E%t�>�����|��x~����j�4$�o������ w���t�w�'�w�sv�������G���:�3�|?�p�l��롳�8K�Y�x� �%x���4Q�2� �:���e5�i���P����t?uK˟&�u��}�4�O�g�V>���?u����Qg���m��:I� ,�� ����� �~#����$���Ic{]6�]���8�� ���νL>+�|g�_��s,�u���;X���U;yl��y�.��ͼ[咟�8�������9}��F�O�-J-�����T�<+j�|�_�η�!��3��f׵	��~�Ļ� �u~��� r���1:(k���s�y�M%�=�#����Dl��1Wy� 
-
-exec
-/bin/zsh -lc "sed -n '1,260p' utils.py" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-#!/usr/bin/env python3
-"""Shared DexHoldem V2 runtime helpers."""
-
-import json
-import os
-import re
-import shutil
-import tempfile
-from datetime import datetime, timezone
-from pathlib import Path
-
-
-STAGES = ("idle", "atom_idle", "acting", "to_recover", "down", "show_hand", "win", "lose")
-STAGE_SET = set(STAGES)
-STATE_DIR_RE = re.compile(r"^s(\d+)$")
-DEFAULT_LOOP_SAFETY = {
-    "max_consecutive_waits": 20,
-    "max_total_waits": 200,
-    "max_step_retries": 2,
-    "max_total_recoveries": 8,
-}
-
-
-def utc_now():
-    return datetime.now(timezone.utc).isoformat()
-
-
-def load_config(path="config.yaml", *, missing_ok=True):
-    if not path:
-        return {}
-    path = Path(path)
-    if not path.exists():
-        if missing_ok:
-            return {}
-        raise FileNotFoundError(f"config file not found: {path}")
-    try:
-        import yaml
-    except ImportError as exc:
-        raise RuntimeError("PyYAML is required to read config.yaml; run preflight/uv sync first") from exc
-    with path.open("r") as f:
-        data = yaml.safe_load(f)
-    if data is None:
-        return {}
-    if not isinstance(data, dict):
-        raise ValueError(f"config file must contain a YAML mapping: {path}")
-    return data
-
-
-def loop_safety_limits(config):
-    raw = (config.get("loop_safety", {}) or {}) if isinstance(config, dict) else {}
-    limits = {}
-    for key, default in DEFAULT_LOOP_SAFETY.items():
-        value = raw.get(key, default)
-        if isinstance(value, bool):
-            raise ValueError(f"loop_safety.{key} must be an integer")
-        value = int(value)
-        if value < 0:
-            raise ValueError(f"loop_safety.{key} must be non-negative")
-        limits[key] = value
-    return limits
-
-
-def atomic_write_text(path, content):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("w", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as f:
-        tmp = Path(f.name)
-        try:
-            f.write(content)
-        except Exception:
-            tmp.unlink(missing_ok=True)
-            raise
-    try:
-        os.replace(tmp, path)
-    finally:
-        if tmp.exists():
-            tmp.unlink()
-
-
-def atomic_write_json(path, data):
-    atomic_write_text(path, json.dumps(data, indent=2) + "\n")
-
-
-def atomic_copy(source, dest):
-    dest = Path(dest)
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("wb", dir=dest.parent, prefix=f".{dest.name}.", suffix=".tmp", delete=False) as f:
-        tmp = Path(f.name)
-    try:
-        shutil.copy2(source, tmp)
-        os.replace(tmp, dest)
-    finally:
-        if tmp.exists():
-            tmp.unlink()
-
-
-def atomic_image_write(path, writer):
-    """Write an image through writer(tmp_path), then atomically publish it."""
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    suffix = path.suffix or ".img"
-    with tempfile.NamedTemporaryFile("wb", dir=path.parent, prefix=f".{path.name}.", suffix=suffix, delete=False) as f:
-        tmp = Path(f.name)
-    try:
-        if not writer(str(tmp)):
-            raise RuntimeError(f"failed to write image to {path}")
-        os.replace(tmp, path)
-    finally:
-        if tmp.exists():
-            tmp.unlink()
-
-
-def read_json_file(path, *, default=None, missing_ok=False):
-    path = Path(path)
-    if not path.exists():
-        if missing_ok:
-            return default
-        raise FileNotFoundError(f"JSON file not found: {path}")
-    try:
-        with path.open("r") as f:
-            return json.load(f)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path} is not valid JSON: {exc}") from exc
-
-
-def extract_json_objects(markdown):
-    objects = []
-    for raw in re.findall(r"```json\s*(.*?)```", markdown, flags=re.S | re.I):
-        try:
-            value = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(value, dict):
-            objects.append(value)
-    if objects:
-        return objects
-
-    decoder = json.JSONDecoder()
-    for match in re.finditer(r"\{", markdown):
-        try:
-            value, _ = decoder.raw_decode(markdown[match.start() :])
-        except json.JSONDecodeError:
-            continue
-        if isinstance(value, dict):
-            objects.append(value)
-    return objects
-
-
-def extract_json_object(markdown, predicate=None):
-    for obj in extract_json_objects(markdown):
-        if predicate is None or predicate(obj):
-            return obj
-    return None
-
-
-def read_markdown_json(path, predicate=None):
-    path = Path(path)
-    if not path.exists():
-        return None
-    return extract_json_object(path.read_text(), predicate=predicate)
-
-
-def state_index(path_or_name):
-    name = Path(path_or_name).name
-    match = STATE_DIR_RE.match(name)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def sorted_state_dirs(exp_dir):
-    states = []
-    for path in Path(exp_dir).iterdir():
-        if not path.is_dir():
-            continue
-        index = state_index(path.name)
-        if index is not None:
-            states.append((index, path))
-    return [path for _, path in sorted(states, key=lambda item: item[0])]
-
-
-def current_state_name(exp_dir):
-    exp_dir = Path(exp_dir)
-    link = exp_dir / "s_current"
-    if link.exists():
-        name = link.resolve().name
-        if state_index(name) is None:
-            raise RuntimeError(f"s_current points to a non-state directory: {name}")
-        return name
-    states = sorted_state_dirs(exp_dir)
-    if not states:
-        raise RuntimeError("no state folders found")
-    return states[-1].name
-
-
-def next_state_name(exp_dir):
-    states = sorted_state_dirs(exp_dir)
-    next_index = (state_index(states[-1].name) + 1) if states else 0
-    return f"s{next_index}"
-
-
-def sequence_steps(sequence_or_steps):
-    if isinstance(sequence_or_steps, dict):
-        return sequence_or_steps.get("steps", []) or []
-    return sequence_or_steps or []
-
-
-def first_pending_step(sequence_or_steps):
-    for step in sequence_steps(sequence_or_steps):
-        if step.get("status") != "completed":
-            return step.get("name")
-    return None
-
-
-def step_status(sequence_or_steps, step_name):
-    for step in sequence_steps(sequence_or_steps):
-        if step.get("name") == step_name:
-            return step.get("status", "pending")
-    return None
-
-
-def view_slot_from_intent(intent):
-    if intent in ("view_left_hole_card", "show_left_hole_card"):
-        return "left"
-    if intent in ("view_right_hole_card", "show_right_hole_card"):
-        return "right"
-    return None
-
-
-def cached_command_for_step(sequence, step_name):
-    if not step_name:
-        raise RuntimeError("current step is not set")
-    for step in sequence_steps(sequence):
-        if step.get("name") == step_name and step.get("last_command"):
-            return step.get("command_index"), step["last_command"], step.get("last_prefix")
-
-    plan = sequence.get("plan") or {}
-    commands = plan.get("commands") or []
-    command_steps = plan.get("command_steps") or []
-    for index, name in enumerate(command_steps):
-        if name == step_name:
-            if index >= len(commands):
-                raise RuntimeError(f"cached command step has no command: {step_name}")
-            prefix = plan.get("prefix")
-            return index, commands[index], prefix
-    raise RuntimeError(f"current step is not a cached robot command step: {step_name}")
-
-
-def has_cached_command_step(sequence, step_name):
-    try:
-        cached_command_for_step(sequence, step_name)
-    except RuntimeError:
-        return False
-    return True
-
-codex
-I’m starting the visual evidence collection in parallel now. Each worker gets the same capture and its own narrow question; the main agent won’t inspect the image itself.
-2026-05-01T22:00:29.130468Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
-2026-05-01T22:00:29.133594Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
-2026-05-01T22:00:29.169611Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
-2026-05-01T22:00:29.172908Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
-2026-05-01T22:00:29.176153Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
-2026-05-01T22:00:29.178908Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
-codex
-The first spawn attempt was malformed. I’m retrying with item-only prompts so the visual workers can start cleanly.
-2026-05-01T22:00:35.457221Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
-collab: SpawnAgent
-2026-05-01T22:00:35.496250Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
-collab: SpawnAgent
-2026-05-01T22:00:35.497430Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
-collab: SpawnAgent
-2026-05-01T22:00:35.498564Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
-collab: SpawnAgent
-2026-05-01T22:00:35.499674Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
-collab: SpawnAgent
-2026-05-01T22:00:35.500792Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
-collab: SpawnAgent
-collab: SpawnAgent
-collab: SpawnAgent
-collab: SpawnAgent
-collab: SpawnAgent
-collab: SpawnAgent
-collab: SpawnAgent
-codex
-The visual workers are running. I’m waiting for their evidence before I write the summary artifacts or involve the reasoning agent.
-collab: Wait
-codex
-One worker finished; the others are still pending. I’m polling again so I can merge only the completed evidence and avoid inventing missing reads.
-collab: Wait
-codex
-I have the board, turn, and stability evidence. I’m waiting on blinds and chip inventory next because those are the remaining blockers for a complete perception record.
-collab: Wait
-codex
-The blind assignment is in. I’m polling the chip worker one more time, then I’ll merge everything into the run directory.
-collab: Wait
-codex
-All requested visual evidence has returned. I’m checking the run’s existing artifacts and nearby examples so I can write the three required files in the expected shape, not a guessed format.
-exec
-/bin/zsh -lc "find runs -path '*/visual_summary.json' -o -path '*/eval_report.md' -o -path '*/visual_raw/*' | sort | head -50" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-codex
-I have enough evidence to assemble the run artifacts. I’m writing the raw subagent dumps, the merged summary JSON, and a short evaluation report now.
-apply patch
-patch: completed
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-new file mode 100644
-index 0000000000000000000000000000000000000000..464613149d7088ae5bf5413628989e5cb1b5413c
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-@@ -0,0 +1,22 @@
-+# Eval Report
-+
-+## Outcome
-+
-+Perception step completed from local evidence only. No robot actions were executed.
-+
-+## Merged Evidence
-+
-+- Scene judged stable enough to continue.
-+- It is not our turn.
-+- Dealer button is on the robot seat.
-+- Small blind is on the robot seat.
-+- Big blind is on the opponent seat.
-+- Community cards visible: `3c`, `2h`, `Tc`, with the first two positions unreadable.
-+- Robot-held hole card was not visibly readable.
-+- Chip inventory was counted with partial occlusion on some stacks.
-+
-+## Caveats
-+
-+- Chip counts for the robot and opponent are approximate where the arm occludes the stacks.
-+- The community-card reader only confirmed the three readable board cards and left the first two positions unreadable.
-+- This report reflects a single capture; very recent motion cannot be excluded.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..3bbf031d53c2ae76d5f8fd5b69b9e5a7c2b14626
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-@@ -0,0 +1,3 @@
-+Dealer button is at the robot seat. Small blind is also the robot seat. Big blind is the opponent seat.
-+
-+Evidence: the white DEALER disc and blue SMALL BLIND disc are both in the lower robot-side area, while the yellow BIG BLIND disc is on the upper opponent side.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..c2db57281593c4878dd8f5acbd7e5945097ff83a
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-@@ -0,0 +1,5 @@
-+Robot/player inventory (bottom seat band): 3 red 5-chips, 2 blue 10-chips, 1 green 50-chip, 2 brown 100-chips. The right-side green/brown cluster is partly occluded by the robot arm, so those counts are approximate.
-+
-+Opponent inventory (top seat band): 3 red 5-chips, 4 blue 10-chips, 3 green 50-chips, 4 brown 100-chips. The top-right cluster under the robot arm is partially occluded.
-+
-+Current bets, buttons, and cards were not counted.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..1c86a7e5bbc0b93f450ce530e334e9c7bb661b18
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-@@ -0,0 +1,10 @@
-+Visible community cards: 3
-+
-+Left to right:
-+- Pos 1: unreadable face-down
-+- Pos 2: unreadable face-down
-+- Pos 3: 3c
-+- Pos 4: 2h
-+- Pos 5: Tc
-+
-+Uncertain: none on the three visible cards; the first two positions are not readable.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..8c2fb03cd0f584d1981a26bb2264d3d0410d82ed
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-@@ -0,0 +1 @@
-+Robot hand is not visibly holding a hole card in this capture. No card value is readable, and this should be treated as unreadable/non-visible.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..104975e88815bfd5ccf4cd668cea300ec8f97546
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-@@ -0,0 +1 @@
-+Stable. Compared the current capture only; no previous or settled image was provided. The table, chips, cards, person, and robot arm are all sharp with no motion blur or visible repositioning, so the scene appears settled enough to continue. Uncertainty: this is a single-frame inference, so very recent motion cannot be ruled out.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..619f41ecdc6cee37ad2225c54e1db68159c676a6
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-@@ -0,0 +1 @@
-+it is not our turn. The small white physical turn button appears on the upper-left side of the table, away from our bottom-side seat.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-new file mode 100644
-index 0000000000000000000000000000000000000000..a398b581a41a74ede2ea4b1e7331875081a9451b
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-@@ -0,0 +1,75 @@
-+{
-+  "status": "ok",
-+  "capture": "s0/00_capture.jpg",
-+  "scene_stable": true,
-+  "is_my_turn": false,
-+  "dealer_button": "robot",
-+  "small_blind": "robot",
-+  "big_blind": "opponent",
-+  "community_cards": {
-+    "visible_count": 3,
-+    "left_to_right": [
-+      {
-+        "position": 1,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 2,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 3,
-+        "card": "3c",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 4,
-+        "card": "2h",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 5,
-+        "card": "Tc",
-+        "status": "readable"
-+      }
-+    ]
-+  },
-+  "held_cards": {
-+    "robot": {
-+      "visible": false,
-+      "cards": []
-+    }
-+  },
-+  "chip_inventory": {
-+    "robot": {
-+      "red_5": 3,
-+      "blue_10": 2,
-+      "green_50": 1,
-+      "brown_100": 2,
-+      "approximate": true
-+    },
-+    "opponent": {
-+      "red_5": 3,
-+      "blue_10": 4,
-+      "green_50": 3,
-+      "brown_100": 4,
-+      "approximate": true
-+    }
-+  },
-+  "evidence_sources": {
-+    "community_cards": "visual_raw/community_cards.txt",
-+    "blind_buttons": "visual_raw/blind_buttons.txt",
-+    "turn_detection": "visual_raw/turn_detection.txt",
-+    "chips": "visual_raw/chips.txt",
-+    "held_card": "visual_raw/held_card.txt",
-+    "scene_stability": "visual_raw/scene_stability.txt"
-+  },
-+  "notes": [
-+    "No robot action was executed.",
-+    "No poker strategy reasoning was requested or committed.",
-+    "Chip inventory counts are approximate where the robot arm occludes the stacks.",
-+    "The first two community-card positions were reported as unreadable by the visual subagent."
-+  ]
-+}
-
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-new file mode 100644
-index 0000000000000000000000000000000000000000..464613149d7088ae5bf5413628989e5cb1b5413c
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-@@ -0,0 +1,22 @@
-+# Eval Report
-+
-+## Outcome
-+
-+Perception step completed from local evidence only. No robot actions were executed.
-+
-+## Merged Evidence
-+
-+- Scene judged stable enough to continue.
-+- It is not our turn.
-+- Dealer button is on the robot seat.
-+- Small blind is on the robot seat.
-+- Big blind is on the opponent seat.
-+- Community cards visible: `3c`, `2h`, `Tc`, with the first two positions unreadable.
-+- Robot-held hole card was not visibly readable.
-+- Chip inventory was counted with partial occlusion on some stacks.
-+
-+## Caveats
-+
-+- Chip counts for the robot and opponent are approximate where the arm occludes the stacks.
-+- The community-card reader only confirmed the three readable board cards and left the first two positions unreadable.
-+- This report reflects a single capture; very recent motion cannot be excluded.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..3bbf031d53c2ae76d5f8fd5b69b9e5a7c2b14626
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-@@ -0,0 +1,3 @@
-+Dealer button is at the robot seat. Small blind is also the robot seat. Big blind is the opponent seat.
-+
-+Evidence: the white DEALER disc and blue SMALL BLIND disc are both in the lower robot-side area, while the yellow BIG BLIND disc is on the upper opponent side.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..c2db57281593c4878dd8f5acbd7e5945097ff83a
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-@@ -0,0 +1,5 @@
-+Robot/player inventory (bottom seat band): 3 red 5-chips, 2 blue 10-chips, 1 green 50-chip, 2 brown 100-chips. The right-side green/brown cluster is partly occluded by the robot arm, so those counts are approximate.
-+
-+Opponent inventory (top seat band): 3 red 5-chips, 4 blue 10-chips, 3 green 50-chips, 4 brown 100-chips. The top-right cluster under the robot arm is partially occluded.
-+
-+Current bets, buttons, and cards were not counted.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..1c86a7e5bbc0b93f450ce530e334e9c7bb661b18
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-@@ -0,0 +1,10 @@
-+Visible community cards: 3
-+
-+Left to right:
-+- Pos 1: unreadable face-down
-+- Pos 2: unreadable face-down
-+- Pos 3: 3c
-+- Pos 4: 2h
-+- Pos 5: Tc
-+
-+Uncertain: none on the three visible cards; the first two positions are not readable.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..8c2fb03cd0f584d1981a26bb2264d3d0410d82ed
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-@@ -0,0 +1 @@
-+Robot hand is not visibly holding a hole card in this capture. No card value is readable, and this should be treated as unreadable/non-visible.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..104975e88815bfd5ccf4cd668cea300ec8f97546
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-@@ -0,0 +1 @@
-+Stable. Compared the current capture only; no previous or settled image was provided. The table, chips, cards, person, and robot arm are all sharp with no motion blur or visible repositioning, so the scene appears settled enough to continue. Uncertainty: this is a single-frame inference, so very recent motion cannot be ruled out.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..619f41ecdc6cee37ad2225c54e1db68159c676a6
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-@@ -0,0 +1 @@
-+it is not our turn. The small white physical turn button appears on the upper-left side of the table, away from our bottom-side seat.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-new file mode 100644
-index 0000000000000000000000000000000000000000..a398b581a41a74ede2ea4b1e7331875081a9451b
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-@@ -0,0 +1,75 @@
-+{
-+  "status": "ok",
-+  "capture": "s0/00_capture.jpg",
-+  "scene_stable": true,
-+  "is_my_turn": false,
-+  "dealer_button": "robot",
-+  "small_blind": "robot",
-+  "big_blind": "opponent",
-+  "community_cards": {
-+    "visible_count": 3,
-+    "left_to_right": [
-+      {
-+        "position": 1,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 2,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 3,
-+        "card": "3c",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 4,
-+        "card": "2h",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 5,
-+        "card": "Tc",
-+        "status": "readable"
-+      }
-+    ]
-+  },
-+  "held_cards": {
-+    "robot": {
-+      "visible": false,
-+      "cards": []
-+    }
-+  },
-+  "chip_inventory": {
-+    "robot": {
-+      "red_5": 3,
-+      "blue_10": 2,
-+      "green_50": 1,
-+      "brown_100": 2,
-+      "approximate": true
-+    },
-+    "opponent": {
-+      "red_5": 3,
-+      "blue_10": 4,
-+      "green_50": 3,
-+      "brown_100": 4,
-+      "approximate": true
-+    }
-+  },
-+  "evidence_sources": {
-+    "community_cards": "visual_raw/community_cards.txt",
-+    "blind_buttons": "visual_raw/blind_buttons.txt",
-+    "turn_detection": "visual_raw/turn_detection.txt",
-+    "chips": "visual_raw/chips.txt",
-+    "held_card": "visual_raw/held_card.txt",
-+    "scene_stability": "visual_raw/scene_stability.txt"
-+  },
-+  "notes": [
-+    "No robot action was executed.",
-+    "No poker strategy reasoning was requested or committed.",
-+    "Chip inventory counts are approximate where the robot arm occludes the stacks.",
-+    "The first two community-card positions were reported as unreadable by the visual subagent."
-+  ]
-+}
-
-codex
-The files are written. I’m doing a quick readback to confirm the exact run path and that the summary/report match the merged evidence.
-exec
-/bin/zsh -lc "sed -n '1,220p' runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-{
-  "status": "ok",
-  "capture": "s0/00_capture.jpg",
-  "scene_stable": true,
-  "is_my_turn": false,
-  "dealer_button": "robot",
-  "small_blind": "robot",
-  "big_blind": "opponent",
-  "community_cards": {
-    "visible_count": 3,
-    "left_to_right": [
-      {
-        "position": 1,
-        "card": null,
-        "status": "unreadable_face_down"
-      },
-      {
-        "position": 2,
-        "card": null,
-        "status": "unreadable_face_down"
-      },
-      {
-        "position": 3,
-        "card": "3c",
-        "status": "readable"
-      },
-      {
-        "position": 4,
-        "card": "2h",
-        "status": "readable"
-      },
-      {
-        "position": 5,
-        "card": "Tc",
-        "status": "readable"
-      }
-    ]
-  },
-  "held_cards": {
-    "robot": {
-      "visible": false,
-      "cards": []
-    }
-  },
-  "chip_inventory": {
-    "robot": {
-      "red_5": 3,
-      "blue_10": 2,
-      "green_50": 1,
-      "brown_100": 2,
-      "approximate": true
-    },
-    "opponent": {
-      "red_5": 3,
-      "blue_10": 4,
-      "green_50": 3,
-      "brown_100": 4,
-      "approximate": true
-    }
-  },
-  "evidence_sources": {
-    "community_cards": "visual_raw/community_cards.txt",
-    "blind_buttons": "visual_raw/blind_buttons.txt",
-    "turn_detection": "visual_raw/turn_detection.txt",
-    "chips": "visual_raw/chips.txt",
-    "held_card": "visual_raw/held_card.txt",
-    "scene_stability": "visual_raw/scene_stability.txt"
-  },
-  "notes": [
-    "No robot action was executed.",
-    "No poker strategy reasoning was requested or committed.",
-    "Chip inventory counts are approximate where the robot arm occludes the stacks.",
-    "The first two community-card positions were reported as unreadable by the visual subagent."
-  ]
-}
-
-exec
-/bin/zsh -lc "sed -n '1,220p' runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-# Eval Report
-
-## Outcome
-
-Perception step completed from local evidence only. No robot actions were executed.
-
-## Merged Evidence
-
-- Scene judged stable enough to continue.
-- It is not our turn.
-- Dealer button is on the robot seat.
-- Small blind is on the robot seat.
-- Big blind is on the opponent seat.
-- Community cards visible: `3c`, `2h`, `Tc`, with the first two positions unreadable.
-- Robot-held hole card was not visibly readable.
-- Chip inventory was counted with partial occlusion on some stacks.
-
-## Caveats
-
-- Chip counts for the robot and opponent are approximate where the arm occludes the stacks.
-- The community-card reader only confirmed the three readable board cards and left the first two positions unreadable.
-- This report reflects a single capture; very recent motion cannot be excluded.
-
-exec
-/bin/zsh -lc 'find runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw -maxdepth 1 -type f | sort' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54
- succeeded in 0ms:
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-new file mode 100644
-index 0000000000000000000000000000000000000000..464613149d7088ae5bf5413628989e5cb1b5413c
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-@@ -0,0 +1,22 @@
-+# Eval Report
-+
-+## Outcome
-+
-+Perception step completed from local evidence only. No robot actions were executed.
-+
-+## Merged Evidence
-+
-+- Scene judged stable enough to continue.
-+- It is not our turn.
-+- Dealer button is on the robot seat.
-+- Small blind is on the robot seat.
-+- Big blind is on the opponent seat.
-+- Community cards visible: `3c`, `2h`, `Tc`, with the first two positions unreadable.
-+- Robot-held hole card was not visibly readable.
-+- Chip inventory was counted with partial occlusion on some stacks.
-+
-+## Caveats
-+
-+- Chip counts for the robot and opponent are approximate where the arm occludes the stacks.
-+- The community-card reader only confirmed the three readable board cards and left the first two positions unreadable.
-+- This report reflects a single capture; very recent motion cannot be excluded.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..3bbf031d53c2ae76d5f8fd5b69b9e5a7c2b14626
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-@@ -0,0 +1,3 @@
-+Dealer button is at the robot seat. Small blind is also the robot seat. Big blind is the opponent seat.
-+
-+Evidence: the white DEALER disc and blue SMALL BLIND disc are both in the lower robot-side area, while the yellow BIG BLIND disc is on the upper opponent side.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..c2db57281593c4878dd8f5acbd7e5945097ff83a
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-@@ -0,0 +1,5 @@
-+Robot/player inventory (bottom seat band): 3 red 5-chips, 2 blue 10-chips, 1 green 50-chip, 2 brown 100-chips. The right-side green/brown cluster is partly occluded by the robot arm, so those counts are approximate.
-+
-+Opponent inventory (top seat band): 3 red 5-chips, 4 blue 10-chips, 3 green 50-chips, 4 brown 100-chips. The top-right cluster under the robot arm is partially occluded.
-+
-+Current bets, buttons, and cards were not counted.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..1c86a7e5bbc0b93f450ce530e334e9c7bb661b18
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-@@ -0,0 +1,10 @@
-+Visible community cards: 3
-+
-+Left to right:
-+- Pos 1: unreadable face-down
-+- Pos 2: unreadable face-down
-+- Pos 3: 3c
-+- Pos 4: 2h
-+- Pos 5: Tc
-+
-+Uncertain: none on the three visible cards; the first two positions are not readable.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..8c2fb03cd0f584d1981a26bb2264d3d0410d82ed
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-@@ -0,0 +1 @@
-+Robot hand is not visibly holding a hole card in this capture. No card value is readable, and this should be treated as unreadable/non-visible.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..104975e88815bfd5ccf4cd668cea300ec8f97546
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-@@ -0,0 +1 @@
-+Stable. Compared the current capture only; no previous or settled image was provided. The table, chips, cards, person, and robot arm are all sharp with no motion blur or visible repositioning, so the scene appears settled enough to continue. Uncertainty: this is a single-frame inference, so very recent motion cannot be ruled out.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..619f41ecdc6cee37ad2225c54e1db68159c676a6
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-@@ -0,0 +1 @@
-+it is not our turn. The small white physical turn button appears on the upper-left side of the table, away from our bottom-side seat.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-new file mode 100644
-index 0000000000000000000000000000000000000000..a398b581a41a74ede2ea4b1e7331875081a9451b
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-@@ -0,0 +1,75 @@
-+{
-+  "status": "ok",
-+  "capture": "s0/00_capture.jpg",
-+  "scene_stable": true,
-+  "is_my_turn": false,
-+  "dealer_button": "robot",
-+  "small_blind": "robot",
-+  "big_blind": "opponent",
-+  "community_cards": {
-+    "visible_count": 3,
-+    "left_to_right": [
-+      {
-+        "position": 1,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 2,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 3,
-+        "card": "3c",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 4,
-+        "card": "2h",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 5,
-+        "card": "Tc",
-+        "status": "readable"
-+      }
-+    ]
-+  },
-+  "held_cards": {
-+    "robot": {
-+      "visible": false,
-+      "cards": []
-+    }
-+  },
-+  "chip_inventory": {
-+    "robot": {
-+      "red_5": 3,
-+      "blue_10": 2,
-+      "green_50": 1,
-+      "brown_100": 2,
-+      "approximate": true
-+    },
-+    "opponent": {
-+      "red_5": 3,
-+      "blue_10": 4,
-+      "green_50": 3,
-+      "brown_100": 4,
-+      "approximate": true
-+    }
-+  },
-+  "evidence_sources": {
-+    "community_cards": "visual_raw/community_cards.txt",
-+    "blind_buttons": "visual_raw/blind_buttons.txt",
-+    "turn_detection": "visual_raw/turn_detection.txt",
-+    "chips": "visual_raw/chips.txt",
-+    "held_card": "visual_raw/held_card.txt",
-+    "scene_stability": "visual_raw/scene_stability.txt"
-+  },
-+  "notes": [
-+    "No robot action was executed.",
-+    "No poker strategy reasoning was requested or committed.",
-+    "Chip inventory counts are approximate where the robot arm occludes the stacks.",
-+    "The first two community-card positions were reported as unreadable by the visual subagent."
-+  ]
-+}
-
-codex
-Completed in `runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low`.
-
-Wrote:
-- `runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/`
-- `runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json`
-- `runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md`
-
-Merged perception:
-- Scene stable
-- Not our turn
-- Dealer and small blind: robot
-- Big blind: opponent
-- Visible board: `3c`, `2h`, `Tc`
-- Robot-held hole card not visibly readable
-- Chip counts captured with partial occlusion, marked approximate
-
-No robot actions were executed.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-new file mode 100644
-index 0000000000000000000000000000000000000000..464613149d7088ae5bf5413628989e5cb1b5413c
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/eval_report.md
-@@ -0,0 +1,22 @@
-+# Eval Report
-+
-+## Outcome
-+
-+Perception step completed from local evidence only. No robot actions were executed.
-+
-+## Merged Evidence
-+
-+- Scene judged stable enough to continue.
-+- It is not our turn.
-+- Dealer button is on the robot seat.
-+- Small blind is on the robot seat.
-+- Big blind is on the opponent seat.
-+- Community cards visible: `3c`, `2h`, `Tc`, with the first two positions unreadable.
-+- Robot-held hole card was not visibly readable.
-+- Chip inventory was counted with partial occlusion on some stacks.
-+
-+## Caveats
-+
-+- Chip counts for the robot and opponent are approximate where the arm occludes the stacks.
-+- The community-card reader only confirmed the three readable board cards and left the first two positions unreadable.
-+- This report reflects a single capture; very recent motion cannot be excluded.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..3bbf031d53c2ae76d5f8fd5b69b9e5a7c2b14626
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/blind_buttons.txt
-@@ -0,0 +1,3 @@
-+Dealer button is at the robot seat. Small blind is also the robot seat. Big blind is the opponent seat.
-+
-+Evidence: the white DEALER disc and blue SMALL BLIND disc are both in the lower robot-side area, while the yellow BIG BLIND disc is on the upper opponent side.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..c2db57281593c4878dd8f5acbd7e5945097ff83a
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/chips.txt
-@@ -0,0 +1,5 @@
-+Robot/player inventory (bottom seat band): 3 red 5-chips, 2 blue 10-chips, 1 green 50-chip, 2 brown 100-chips. The right-side green/brown cluster is partly occluded by the robot arm, so those counts are approximate.
-+
-+Opponent inventory (top seat band): 3 red 5-chips, 4 blue 10-chips, 3 green 50-chips, 4 brown 100-chips. The top-right cluster under the robot arm is partially occluded.
-+
-+Current bets, buttons, and cards were not counted.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..1c86a7e5bbc0b93f450ce530e334e9c7bb661b18
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/community_cards.txt
-@@ -0,0 +1,10 @@
-+Visible community cards: 3
-+
-+Left to right:
-+- Pos 1: unreadable face-down
-+- Pos 2: unreadable face-down
-+- Pos 3: 3c
-+- Pos 4: 2h
-+- Pos 5: Tc
-+
-+Uncertain: none on the three visible cards; the first two positions are not readable.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..8c2fb03cd0f584d1981a26bb2264d3d0410d82ed
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/held_card.txt
-@@ -0,0 +1 @@
-+Robot hand is not visibly holding a hole card in this capture. No card value is readable, and this should be treated as unreadable/non-visible.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..104975e88815bfd5ccf4cd668cea300ec8f97546
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/scene_stability.txt
-@@ -0,0 +1 @@
-+Stable. Compared the current capture only; no previous or settled image was provided. The table, chips, cards, person, and robot arm are all sharp with no motion blur or visible repositioning, so the scene appears settled enough to continue. Uncertainty: this is a single-frame inference, so very recent motion cannot be ruled out.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-new file mode 100644
-index 0000000000000000000000000000000000000000..619f41ecdc6cee37ad2225c54e1db68159c676a6
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_raw/turn_detection.txt
-@@ -0,0 +1 @@
-+it is not our turn. The small white physical turn button appears on the upper-left side of the table, away from our bottom-side seat.
-diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-new file mode 100644
-index 0000000000000000000000000000000000000000..a398b581a41a74ede2ea4b1e7331875081a9451b
---- /dev/null
-+++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p54_p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low__2rql6bc/p54/runs/p54_codex_native_gpt5_4_mini_medium_split_batch003_gpt54mini_split_low/visual_summary.json
-@@ -0,0 +1,75 @@
-+{
-+  "status": "ok",
-+  "capture": "s0/00_capture.jpg",
-+  "scene_stable": true,
-+  "is_my_turn": false,
-+  "dealer_button": "robot",
-+  "small_blind": "robot",
-+  "big_blind": "opponent",
-+  "community_cards": {
-+    "visible_count": 3,
-+    "left_to_right": [
-+      {
-+        "position": 1,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 2,
-+        "card": null,
-+        "status": "unreadable_face_down"
-+      },
-+      {
-+        "position": 3,
-+        "card": "3c",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 4,
-+        "card": "2h",
-+        "status": "readable"
-+      },
-+      {
-+        "position": 5,
-+        "card": "Tc",
-+        "status": "readable"
-+      }
-+    ]
-+  },
-+  "held_cards": {
-+    "robot": {
-+      "visible": false,
-+      "cards": []
-+    }
-+  },
-+  "chip_inventory": {
-+    "robot": {
-+      "red_5": 3,
-+      "blue_10": 2,
-+      "green_50": 1,
-+      "brown_100": 2,
-+      "approximate": true
-+    },
-+    "opponent": {
-+      "red_5": 3,
-+      "blue_10": 4,
-+      "green_50": 3,
-+      "brown_100": 4,
-+      "approximate": true
-+    }
-+  },
-+  "evidence_sources": {
-+    "community_cards": "visual_raw/community_cards.txt",
-+    "blind_buttons": "visual_raw/blind_buttons.txt",
-+    "turn_detection": "visual_raw/turn_detection.txt",
-+    "chips": "visual_raw/chips.txt",
-+    "held_card": "visual_raw/held_card.txt",
-+    "scene_stability": "visual_raw/scene_stability.txt"
-+  },
-+  "notes": [
-+    "No robot action was executed.",
-+    "No poker strategy reasoning was requested or committed.",
-+    "Chip inventory counts are approximate where the robot arm occludes the stacks.",
-+    "The first two community-card positions were reported as unreadable by the visual subagent."
-+  ]
-+}
-
-2026-05-01T22:02:02.726003Z ERROR codex_core::session: failed to record rollout items: thread 019de58e-eaa6-7531-a466-4d331c1cbd77 not found
-2026-05-01T22:02:02.726163Z ERROR codex_core::session: failed to record rollout items: thread 019de58e-ea75-7012-a991-32b402afa27f not found
-2026-05-01T22:02:02.726165Z ERROR codex_core::session: failed to record rollout items: thread 019de58e-ea8d-7471-9cc8-2e6a504024e6 not found
-2026-05-01T22:02:02.726172Z ERROR codex_core::session: failed to record rollout items: thread 019de58e-ea95-7942-9ba2-d28833dcebac not found
-2026-05-01T22:02:02.726244Z ERROR codex_core::session: failed to record rollout items: thread 019de58e-eaa1-7b20-949b-24dfa2b678e8 not found
-2026-05-01T22:02:02.726256Z ERROR codex_core::session: failed to record rollout items: thread 019de58e-ea9c-72d2-8852-6eb576852d62 not found
-tokens used
-77,982
