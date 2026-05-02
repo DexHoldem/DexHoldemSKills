@@ -175,7 +175,7 @@ python3 perception_eval/run_parallel_buffer.py \
 Defaults:
 
 ```text
-problems: p1 through p64
+problems: p1 through p36
 concurrency: 6 active subprocesses
 visual setting: split
 harness model: gpt-5.4-mini

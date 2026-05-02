@@ -3,10 +3,10 @@
 ```json
 {
   "blind": "big_blind",
-  "loop_stage": "to_recover",
-  "robot": "simulate pausing of 3 frames, should recover cached action",
+  "loop_stage": "acting",
+  "robot": "acting pushing chips 10, wait",
   "table": {
-    "scene_stable": true,
+    "scene_stable": false,
     "is_my_turn": true,
     "community_cards": [],
     "my_chips": {

@@ -4,8 +4,8 @@
 
 ```json
 {
-  "action": "choose_poker_action",
-  "reason": "The table is stable and ready for the next decision."
+  "action": "wait_for_opponent",
+  "reason": "It is not the robot/player's turn."
 }
 ```
 
@@ -17,7 +17,7 @@
   "dry_run": true,
   "can_retry": false,
   "human_required": false,
-  "note": "The table is stable and ready for the next decision."
+  "note": "It is not the robot/player's turn."
 }
 ```
 

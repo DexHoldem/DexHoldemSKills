@@ -1,18 +1,8 @@
 # Parsed State
 
-Source image: `00_capture.jpg`
-
-## Visual Summary
-
-- Source raw image is `bench/bench_raw/7.jpg`.
-- Loop stage: `atom_idle`.
-- dexterous hand is holding the left hole card face-visible to the camera.
-- Readable held card: `9d` from the left slot.
-
-## State JSON
-
 ```json
 {
+  "blind": "big blind",
   "loop_stage": "atom_idle",
   "robot": "dexterous hand is holding the left hole card face-visible to the camera",
   "table": {

@@ -4,8 +4,8 @@
 
 ```json
 {
-  "action": "recover_cached_action",
-  "reason": "The previous atom appears retryable from the cached action sequence."
+  "action": "wait",
+  "reason": "Robot motion is still in progress; wait for another capture."
 }
 ```
 
@@ -13,11 +13,11 @@
 
 ```json
 {
-  "stage": "pending",
+  "stage": "in_progress",
   "dry_run": true,
   "can_retry": true,
   "human_required": false,
-  "note": "The previous atom appears retryable from the cached action sequence."
+  "note": "Robot motion is still in progress; wait for another capture."
 }
 ```
 

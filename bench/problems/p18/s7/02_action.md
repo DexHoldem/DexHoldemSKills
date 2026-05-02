@@ -1,18 +1,11 @@
 # Action
 
-Based on: `01_parsed_state.md`
-
-## Decision
-
-Wait for the left-card put-down action to settle.
-
 ## Action JSON
 
 ```json
 {
   "action": "wait",
-  "reason": "robot_action_in_progress",
-  "sleep_seconds": 30
+  "reason": "Robot motion is still in progress; wait for another capture."
 }
 ```
 
@@ -20,15 +13,11 @@ Wait for the left-card put-down action to settle.
 
 ```json
 {
-  "stage": "completed",
-  "started_at": "2026-05-01T00:00:00+00:00",
-  "completed_at": "2026-05-01T00:00:00+00:00",
-  "commands": [],
-  "commands_completed": 0,
+  "stage": "in_progress",
   "dry_run": true,
   "can_retry": true,
   "human_required": false,
-  "preserved_loop_stage": null
+  "note": "Robot motion is still in progress; wait for another capture."
 }
 ```
 
@@ -36,7 +25,7 @@ Wait for the left-card put-down action to settle.
 
 ```json
 {
-  "prefix": null,
+  "prefix": "reset",
   "commands": [],
   "command_steps": [],
   "sequence_steps": []

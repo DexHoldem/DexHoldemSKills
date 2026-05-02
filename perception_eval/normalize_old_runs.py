@@ -54,7 +54,7 @@ def batch_run_ids(batch_dir: Path) -> list[tuple[str, str]]:
     variant = manifest["visual_variant"]
     setting = manifest["visual_setting"]
     prefix = manifest["run_prefix"]
-    return [(f"p{i}", f"p{i}_{variant}_{setting}_{prefix}") for i in range(1, 65)]
+    return [(f"p{i}", f"p{i}_{variant}_{setting}_{prefix}") for i in range(1, 37)]
 
 
 def copy_if_exists(src: Path, dest: Path) -> None:
@@ -166,7 +166,7 @@ def main() -> None:
         action="append",
         help="Batch dir to normalize. Defaults to the six completed Codex split batches.",
     )
-    parser.add_argument("--problem-list", help="Comma-separated problem ids, e.g. p1,p2. Default: all p1-p64.")
+    parser.add_argument("--problem-list", help="Comma-separated problem ids, e.g. p1,p2. Default: all p1-p36.")
     parser.add_argument("--codex-bin", default="codex")
     parser.add_argument("--output-name", default="normalized_visual_summary.json")
     parser.add_argument("--skip-existing", action="store_true")

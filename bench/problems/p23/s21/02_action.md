@@ -4,8 +4,8 @@
 
 ```json
 {
-  "action": "recover_cached_action",
-  "reason": "The previous atom appears retryable from the cached action sequence."
+  "action": "wait_for_opponent",
+  "reason": "It is not the robot/player's turn."
 }
 ```
 
@@ -15,9 +15,9 @@
 {
   "stage": "pending",
   "dry_run": true,
-  "can_retry": true,
+  "can_retry": false,
   "human_required": false,
-  "note": "The previous atom appears retryable from the cached action sequence."
+  "note": "It is not the robot/player's turn."
 }
 ```
 

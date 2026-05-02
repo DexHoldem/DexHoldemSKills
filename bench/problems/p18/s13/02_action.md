@@ -1,18 +1,11 @@
 # Action
 
-Based on: `01_parsed_state.md`
-
-## Decision
-
-Wait for the right-card pickup action to settle.
-
 ## Action JSON
 
 ```json
 {
-  "action": "wait",
-  "reason": "robot_action_in_progress",
-  "sleep_seconds": 30
+  "action": "continue_cached_action_sequence",
+  "reason": "The atom has settled but the cached action sequence still has pending steps."
 }
 ```
 
@@ -20,15 +13,11 @@ Wait for the right-card pickup action to settle.
 
 ```json
 {
-  "stage": "completed",
-  "started_at": "2026-05-01T00:00:00+00:00",
-  "completed_at": "2026-05-01T00:00:00+00:00",
-  "commands": [],
-  "commands_completed": 0,
+  "stage": "pending",
   "dry_run": true,
   "can_retry": true,
   "human_required": false,
-  "preserved_loop_stage": null
+  "note": "The atom has settled but the cached action sequence still has pending steps."
 }
 ```
 
@@ -36,7 +25,7 @@ Wait for the right-card pickup action to settle.
 
 ```json
 {
-  "prefix": null,
+  "prefix": "reset",
   "commands": [],
   "command_steps": [],
   "sequence_steps": []

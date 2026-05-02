@@ -1,17 +1,8 @@
 # Parsed State
 
-Source image: `00_capture.jpg`
-
-## Visual Summary
-
-- Source raw image is `bench/bench_raw/3.jpg`.
-- Loop stage: `acting`.
-- dexterous hand is moving through the left hole-card pickup sequence.
-
-## State JSON
-
 ```json
 {
+  "blind": "big blind",
   "loop_stage": "acting",
   "robot": "dexterous hand is moving through the left hole-card pickup sequence",
   "table": {

@@ -4,10 +4,10 @@
 {
   "blind": "big_blind",
   "loop_stage": "idle",
-  "robot": "chip pushed, idle, ready for next move.",
+  "robot": "the opponent's turn",
   "table": {
     "scene_stable": true,
-    "is_my_turn": true,
+    "is_my_turn": false,
     "community_cards": [],
     "my_chips": {
       "5": 4,

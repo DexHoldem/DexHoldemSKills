@@ -4,8 +4,8 @@
 
 ```json
 {
-  "action": "recover_cached_action",
-  "reason": "The table is stable and ready for the next decision."
+  "action": "judge_or_collect_pot",
+  "reason": "The current table state should be judged or collected."
 }
 ```
 
@@ -17,7 +17,7 @@
   "dry_run": true,
   "can_retry": false,
   "human_required": false,
-  "note": "The table is stable and ready for the next decision."
+  "note": "The current table state should be judged or collected."
 }
 ```
 

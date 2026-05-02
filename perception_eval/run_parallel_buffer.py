@@ -164,7 +164,7 @@ def main() -> None:
     parser.add_argument("--visual-setting", choices=("split", "general"), default="split")
     parser.add_argument("--problems-root", default=str(ROOT / "bench" / "problems"))
     parser.add_argument("--problem-start", type=int, default=1)
-    parser.add_argument("--problem-end", type=int, default=64)
+    parser.add_argument("--problem-end", type=int, default=36)
     parser.add_argument("--problem-list", help="Comma-separated problem names, e.g. p1,p3,p8")
     parser.add_argument("--problem-list-file", help="File containing problem names separated by commas or whitespace")
     parser.add_argument("--concurrency", type=int, default=6)

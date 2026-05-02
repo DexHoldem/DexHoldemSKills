@@ -2,36 +2,40 @@
 
 ```json
 {
-  "blind": "big blind",
+  "blind": "big_blind",
   "loop_stage": "idle",
-  "robot": "dexterous hand is near its initial pose and not holding a card or chips",
+  "robot": "new game, start from 3 cards unfolded; opponent's turn",
   "table": {
     "scene_stable": true,
-    "is_my_turn": true,
-    "community_cards": [],
+    "is_my_turn": false,
+    "community_cards": [
+      "Jh",
+      "Ac",
+      "4c"
+    ],
     "my_chips": {
-      "5": 4,
-      "10": 4,
-      "50": 4,
-      "100": 4
+      "5": 1,
+      "10": 1,
+      "50": 1,
+      "100": 1
     },
     "opponent_chips": {
       "5": 4,
-      "10": 4,
-      "50": 4,
-      "100": 4
+      "10": 2,
+      "50": 5,
+      "100": 2
     },
     "my_current_bet": {
       "5": 0,
-      "10": 0,
+      "10": 1,
       "50": 0,
-      "100": 0
+      "100": 1
     },
     "opponent_bet": {
-      "5": 0,
+      "5": 2,
       "10": 0,
       "50": 0,
-      "100": 0
+      "100": 1
     }
   }
 }

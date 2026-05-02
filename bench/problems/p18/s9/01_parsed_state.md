@@ -1,17 +1,8 @@
 # Parsed State
 
-Source image: `00_capture.jpg`
-
-## Visual Summary
-
-- Source raw image is `bench/bench_raw/14.jpg`.
-- Loop stage: `idle`.
-- dexterous hand has returned near the table after putting down the left hole card and is ready to view the right hole card.
-
-## State JSON
-
 ```json
 {
+  "blind": "big blind",
   "loop_stage": "idle",
   "robot": "dexterous hand has returned near the table after putting down the left hole card and is ready to view the right hole card",
   "table": {

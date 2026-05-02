@@ -4,7 +4,7 @@
 
 ```json
 {
-  "action": "choose_poker_action",
+  "action": "continue_cached_action_sequence",
   "reason": "The table is stable and ready for the next decision."
 }
 ```
