@@ -3,7 +3,7 @@
 `system_eval/preflight.py` creates a self-contained DexHoldem experiment
 workspace for real system-level runs.
 
-Default setup:
+## Default Setup (with subagents)
 
 ```bash
 python3 system_eval/preflight.py --exp-name exp001
@@ -18,6 +18,19 @@ This creates `experiments/exp001/`, updates `experiments/current`, and installs:
 - split Claude visual subagents from `subagent/claude_sonnet_4_6_medium/split`
 - runtime helper script symlinks, `config.yaml`, `pyproject.toml`, `visual_guidelines`, `s0`, `s_current`, and the two state caches
 - `AGENTS.md` documenting the available subagents for the main agent to discover
+
+## Native Setup (no subagents)
+
+For system benchmarks where the main agent handles perception directly:
+
+```bash
+python3 system_eval/preflight.py --exp-name exp001 --native
+```
+
+This uses `dexholdem-v2-native` skill and skips subagent installation. The main
+agent reads images directly using visual guidelines.
+
+## Options
 
 Use `--dry-run` to inspect the planned setup without writing. Use `--force`
 only when intentionally replacing the named experiment directory.

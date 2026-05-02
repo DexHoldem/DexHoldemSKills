@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_SOURCE = ROOT / "skills" / "dexholdem-v2"
+SKILL_SOURCE_NATIVE = ROOT / "skills" / "dexholdem-v2-native"
 SUBAGENT_ROOT = ROOT / "subagent"
 DEFAULT_EXPERIMENTS_ROOT = ROOT / "experiments"
 DEFAULT_CODEX_VARIANT = "codex_native_gpt5_4_mini_medium"
@@ -149,14 +150,16 @@ def install_agent_files(files: list[Path], target_dir: Path) -> list[dict]:
     return installed
 
 
-def install_skill(exp_dir: Path) -> dict:
-    shared_skill = exp_dir / ".agent" / "skills" / "dexholdem-v2"
-    copytree_clean(SKILL_SOURCE, shared_skill)
+def install_skill(exp_dir: Path, native: bool = False) -> dict:
+    skill_name = "dexholdem-v2-native" if native else "dexholdem-v2"
+    skill_source = SKILL_SOURCE_NATIVE if native else SKILL_SOURCE
+    shared_skill = exp_dir / ".agent" / "skills" / skill_name
+    copytree_clean(skill_source, shared_skill)
 
     links = {}
     for link in (
-        exp_dir / ".claude" / "skills" / "dexholdem-v2",
-        exp_dir / ".codex" / "skills" / "dexholdem-v2",
+        exp_dir / ".claude" / "skills" / skill_name,
+        exp_dir / ".codex" / "skills" / skill_name,
     ):
         replace_symlink(link, relative_target(link, shared_skill))
         links[str(link.relative_to(exp_dir))] = os.readlink(link)
@@ -165,11 +168,12 @@ def install_skill(exp_dir: Path) -> dict:
     replace_symlink(agents_link, ".agent")
     links[str(agents_link.relative_to(exp_dir))] = os.readlink(agents_link)
 
-    return {"shared_skill": str(shared_skill), "links": links}
+    return {"shared_skill": str(shared_skill), "skill_name": skill_name, "links": links}
 
 
-def expose_runtime(exp_dir: Path) -> dict:
-    skill_dir = exp_dir / ".agent" / "skills" / "dexholdem-v2"
+def expose_runtime(exp_dir: Path, native: bool = False) -> dict:
+    skill_name = "dexholdem-v2-native" if native else "dexholdem-v2"
+    skill_dir = exp_dir / ".agent" / "skills" / skill_name
     exposed = []
     for name in RUNTIME_FILES:
         link = exp_dir / name
@@ -185,11 +189,12 @@ def expose_runtime(exp_dir: Path) -> dict:
     replace_symlink(visual_link, relative_target(visual_link, skill_dir / "visual_guidelines"))
     exposed.append(str(visual_link.relative_to(exp_dir)))
 
-    return {"runtime_entries": exposed}
+    return {"runtime_entries": exposed, "skill_name": skill_name}
 
 
-def run_uv_sync(exp_dir: Path) -> dict:
-    skill_dir = exp_dir / ".agent" / "skills" / "dexholdem-v2"
+def run_uv_sync(exp_dir: Path, native: bool = False) -> dict:
+    skill_name = "dexholdem-v2-native" if native else "dexholdem-v2"
+    skill_dir = exp_dir / ".agent" / "skills" / skill_name
     if shutil.which("uv") is None:
         raise SystemExit("uv not found on PATH; install uv or omit --uv-sync")
     result = subprocess.run(["uv", "sync"], cwd=skill_dir, capture_output=True, text=True, timeout=300)
@@ -217,7 +222,7 @@ def init_state(exp_dir: Path) -> dict:
     }
 
 
-def capture_initial(exp_dir: Path, source: str | None = None) -> dict:
+def capture_initial(exp_dir: Path, source: str | None = None, native: bool = False) -> dict:
     output = exp_dir / "s0" / "00_capture.jpg"
     if source:
         source_path = Path(source)
@@ -228,7 +233,8 @@ def capture_initial(exp_dir: Path, source: str | None = None) -> dict:
         shutil.copy2(source_path, output)
         return {"mode": "source_copy", "source": str(source_path), "output": str(output)}
 
-    venv_python = exp_dir / ".agent" / "skills" / "dexholdem-v2" / ".venv" / "bin" / "python"
+    skill_name = "dexholdem-v2-native" if native else "dexholdem-v2"
+    venv_python = exp_dir / ".agent" / "skills" / skill_name / ".venv" / "bin" / "python"
     python = str(venv_python) if venv_python.exists() else sys.executable
     command = [python, str(exp_dir / "capture.py"), "--output", str(output), "--meta"]
     result = subprocess.run(command, cwd=exp_dir, capture_output=True, text=True, timeout=30)
@@ -243,6 +249,80 @@ def capture_initial(exp_dir: Path, source: str | None = None) -> dict:
         raise SystemExit(json.dumps({"status": "failed", "step": "capture_initial", "detail": detail}, indent=2))
     return detail
 
+
+AGENTS_MD_NATIVE_TEMPLATE = """# DexHoldem System Evaluation (Native)
+
+This experiment workspace is configured for native system-level DexHoldem runs.
+The main agent handles all perception directly without delegating to subagents.
+
+## Skill Overview
+
+The DexHoldem native skill (`dexholdem-v2-native`) runs a physical two-player
+Texas Hold'em setup with a dexterous robot hand. The main agent handles:
+- Visual perception directly (using visual guidelines)
+- State maintenance and interpretation
+- Poker reasoning and action decisions
+- Recovery decisions when errors occur
+
+### Key Files
+
+- `SKILL.md` - Full skill documentation (in `.agent/skills/dexholdem-v2-native/`)
+- `visual_guidelines/` - Visual parsing reference documents
+- `config.yaml` - Robot and camera configuration
+- `state.py` - State management CLI
+- `router.py` - Next-move routing logic
+- `executor.py` - Robot action execution
+- `capture.py` - Camera capture utility
+
+### State Contract
+
+```
+experiments/current/
+  s0/                      # First state folder
+    00_capture.jpg         # Screenshot
+    01_parsed_state.md     # Parsed visual state (agent writes)
+    02_action.md           # Committed action (agent writes)
+  s1/, s2/, ...            # Subsequent states
+  s_current -> s<N>        # Symlink to current state
+  hole_card_cache.json     # Cached hole cards
+  action_sequence.json     # Current action sequence and safety counters
+```
+
+### Visual Guidelines
+
+Use these files in `visual_guidelines/` for direct image parsing:
+
+| Guideline | Purpose |
+|-----------|---------|
+| `SCENE_STABILITY.md` | Check if scene is stable for action |
+| `ROBOT_BEHAVIOR.md` | Describe robot/dexterous hand state |
+| `TABLE_GEOMETRY.md` | Robot/opponent orientation, zones |
+| `TURN_DETECTION.md` | Determine whose turn it is |
+| `BLIND_BUTTON_RECOGNITION.md` | Identify dealer and blind positions |
+| `COMMUNITY_CARDS.md` | Identify community cards on board |
+| `CHIP_RECOGNITION.md` | Count remaining inventory chips |
+| `BET_RECOGNITION.md` | Count current bet chips |
+| `HELD_CARD_RECOGNITION.md` | Read cards held by robot |
+| `SHOWDOWN_OUTCOME.md` | Determine winner at showdown |
+
+### Core Workflow
+
+1. **Capture** - `python3 capture.py` takes a screenshot
+2. **Parse** - Read image directly using visual guidelines, write `01_parsed_state.md`
+3. **Route** - `python3 router.py` determines next action
+4. **Execute** - `python3 executor.py --action '<json>'` runs robot commands
+5. **Advance** - `python3 state.py begin-next` creates the next state folder
+
+### Common Commands
+
+```bash
+python3 state.py current                    # Show current state info
+python3 state.py begin-next                 # Advance to next state
+python3 capture.py --output s<N>/00_capture.jpg  # Capture image
+python3 router.py                           # Get routing decision
+python3 executor.py --action '{{...}}'       # Execute action
+```
+"""
 
 AGENTS_MD_TEMPLATE = """# DexHoldem System Evaluation
 
@@ -342,7 +422,9 @@ Split visual subagents are installed for image perception tasks.
 """
 
 
-def generate_agents_md(codex_files: list[Path], claude_files: list[Path]) -> str:
+def generate_agents_md(codex_files: list[Path], claude_files: list[Path], native: bool = False) -> str:
+    if native:
+        return AGENTS_MD_NATIVE_TEMPLATE
     codex_list = "\n".join(f"- `{f.stem}` ({f.name})" for f in codex_files)
     claude_list = "\n".join(f"- `{f.stem}` ({f.name})" for f in claude_files)
     return AGENTS_MD_TEMPLATE.format(
@@ -371,7 +453,9 @@ def model_checks(codex_files: list[Path], claude_files: list[Path]) -> list[dict
 
 
 def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Path], claude_files: list[Path]) -> dict:
-    return {
+    skill_source = SKILL_SOURCE_NATIVE if args.native else SKILL_SOURCE
+    skill_name = "dexholdem-v2-native" if args.native else "dexholdem-v2"
+    manifest = {
         "schema_version": 1,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "experiment": {
@@ -380,26 +464,34 @@ def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Pa
             "current_link": str(exp_dir.parent / "current"),
         },
         "defaults": {
-            "visual_setting": "split",
-            "codex_variant": args.codex_variant,
-            "claude_variant": args.claude_variant,
+            "native": args.native,
+            "skill": skill_name,
+            "visual_setting": "native" if args.native else "split",
+            "codex_variant": args.codex_variant if not args.native else None,
+            "claude_variant": args.claude_variant if not args.native else None,
         },
         "source": {
-            "skill": str(SKILL_SOURCE.relative_to(ROOT)),
-            "codex_subagents": [file_record(path) for path in codex_files],
-            "claude_subagents": [file_record(path) for path in claude_files],
-            "skill_files": tree_records(SKILL_SOURCE),
+            "skill": str(skill_source.relative_to(ROOT)),
+            "skill_files": tree_records(skill_source),
         },
-        "model_checks": model_checks(codex_files, claude_files),
     }
+    if not args.native:
+        manifest["source"]["codex_subagents"] = [file_record(path) for path in codex_files]
+        manifest["source"]["claude_subagents"] = [file_record(path) for path in claude_files]
+        manifest["model_checks"] = model_checks(codex_files, claude_files)
+    return manifest
 
 
 def create_experiment(args: argparse.Namespace) -> dict:
     validate_exp_name(args.exp_name)
     experiments_root = Path(args.experiments_root).resolve()
     exp_dir = experiments_root / args.exp_name
-    codex_files = split_agent_files(args.codex_variant, ".toml")
-    claude_files = split_agent_files(args.claude_variant, ".md")
+
+    codex_files: list[Path] = []
+    claude_files: list[Path] = []
+    if not args.native:
+        codex_files = split_agent_files(args.codex_variant, ".toml")
+        claude_files = split_agent_files(args.claude_variant, ".md")
 
     manifest = build_manifest(args, exp_dir, codex_files, claude_files)
     if args.dry_run:
@@ -412,20 +504,25 @@ def create_experiment(args: argparse.Namespace) -> dict:
         remove_path(exp_dir)
 
     exp_dir.mkdir(parents=True)
-    skill_result = install_skill(exp_dir)
-    runtime_result = expose_runtime(exp_dir)
-    uv_result = run_uv_sync(exp_dir) if args.uv_sync else {"skipped": True}
+    skill_result = install_skill(exp_dir, native=args.native)
+    runtime_result = expose_runtime(exp_dir, native=args.native)
+    uv_result = run_uv_sync(exp_dir, native=args.native) if args.uv_sync else {"skipped": True}
     state_result = init_state(exp_dir)
-    capture_result = capture_initial(exp_dir, args.camera_source) if args.capture_initial else {"skipped": True}
+    capture_result = capture_initial(exp_dir, args.camera_source, native=args.native) if args.capture_initial else {"skipped": True}
 
-    codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
-    claude_installed = install_agent_files(claude_files, exp_dir / ".claude" / "agents")
+    codex_installed: list[dict] = []
+    claude_installed: list[dict] = []
+    visible_codex: list[str] = []
+    visible_claude: list[str] = []
 
-    agents_md = generate_agents_md(codex_files, claude_files)
+    if not args.native:
+        codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
+        claude_installed = install_agent_files(claude_files, exp_dir / ".claude" / "agents")
+        visible_codex = [f.stem for f in codex_files]
+        visible_claude = [f.stem for f in claude_files]
+
+    agents_md = generate_agents_md(codex_files, claude_files, native=args.native)
     (exp_dir / "AGENTS.md").write_text(agents_md)
-
-    visible_codex = [f.stem for f in codex_files]
-    visible_claude = [f.stem for f in claude_files]
 
     if not args.no_current:
         replace_symlink(exp_dir.parent / "current", exp_dir)
@@ -437,16 +534,17 @@ def create_experiment(args: argparse.Namespace) -> dict:
             "uv_sync": uv_result,
             "state": state_result,
             "capture": capture_result,
-            "codex_agents": codex_installed,
-            "claude_agents": claude_installed,
         },
-        "visible_agents": {
+    })
+    if not args.native:
+        manifest["installed"]["codex_agents"] = codex_installed
+        manifest["installed"]["claude_agents"] = claude_installed
+        manifest["visible_agents"] = {
             "codex": visible_codex,
             "claude": visible_claude,
             "codex_dir": ".codex/agents",
             "claude_dir": ".claude/agents",
-        },
-    })
+        }
     (exp_dir / "system_eval_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
 
     return {"status": "ok", "experiment": str(exp_dir), "manifest": manifest}
@@ -456,6 +554,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--exp-name", required=True, help="Experiment directory name to create")
     parser.add_argument("--experiments-root", default=str(DEFAULT_EXPERIMENTS_ROOT))
+    parser.add_argument("--native", action="store_true", help="Use dexholdem-v2-native skill (no subagents)")
     parser.add_argument("--codex-variant", default=DEFAULT_CODEX_VARIANT)
     parser.add_argument("--claude-variant", default=DEFAULT_CLAUDE_VARIANT)
     parser.add_argument("--force", action="store_true", help="Replace an existing experiment directory")
@@ -463,7 +562,7 @@ def main() -> None:
     parser.add_argument("--no-current", action="store_true", help="Do not update experiments/current")
     parser.add_argument("--capture-initial", action="store_true", help="Capture s0/00_capture.jpg after setup")
     parser.add_argument("--camera-source", help="With --capture-initial, copy an existing image as s0/00_capture.jpg")
-    parser.add_argument("--uv-sync", action="store_true", help="Run uv sync in the copied dexholdem-v2 skill")
+    parser.add_argument("--uv-sync", action="store_true", help="Run uv sync in the copied skill")
     args = parser.parse_args()
 
     print(json.dumps(create_experiment(args), indent=2))
