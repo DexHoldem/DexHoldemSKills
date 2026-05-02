@@ -1,0 +1,1 @@
+{"agent_id":"019de5d0-afb4-7432-93a1-8e25e5889d76","status":"completed","evidence":"Top betting area: red 5 x3, blue 10 x4, green 50 x1, brown 100 x0/uncertain.\n\nBottom betting area: red 5 x3, blue 10 x2, green 50 x1, brown 100 x1/uncertain."}

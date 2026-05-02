@@ -1,0 +1,1 @@
+Robot hand is holding a card. The visible value appears to be `5♦` (five of diamonds), but the suit is partially occluded by the gripper/camera so treat the suit as uncertain if you need strict readability.

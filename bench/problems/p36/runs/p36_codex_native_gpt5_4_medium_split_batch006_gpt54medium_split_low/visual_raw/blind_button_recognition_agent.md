@@ -1,0 +1,1 @@
+Dealer button is at the opponent seat, so the opponent is also the small blind. The robot is the big blind. Evidence: a white DEALER button and blue SMALL BLIND button are visible in the top/opponent seat band, while a yellow BIG BLIND button is visible in the bottom/robot seat band.

@@ -1,0 +1,1 @@
+Stable. Compared the current capture only; no previous capture or pre-action settled image was supplied. The table, cards, chips, dealer button, and robot hand all appear sharp with no visible motion blur or active manipulation. The robot is present near the table but does not appear to be moving or contacting objects, so the scene looks stable enough to continue.

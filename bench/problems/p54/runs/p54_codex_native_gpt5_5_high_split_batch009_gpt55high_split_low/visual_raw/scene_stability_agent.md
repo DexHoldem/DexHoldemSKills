@@ -1,0 +1,1 @@
+Unstable. Compared Image #1 only; no previous capture is available in context. The robot arm is still extended over the table and partially occluding the right-side betting area, so the scene appears still in progress rather than settled. Uncertainty: I cannot confirm motion without a previous frame, but the visible active robot position is enough to wait.

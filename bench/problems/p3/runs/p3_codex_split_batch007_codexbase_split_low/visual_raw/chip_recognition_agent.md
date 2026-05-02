@@ -1,0 +1,1 @@
+Top player: about 3 red chips and 4 blue chips visible. Bottom player: about 5 red chips and 4 blue chips visible. No clearly visible green or brown inventory chips. Some chips are partially blocked, so those counts are approximate.

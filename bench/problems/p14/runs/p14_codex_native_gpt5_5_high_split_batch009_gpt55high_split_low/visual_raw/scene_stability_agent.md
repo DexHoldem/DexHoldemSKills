@@ -1,0 +1,1 @@
+Unstable. Compared current image only: the robot hand is still extended over the table near the betting/chip area, suggesting the action may still be in progress. No previous or settled image was provided, so stability is uncertain.

@@ -1,0 +1,1 @@
+The dexterous hand is extended over the right side of the table, reaching toward the center. It does not appear to be holding a card or chips, and it is not near rest pose. The action looks still in progress and physically safe; no failure or recovery evidence is visible in this frame.

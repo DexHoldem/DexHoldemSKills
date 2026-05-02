@@ -1,0 +1,3 @@
+The dexterous hand enters from the right side and is extended over the lower-right/robot side of the table, hovering above the central betting lane and near the robot hole-card/chip area. The fingers are open or lightly curled, and it does not appear to be gripping a card or chips.
+
+It is not near idle/rest pose. The hand is away from its base and over the table, so the action appears still in progress or not yet settled. The visible table state looks safe: no card is dropped or pinned, no chip group appears scattered, and no non-target object is visibly disturbed. The hand does occlude part of the right-side robot area, but there is no clear human-help concern from this frame.

@@ -1,0 +1,1 @@
+It is our turn. The small white turn button labeled "Your Turn" is visible near the bottom-left robot seat area, in the robot-turn button zone. It is only lightly occluded by nearby chips, but still safely identifiable.

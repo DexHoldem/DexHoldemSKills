@@ -1,0 +1,756 @@
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52
+model: gpt-5.4-mini
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/memories]
+reasoning effort: low
+reasoning summaries: none
+session id: 019de7a0-ff41-7bf3-bed0-85b5c595f157
+--------
+user
+Run the current DexHoldem perception step.
+
+Use the local setup and visible visual subagents.
+The main agent's only job is to launch the needed visual subagents, merge their
+returned evidence, write the requested files, verify those files exist, and
+stop.
+Do not execute robot actions.
+Do not perform image perception in the main agent; merge subagent evidence only.
+Do not run router.py, state.py, executor.py, or any helper script.
+Do not call the reasoning agent or choose a poker action.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
+
+Output policy:
+- Do not write null, "unknown", or placeholder values in visual_summary.json.
+- Every required field must contain a concrete best estimate.
+- When direct visual evidence is incomplete, first inherit durable state from
+  `sN-1/01_parsed_state.md`, `action_sequence.json`, or `hole_card_cache.json`
+  when that state should persist physically. Otherwise choose the most likely
+  value from current visual evidence and poker/workflow context.
+- Add a field name to `uncertain_fields` whenever its value is inherited,
+  inferred, or low confidence.
+
+Current state and context:
+- `s_current` points to the latest state directory.
+- The latest capture is `s_current/00_capture.jpg`.
+- Use `action_sequence.json` and `hole_card_cache.json` only as workflow/cache
+  context for loop-stage interpretation and previously viewed hidden cards.
+- Do not inspect benchmark ground-truth files.
+
+Subagent inputs and conditions:
+- `scene_stability_agent`: always pass `s_current/00_capture.jpg` and the
+  previous state image, usually `sN-1/00_capture.jpg`. If there is a dispatched
+  robot atom, also pass the last clearly settled pre-action image when
+  available. The raw evidence must name the compared images. If the agent only
+  inspects one image or cannot access the previous image, infer the most likely
+  true/false value from current image and previous parsed state, and add
+  `scene_stable` to `uncertain_fields`.
+- `robot_behavior_agent`: pass `s_current/00_capture.jpg`, the previous state
+  image, and action-sequence context including `loop_stage`, `current_step`,
+  and step statuses. Ask for hand pose, held object, near-rest status,
+  action progress, safety, retryability, and human-help concerns.
+- `turn_detection_agent`: pass `s_current/00_capture.jpg`; ask only whether
+  the physical turn marker indicates it is our turn.
+- `blind_button_recognition_agent`: pass `s_current/00_capture.jpg`; use
+  two-player blind/dealer rules only when the button evidence is visible.
+- `community_cards_agent`: pass `s_current/00_capture.jpg`; report community
+  cards left to right. For visible but unreadable or occluded community cards,
+  inherit the previous known board when physically durable; otherwise choose the
+  most likely card string and add `community_cards` to `uncertain_fields`.
+- `held_card_recognition_agent`: call only when the robot hand appears to
+  hold or expose a card, or when cached workflow context says a card-view atom
+  is active. Pass `s_current/00_capture.jpg`; do not infer hidden cards.
+- `chip_recognition_agent`: call for chip-inventory columns. Pass
+  `s_current/00_capture.jpg` and ask for robot and opponent inventories,
+  excluding current bet areas and button markers.
+- `bet_recognition_agent`: call for current-bet columns. Pass
+  `s_current/00_capture.jpg` and ask for robot and opponent current bet areas,
+  excluding inventory stacks and button markers.
+- `showdown_outcome_agent`: call when board/hole cards appear face-up, when
+  `action_sequence.json` has a showdown/win/lose stage, or when the raw visual
+  evidence suggests showdown. Pass `s_current/00_capture.jpg`, visible board
+  and hole-card evidence, and cached viewed robot hole cards if present.
+
+Loop-stage merge rule:
+- `loop_stage` is a workflow-state field, not pure single-image perception.
+- Start from `action_sequence.json.loop_stage` when present, then use visual
+  subagent evidence to confirm whether the physical scene is compatible.
+- Do not change `acting` to `idle` only because one frame looks sharp or still.
+- Use `acting` when the action sequence says a step is dispatched/in progress
+  or visual evidence shows the hand still moving, reaching, or not settled.
+- Use `atom_idle` when the latest scene is settled after an atom action but
+  the action sequence still has pending steps.
+- Use `idle` only after the full action sequence is complete and the hand is
+  near rest with no held card/chips or large movement.
+- Use `to_recover` only when the action sequence or visual evidence indicates
+  a harmless failed atom and the table is safe/countable enough to retry.
+- Use `down` for unsafe, blocked, dropped, scattered, or human-help states.
+- Use `show_hand`, `win`, or `lose` when showdown/outcome evidence and cached
+  card context support that workflow stage.
+- If `action_sequence.json` is missing and visual evidence cannot distinguish
+  `idle`, `acting`, and `atom_idle`, infer from the previous parsed state and
+  visual continuity. Prefer `acting` for active/pending action cues, `atom_idle`
+  for settled post-atom scenes with likely pending sequence work, and `idle`
+  only when the hand is near rest and no action is visibly pending. Include
+  `loop_stage` in `uncertain_fields`.
+
+Use exactly this output directory: runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023
+Do not append the isolated workspace suffix or any other suffix to the run id.
+
+Write:
+- runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/
+- runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+- runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+
+`visual_summary.json` must use this evaluator-ready top-level schema:
+- `scene_stable`: true or false
+- `loop_stage`: one of idle, acting, atom_idle, down, to_recover, win, lose,
+  show_hand
+- `is_my_turn`: true or false
+- `blind`: big_blind, small_blind, or none
+- `community_cards`: list of card strings like Ah, Td, 6s; omit only absent
+  cards or face-down cards that are not part of the community board
+- `my_chips`, `opponent_chips`, `my_current_bet`, `opponent_bet`: each an
+  object with exactly the denomination keys `5`, `10`, `50`, `100`; values are
+  integer count best estimates
+- `showdown_outcome`: win, lose, tie, or not_showdown
+- `uncertain_fields`: list of field names whose values are uncertain
+
+`runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/` must contain at least one real evidence file.
+Do not claim raw evidence exists unless the file exists on disk. Before your
+final response, verify the three requested outputs and the non-empty
+`visual_raw/` directory.
+Keep the final response brief; do not repeat the full report content.
+
+codex
+I’m going to gather the current state files, launch the required visual subagents in parallel, merge only their evidence, then write and verify the three requested outputs plus non-empty `visual_raw/`.
+exec
+/bin/zsh -lc "pwd && rg --files runs | sed -n '1,120p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52
+ succeeded in 0ms:
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52
+zsh:1: command not found: rg
+
+codex
+`rg` isn’t available here, so I’m switching to plain filesystem inspection to locate the current state and the cache/context files before I dispatch the visual agents.
+exec
+/bin/zsh -lc "find runs -maxdepth 3 -type f | sort | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52
+ succeeded in 0ms:
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/auth.json
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/config.toml
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/installation_id
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/models_cache.json
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/agent_manifest.json
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/codex_command.json
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/codex_env.json
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/harness_prompt.md
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/harness_version.json
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/isolation_manifest.json
+runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/preflight_result.json
+
+exec
+/bin/zsh -lc "find . -maxdepth 4 -type f \\( -name '00_capture.jpg' -o -name 'action_sequence.json' -o -name 'hole_card_cache.json' -o -name '01_parsed_state.md' -o -name 'visual_summary.json' \\) | sort | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52
+ succeeded in 0ms:
+./action_sequence.json
+./hole_card_cache.json
+./s0/00_capture.jpg
+
+exec
+/bin/zsh -lc "sed -n '1,220p' action_sequence.json && printf '\\n---\\n' && sed -n '1,220p' hole_card_cache.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52
+ succeeded in 0ms:
+{
+  "schema_version": "1.0",
+  "problem_id": "p52",
+  "source": "TODO.md rough label",
+  "loop_stage": "idle",
+  "intent": "choose_poker_action",
+  "current_action": "choose_poker_action",
+  "current_step": "choose_poker_action",
+  "steps": [
+    {
+      "name": "choose_poker_action",
+      "status": "pending",
+      "description": "The table is stable and ready for the next poker decision."
+    }
+  ],
+  "retry_count": 0,
+  "last_error": null,
+  "human_required": false,
+  "notes": "119.jpg\nnew game, initial state, idle, need to read table\nmy bet 0\nmy chip 5:4, 10:3, 50:2, 100:2\nopponent bet 0\nopponent chip 5:4, 10:4, 50:3, 100:3\ncommunity card: no\nbig blind, my turn"
+}
+
+---
+{
+  "schema_version": "1.0",
+  "problem_id": "p52",
+  "hole_cards": {
+    "robot": {
+      "left": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      },
+      "right": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      }
+    },
+    "opponent": {
+      "left": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      },
+      "right": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      }
+    }
+  },
+  "blinds": {
+    "dealer": "opponent",
+    "small_blind": "opponent",
+    "big_blind": "robot",
+    "source_state": "s0"
+  },
+  "notes": "Generated from TODO.md rough label."
+}
+
+codex
+I’ve confirmed this is the initial idle state with cached blinds/chip counts and no previous board state. Next I’m fanning out the visual checks that the workflow requires, then I’ll merge only their outputs into the evaluator files.
+2026-05-02T07:40:08.295431Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-02T07:40:08.340332Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-02T07:40:08.343570Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-02T07:40:08.346417Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-02T07:40:08.349096Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-02T07:40:08.351690Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-02T07:40:08.353972Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-02T07:40:18.471226Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:40:18.474640Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:40:18.512979Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:40:18.514821Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:40:18.516436Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:40:18.518030Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:40:18.519612Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+codex
+The visual workers are running in parallel now. I’m waiting for their reports, then I’ll consolidate the evidence into the evaluator schema and write the output files.
+collab: Wait
+codex
+One worker already confirmed there’s no visible turn marker. I’m letting the remaining perception workers finish so the final merge reflects the full table state rather than a partial read.
+collab: Wait
+collab: Wait
+collab: Wait
+codex
+The table-level cues are now mostly resolved: stable scene, our turn, blinds visible, and the hand is resting. I still need the board and chip/bet counts before I write the summary file.
+collab: Wait
+collab: Wait
+codex
+I have enough evidence to merge. I’m now writing the evaluator outputs, including a raw evidence artifact from the subagent reports, then I’ll verify the files exist and that `visual_raw/` is non-empty.
+apply patch
+patch: completed
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..a64c46f52da357be7651395bedcf0165191f820c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,19 @@
++# Visual Eval Report
++
++- Current capture: `s0/00_capture.jpg`
++- Scene is judged stable and the table is ready for the next decision.
++- Physical turn marker says it is our turn.
++- Blind assignment: robot is big blind, opponent is small blind.
++- No community cards are visible.
++- Robot hand is hovering/resting and not holding chips or a card.
++- Inventory and bet counts were merged from the visual subagents.
++
++## Evidence
++
++- Scene stability: compared only against the current frame; no prior image was available to the stability worker.
++- Turn marker: visible "Your Turn" indicator.
++- Blinds: visible buttoning indicates opponent dealer/small blind and robot big blind.
++- Robot inventory estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent inventory estimate: 5s=4, 10s=5, 50s=1, 100s=3.
++- Robot current bet estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent current bet estimate: 5s=3, 10s=3, 50s=1, 100s=3.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f62a9f0e2e84802c24c6d70488a58cc9ab88e806
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+@@ -0,0 +1,37 @@
++scene_stability_agent:
++Stable. Compared `s0/00_capture.jpg`; no prior image was in context, so I could only judge from the current frame. The robot hand on the right looks stationary rather than mid-motion, the chips and cards on the table appear settled, and the human arm is not reaching across or rearranging the table. Uncertainty: without a previous frame or parsed state, I can’t confirm that nothing changed immediately before this capture.
++
++robot_behavior_agent:
++The robot hand is on the right side of the table, hovering above the betting area near the chip stacks. It appears to be in a loose open-grasp pose, with fingers slightly flexed and not contacting the table.
++
++- Holding anything: no visible card or chips
++- Near rest pose: roughly yes, it looks like a hover/resting wait position rather than an active grab or push
++- Action progress: no clear action is in progress; it appears idle/waiting for the next poker action
++- Safety: looks safe in the current frame, with no visible collision or unsafe contact
++- Retryability: retryable if a pickup/place action is expected, since nothing is visibly grasped and the hand is unobstructed enough to reattempt
++- Human-help concern: low, though the hand is partly occluded by the robot body/camera and the person at the table, so precise fingertip state is not fully visible
++
++turn_detection_agent:
++it is our turn. The small white turn button is visible near the lower-left edge of the table, and it reads “Your Turn.”
++
++blind_button_recognition_agent:
++Dealer button is at the `opponent` seat, so the `opponent` is the small blind. The `robot` seat is the big blind. I can see the yellow `BIG BLIND` button on the robot side and the dealer/small-blind markers on the opponent side, with no visible conflict.
++
++chip_recognition_agent:
++Best estimate from the image, excluding the bet/button markers:
++
++- Robot/player inventory: red `4`, blue `3`, green `1`, brown `2`
++- Opponent inventory: red `4`, blue `5`, green `1`, brown `3`
++
++Uncertain / partially occluded:
++- Opponent top-right mixed-color cluster near the robot arm
++- Robot bottom-right mixed-color cluster near the camera arm
++
++Those two clusters could shift the brown/green counts by `1` each.
++
++bet_recognition_agent:
++Robot/bottom current bet area: 4 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 2 brown 100-chips visible. The far-right bottom cluster is partly occluded by the camera, so the green/brown count there is a bit uncertain.
++
++Opponent/top current bet area: 3 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 3 brown 100-chips visible. The right-side top cluster is somewhat angled/partly occluded, so the brown count is the least certain.
++
++Button markers and inventory stacks were excluded.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..b307661dcae2eed64392c4d9953e2709b961a13b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,40 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": [],
++  "my_chips": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 5,
++    "50": 1,
++    "100": 3
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_bet": {
++    "5": 3,
++    "10": 3,
++    "50": 1,
++    "100": 3
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": [
++    "scene_stable",
++    "loop_stage",
++    "my_chips",
++    "opponent_chips",
++    "my_current_bet",
++    "opponent_bet"
++  ]
++}
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..a64c46f52da357be7651395bedcf0165191f820c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,19 @@
++# Visual Eval Report
++
++- Current capture: `s0/00_capture.jpg`
++- Scene is judged stable and the table is ready for the next decision.
++- Physical turn marker says it is our turn.
++- Blind assignment: robot is big blind, opponent is small blind.
++- No community cards are visible.
++- Robot hand is hovering/resting and not holding chips or a card.
++- Inventory and bet counts were merged from the visual subagents.
++
++## Evidence
++
++- Scene stability: compared only against the current frame; no prior image was available to the stability worker.
++- Turn marker: visible "Your Turn" indicator.
++- Blinds: visible buttoning indicates opponent dealer/small blind and robot big blind.
++- Robot inventory estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent inventory estimate: 5s=4, 10s=5, 50s=1, 100s=3.
++- Robot current bet estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent current bet estimate: 5s=3, 10s=3, 50s=1, 100s=3.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f62a9f0e2e84802c24c6d70488a58cc9ab88e806
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+@@ -0,0 +1,37 @@
++scene_stability_agent:
++Stable. Compared `s0/00_capture.jpg`; no prior image was in context, so I could only judge from the current frame. The robot hand on the right looks stationary rather than mid-motion, the chips and cards on the table appear settled, and the human arm is not reaching across or rearranging the table. Uncertainty: without a previous frame or parsed state, I can’t confirm that nothing changed immediately before this capture.
++
++robot_behavior_agent:
++The robot hand is on the right side of the table, hovering above the betting area near the chip stacks. It appears to be in a loose open-grasp pose, with fingers slightly flexed and not contacting the table.
++
++- Holding anything: no visible card or chips
++- Near rest pose: roughly yes, it looks like a hover/resting wait position rather than an active grab or push
++- Action progress: no clear action is in progress; it appears idle/waiting for the next poker action
++- Safety: looks safe in the current frame, with no visible collision or unsafe contact
++- Retryability: retryable if a pickup/place action is expected, since nothing is visibly grasped and the hand is unobstructed enough to reattempt
++- Human-help concern: low, though the hand is partly occluded by the robot body/camera and the person at the table, so precise fingertip state is not fully visible
++
++turn_detection_agent:
++it is our turn. The small white turn button is visible near the lower-left edge of the table, and it reads “Your Turn.”
++
++blind_button_recognition_agent:
++Dealer button is at the `opponent` seat, so the `opponent` is the small blind. The `robot` seat is the big blind. I can see the yellow `BIG BLIND` button on the robot side and the dealer/small-blind markers on the opponent side, with no visible conflict.
++
++chip_recognition_agent:
++Best estimate from the image, excluding the bet/button markers:
++
++- Robot/player inventory: red `4`, blue `3`, green `1`, brown `2`
++- Opponent inventory: red `4`, blue `5`, green `1`, brown `3`
++
++Uncertain / partially occluded:
++- Opponent top-right mixed-color cluster near the robot arm
++- Robot bottom-right mixed-color cluster near the camera arm
++
++Those two clusters could shift the brown/green counts by `1` each.
++
++bet_recognition_agent:
++Robot/bottom current bet area: 4 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 2 brown 100-chips visible. The far-right bottom cluster is partly occluded by the camera, so the green/brown count there is a bit uncertain.
++
++Opponent/top current bet area: 3 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 3 brown 100-chips visible. The right-side top cluster is somewhat angled/partly occluded, so the brown count is the least certain.
++
++Button markers and inventory stacks were excluded.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..b307661dcae2eed64392c4d9953e2709b961a13b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,40 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": [],
++  "my_chips": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 5,
++    "50": 1,
++    "100": 3
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_bet": {
++    "5": 3,
++    "10": 3,
++    "50": 1,
++    "100": 3
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": [
++    "scene_stable",
++    "loop_stage",
++    "my_chips",
++    "opponent_chips",
++    "my_current_bet",
++    "opponent_bet"
++  ]
++}
+
+exec
+/bin/zsh -lc "printf 'summary: '; test -f runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json && echo yes || echo no; printf 'report: '; test -f runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md && echo yes || echo no; printf 'raw dir files: '; find runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw -type f | wc -l" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52
+ succeeded in 0ms:
+summary: yes
+report: yes
+raw dir files:        1
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..a64c46f52da357be7651395bedcf0165191f820c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,19 @@
++# Visual Eval Report
++
++- Current capture: `s0/00_capture.jpg`
++- Scene is judged stable and the table is ready for the next decision.
++- Physical turn marker says it is our turn.
++- Blind assignment: robot is big blind, opponent is small blind.
++- No community cards are visible.
++- Robot hand is hovering/resting and not holding chips or a card.
++- Inventory and bet counts were merged from the visual subagents.
++
++## Evidence
++
++- Scene stability: compared only against the current frame; no prior image was available to the stability worker.
++- Turn marker: visible "Your Turn" indicator.
++- Blinds: visible buttoning indicates opponent dealer/small blind and robot big blind.
++- Robot inventory estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent inventory estimate: 5s=4, 10s=5, 50s=1, 100s=3.
++- Robot current bet estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent current bet estimate: 5s=3, 10s=3, 50s=1, 100s=3.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f62a9f0e2e84802c24c6d70488a58cc9ab88e806
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+@@ -0,0 +1,37 @@
++scene_stability_agent:
++Stable. Compared `s0/00_capture.jpg`; no prior image was in context, so I could only judge from the current frame. The robot hand on the right looks stationary rather than mid-motion, the chips and cards on the table appear settled, and the human arm is not reaching across or rearranging the table. Uncertainty: without a previous frame or parsed state, I can’t confirm that nothing changed immediately before this capture.
++
++robot_behavior_agent:
++The robot hand is on the right side of the table, hovering above the betting area near the chip stacks. It appears to be in a loose open-grasp pose, with fingers slightly flexed and not contacting the table.
++
++- Holding anything: no visible card or chips
++- Near rest pose: roughly yes, it looks like a hover/resting wait position rather than an active grab or push
++- Action progress: no clear action is in progress; it appears idle/waiting for the next poker action
++- Safety: looks safe in the current frame, with no visible collision or unsafe contact
++- Retryability: retryable if a pickup/place action is expected, since nothing is visibly grasped and the hand is unobstructed enough to reattempt
++- Human-help concern: low, though the hand is partly occluded by the robot body/camera and the person at the table, so precise fingertip state is not fully visible
++
++turn_detection_agent:
++it is our turn. The small white turn button is visible near the lower-left edge of the table, and it reads “Your Turn.”
++
++blind_button_recognition_agent:
++Dealer button is at the `opponent` seat, so the `opponent` is the small blind. The `robot` seat is the big blind. I can see the yellow `BIG BLIND` button on the robot side and the dealer/small-blind markers on the opponent side, with no visible conflict.
++
++chip_recognition_agent:
++Best estimate from the image, excluding the bet/button markers:
++
++- Robot/player inventory: red `4`, blue `3`, green `1`, brown `2`
++- Opponent inventory: red `4`, blue `5`, green `1`, brown `3`
++
++Uncertain / partially occluded:
++- Opponent top-right mixed-color cluster near the robot arm
++- Robot bottom-right mixed-color cluster near the camera arm
++
++Those two clusters could shift the brown/green counts by `1` each.
++
++bet_recognition_agent:
++Robot/bottom current bet area: 4 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 2 brown 100-chips visible. The far-right bottom cluster is partly occluded by the camera, so the green/brown count there is a bit uncertain.
++
++Opponent/top current bet area: 3 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 3 brown 100-chips visible. The right-side top cluster is somewhat angled/partly occluded, so the brown count is the least certain.
++
++Button markers and inventory stacks were excluded.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..b307661dcae2eed64392c4d9953e2709b961a13b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,40 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": [],
++  "my_chips": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 5,
++    "50": 1,
++    "100": 3
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_bet": {
++    "5": 3,
++    "10": 3,
++    "50": 1,
++    "100": 3
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": [
++    "scene_stable",
++    "loop_stage",
++    "my_chips",
++    "opponent_chips",
++    "my_current_bet",
++    "opponent_bet"
++  ]
++}
+
+codex
+Completed. The requested outputs are written and verified:
+
+- `runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json`
+- `runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md`
+- `runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt`
+
+`visual_raw/` is non-empty.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..a64c46f52da357be7651395bedcf0165191f820c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,19 @@
++# Visual Eval Report
++
++- Current capture: `s0/00_capture.jpg`
++- Scene is judged stable and the table is ready for the next decision.
++- Physical turn marker says it is our turn.
++- Blind assignment: robot is big blind, opponent is small blind.
++- No community cards are visible.
++- Robot hand is hovering/resting and not holding chips or a card.
++- Inventory and bet counts were merged from the visual subagents.
++
++## Evidence
++
++- Scene stability: compared only against the current frame; no prior image was available to the stability worker.
++- Turn marker: visible "Your Turn" indicator.
++- Blinds: visible buttoning indicates opponent dealer/small blind and robot big blind.
++- Robot inventory estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent inventory estimate: 5s=4, 10s=5, 50s=1, 100s=3.
++- Robot current bet estimate: 5s=4, 10s=3, 50s=1, 100s=2.
++- Opponent current bet estimate: 5s=3, 10s=3, 50s=1, 100s=3.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f62a9f0e2e84802c24c6d70488a58cc9ab88e806
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/subagent_evidence.txt
+@@ -0,0 +1,37 @@
++scene_stability_agent:
++Stable. Compared `s0/00_capture.jpg`; no prior image was in context, so I could only judge from the current frame. The robot hand on the right looks stationary rather than mid-motion, the chips and cards on the table appear settled, and the human arm is not reaching across or rearranging the table. Uncertainty: without a previous frame or parsed state, I can’t confirm that nothing changed immediately before this capture.
++
++robot_behavior_agent:
++The robot hand is on the right side of the table, hovering above the betting area near the chip stacks. It appears to be in a loose open-grasp pose, with fingers slightly flexed and not contacting the table.
++
++- Holding anything: no visible card or chips
++- Near rest pose: roughly yes, it looks like a hover/resting wait position rather than an active grab or push
++- Action progress: no clear action is in progress; it appears idle/waiting for the next poker action
++- Safety: looks safe in the current frame, with no visible collision or unsafe contact
++- Retryability: retryable if a pickup/place action is expected, since nothing is visibly grasped and the hand is unobstructed enough to reattempt
++- Human-help concern: low, though the hand is partly occluded by the robot body/camera and the person at the table, so precise fingertip state is not fully visible
++
++turn_detection_agent:
++it is our turn. The small white turn button is visible near the lower-left edge of the table, and it reads “Your Turn.”
++
++blind_button_recognition_agent:
++Dealer button is at the `opponent` seat, so the `opponent` is the small blind. The `robot` seat is the big blind. I can see the yellow `BIG BLIND` button on the robot side and the dealer/small-blind markers on the opponent side, with no visible conflict.
++
++chip_recognition_agent:
++Best estimate from the image, excluding the bet/button markers:
++
++- Robot/player inventory: red `4`, blue `3`, green `1`, brown `2`
++- Opponent inventory: red `4`, blue `5`, green `1`, brown `3`
++
++Uncertain / partially occluded:
++- Opponent top-right mixed-color cluster near the robot arm
++- Robot bottom-right mixed-color cluster near the camera arm
++
++Those two clusters could shift the brown/green counts by `1` each.
++
++bet_recognition_agent:
++Robot/bottom current bet area: 4 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 2 brown 100-chips visible. The far-right bottom cluster is partly occluded by the camera, so the green/brown count there is a bit uncertain.
++
++Opponent/top current bet area: 3 red 5-chips, 3 blue 10-chips, 1 green 50-chip, and 3 brown 100-chips visible. The right-side top cluster is somewhat angled/partly occluded, so the brown count is the least certain.
++
++Button markers and inventory stacks were excluded.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..b307661dcae2eed64392c4d9953e2709b961a13b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p52_p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_e6d9c0o6/p52/runs/p52_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,40 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": [],
++  "my_chips": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 5,
++    "50": 1,
++    "100": 3
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 3,
++    "50": 1,
++    "100": 2
++  },
++  "opponent_bet": {
++    "5": 3,
++    "10": 3,
++    "50": 1,
++    "100": 3
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": [
++    "scene_stable",
++    "loop_stage",
++    "my_chips",
++    "opponent_chips",
++    "my_current_bet",
++    "opponent_bet"
++  ]
++}
+
+2026-05-02T07:41:34.250904Z ERROR codex_core::session: failed to record rollout items: thread 019de7a1-c6e3-7d60-828a-c14f91bf9192 not found
+2026-05-02T07:41:34.250935Z ERROR codex_core::session: failed to record rollout items: thread 019de7a1-c711-79b2-ac40-3e9c41162640 not found
+2026-05-02T07:41:34.250907Z ERROR codex_core::session: failed to record rollout items: thread 019de7a1-c716-7e90-9b00-0db15fb8db5e not found
+2026-05-02T07:41:34.250907Z ERROR codex_core::session: failed to record rollout items: thread 019de7a1-c71b-7332-8c6c-4abb200efa4b not found
+2026-05-02T07:41:34.251076Z ERROR codex_core::session: failed to record rollout items: thread 019de7a1-c70c-7223-bddb-ceeaa7c21557 not found
+2026-05-02T07:41:34.251156Z ERROR codex_core::session: failed to record rollout items: thread 019de7a1-c6fc-70d1-85ab-130b1972a553 not found
+2026-05-02T07:41:34.251199Z ERROR codex_core::session: failed to record rollout items: thread 019de7a1-c706-7d50-a625-7e68848225ae not found
+tokens used
+31,634

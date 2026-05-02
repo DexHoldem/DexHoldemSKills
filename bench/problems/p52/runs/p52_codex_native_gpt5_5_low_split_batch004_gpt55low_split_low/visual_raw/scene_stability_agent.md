@@ -1,0 +1,1 @@
+Unstable. Compared no images: the requested current capture `/runs/.../s0/00_capture.jpg` was not readable because the file was missing, and no attached image is visible in this context. Concrete visual stability cannot be assessed from evidence available. Uncertainty is total: this is an evidence/access issue, not a visual motion finding.

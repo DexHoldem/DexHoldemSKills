@@ -1,0 +1,1 @@
+The robot hand is extended in from the right over the lower-right robot/bet area, near a yellow chip and some blue/green chips. It does not appear to be holding a card, and it is not near rest pose. The action looks still in progress and physically safe so far, but the hand/camera body is occluding part of the chip area, so that zone is partly ambiguous.

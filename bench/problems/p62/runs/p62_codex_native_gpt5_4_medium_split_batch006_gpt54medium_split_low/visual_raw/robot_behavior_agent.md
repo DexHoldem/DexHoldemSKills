@@ -1,0 +1,5 @@
+The dexterous hand is extended in from the right side and hovering over the upper-right central table area, roughly above the opponent-side betting lane near seat `1`. It appears to be reaching or positioning for an action, not near its idle/rest pose.
+
+I do not see a card or chips in the gripper. The fingers look open/empty, and there is no clear contact with a card stack or chip group in this frame. The robot/camera body does occlude part of the right side, including some of the upper-right betting/inventory area, so that zone is only partially visible.
+
+This looks still in progress rather than settled. The hand is still out over the table and away from rest, so I would wait for another capture instead of calling success, failure, or recovery. From what is visible, the table still looks orderly: community cards remain aligned, robot-side inventory/bet chips remain countable, and I do not see an obvious dropped card, scattered chips, or a moved non-target object. No immediate human-help concern is visible in this frame, aside from the right-side occlusion limiting certainty.

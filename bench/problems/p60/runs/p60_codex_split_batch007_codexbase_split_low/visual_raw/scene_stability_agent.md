@@ -1,0 +1,1 @@
+Unstable. I only have the single capture to judge from, not a previous frame. In this image the robot hand is still extended over the table in an active pose, so I can’t confirm the scene has settled enough for the main agent to continue.

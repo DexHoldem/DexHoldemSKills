@@ -1,0 +1,1 @@
+Stable. Compared the supplied current image only; no previous or pre-action settled image was provided. The table, chips, cards, player, and robot arm appear sharp and stationary, with no visible motion blur or active robot movement. No safety cue suggests the robot is still in progress.

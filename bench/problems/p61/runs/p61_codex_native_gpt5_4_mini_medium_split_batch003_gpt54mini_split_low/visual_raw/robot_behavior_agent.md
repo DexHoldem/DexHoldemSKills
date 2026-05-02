@@ -1,0 +1,6 @@
+- Robot hand is extended from the right side over the table, open and angled downward toward the center-right area.
+- It does not appear to be holding a card or chips.
+- The hand is not near a rest pose; it looks mid-reach, not parked.
+- The hand appears to still be moving or in progress, based on the blurred, outstretched pose.
+- The scene looks safe right now: no visible collision, no dropped object, and no immediate human-help issue.
+- There is some occlusion from the robot body/camera on the right, but the hand action is still visible enough to assess.

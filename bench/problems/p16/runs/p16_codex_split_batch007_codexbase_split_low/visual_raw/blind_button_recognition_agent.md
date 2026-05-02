@@ -1,0 +1,1 @@
+Dealer button is at the opponent seat. Small blind is also the opponent seat. Big blind is the robot seat. The visible yellow `BIG BLIND` button on the lower/robot side matches that assignment; I don’t see a conflicting dealer button on the robot side.

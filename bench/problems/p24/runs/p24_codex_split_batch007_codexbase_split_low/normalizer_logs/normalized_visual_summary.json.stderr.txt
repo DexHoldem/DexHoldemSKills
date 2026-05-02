@@ -1,0 +1,619 @@
+Reading additional input from stdin...
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019de74d-f9f8-77a0-9beb-a42cb1d21b7b
+--------
+user
+Use report_normalizer_agent to normalize this old DexHoldem perception run.
+
+Important boundaries:
+- This is post-processing only.
+- Do not inspect images.
+- Do not inspect benchmark ground truth or problem labels.
+- Use only files under this workspace.
+- Return strict JSON only.
+
+Run metadata:
+- problem_id: p24
+- run_id: p24_codex_split_batch007_codexbase_split_low
+
+Input files are copied into this workspace. Write the final strict JSON to:
+normalized_visual_summary.json
+
+codex
+I’ll use the local workspace only and avoid image or benchmark-label inspection. I’m going to identify the normalizer entry point and the allowed text outputs first.
+exec
+/bin/zsh -lc 'rg --files' in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+visual_raw/held_card_recognition_agent.md
+visual_raw/bet_recognition_agent.md
+visual_raw/chip_recognition_agent.md
+visual_raw/blind_button_recognition_agent.md
+visual_raw/scene_stability_agent.md
+visual_raw/community_cards_agent.md
+visual_raw/turn_detection_agent.md
+visual_raw/robot_behavior_agent.md
+harness_prompt.md
+eval_report.md
+harness_version.json
+agent_manifest.json
+visual_summary.json
+output_check.json
+
+codex
+The workspace contains only text summaries and harness metadata, so I can stay within the boundaries. I’m reading the prompt/schema files and the existing visual summaries to infer the expected normalized output.
+exec
+/bin/zsh -lc "sed -n '1,220p' harness_prompt.md" in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+# Split Visual-Agent Setup
+
+Use the visible split visual agents for image perception.
+Use the visible reasoning agent for Texas Hold'em poker-action reasoning when
+the router asks for `choose_poker_action`.
+
+The main agent must not inspect images or independently decide visual fields.
+Delegate each image-reading question to the appropriate scoped visual agent and
+merge only returned evidence.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
+
+Write one raw evidence file per called subagent under
+`runs/<run_id>/visual_raw/<agent_name>.md`.
+
+Then write `runs/<run_id>/visual_summary.json` and
+`runs/<run_id>/eval_report.md`. Do not execute robot actions.
+
+exec
+/bin/zsh -lc "sed -n '1,220p' visual_summary.json" in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+{
+  "run_id": "p24_codex_split_batch007_codexbase_split_low",
+  "scene_stability": {
+    "status": "unstable",
+    "evidence": [
+      "Compared current capture against the previous capture.",
+      "Robot arm and hand moved leftward.",
+      "Chip stacks shifted.",
+      "Opponent posture changed."
+    ]
+  },
+  "turn_detection": {
+    "status": "our_turn",
+    "evidence": [
+      "Small white physical turn button visible near the lower-left area of the table.",
+      "Button is beside the \"Your Turn\" text."
+    ]
+  },
+  "blind_buttons": {
+    "dealer": "robot",
+    "small_blind": "robot",
+    "big_blind": "opponent",
+    "evidence": [
+      "Single visible white puck near seat 6 on the near side.",
+      "No separate second button visible."
+    ],
+    "confidence": "partial_inference"
+  },
+  "robot_behavior": {
+    "status": "not_settled",
+    "evidence": [
+      "Robot arm extended over the table.",
+      "Hand open and hovering near chips.",
+      "No neutral rest pose yet."
+    ]
+  },
+  "community_cards": {
+    "count": 0,
+    "cards": []
+  },
+  "held_cards": {
+    "visible": false,
+    "cards": []
+  },
+  "chip_inventory": {
+    "robot": {
+      "red_5": 4,
+      "blue_10": 1
+    },
+    "opponent": {
+      "countable_visible_chips": []
+    }
+  },
+  "bets": {
+    "robot_side_visible_bet": {
+      "red_5": 4,
+      "blue_10": 1
+    },
+    "opponent_side_visible_bet": {
+      "chips_visible": 0
+    }
+  },
+  "notes": [
+    "No image perception was performed in the main agent.",
+    "Summary is merged only from subagent evidence.",
+    "Scene remains unstable, so no robot action should be executed."
+  ]
+}
+
+exec
+/bin/zsh -lc "sed -n '1,220p' output_check.json" in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+{
+  "ok": true,
+  "required": {
+    "visual_summary": true,
+    "eval_report": true,
+    "visual_raw_dir": true,
+    "visual_raw_files": true,
+    "not_blocked": true
+  },
+  "visual_raw_files": [
+    "visual_raw/bet_recognition_agent.md",
+    "visual_raw/blind_button_recognition_agent.md",
+    "visual_raw/chip_recognition_agent.md",
+    "visual_raw/community_cards_agent.md",
+    "visual_raw/held_card_recognition_agent.md",
+    "visual_raw/robot_behavior_agent.md",
+    "visual_raw/scene_stability_agent.md",
+    "visual_raw/turn_detection_agent.md"
+  ],
+  "blocked_summary": false
+}
+
+exec
+/bin/zsh -lc "sed -n '1,220p' agent_manifest.json" in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+{
+  "schema_version": 1,
+  "harness": "codex",
+  "visual_setting": "split",
+  "visual_variant": "codex",
+  "source_dir": "subagent/codex",
+  "problem_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p24_p24_codex_split_batch007_codexbase_split_low_qi1mbxy3/p24",
+  "run_id": "p24_codex_split_batch007_codexbase_split_low",
+  "run_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p24_p24_codex_split_batch007_codexbase_split_low_qi1mbxy3/p24/runs/p24_codex_split_batch007_codexbase_split_low",
+  "latest_state": "s21",
+  "visible_agent_dir": ".codex/agents",
+  "visible_agents": [
+    "bet_recognition_agent",
+    "blind_button_recognition_agent",
+    "chip_recognition_agent",
+    "community_cards_agent",
+    "held_card_recognition_agent",
+    "robot_behavior_agent",
+    "scene_stability_agent",
+    "showdown_outcome_agent",
+    "turn_detection_agent",
+    "reasoning_agent"
+  ],
+  "version": {
+    "preflight_script": {
+      "path": "perception_eval/preflight.py",
+      "sha256": "98832c38e0e7c7a849a6f54a5d395eba5e6d1044dc8abcd18523bad451d2fc67",
+      "size": 15892
+    },
+    "skill_root": "skills/dexholdem-v2",
+    "source_agents": [
+      {
+        "path": "subagent/codex/split/bet_recognition_agent.toml",
+        "sha256": "ea3e7f58f5fbf6e15e422ceb2dcbe9e98703dce44409e7ea1d3c437c1e74ed03",
+        "size": 998
+      },
+      {
+        "path": "subagent/codex/split/blind_button_recognition_agent.toml",
+        "sha256": "ad4e93be68d565cb2b733db4d993db4071ba6922779e0f3e111c4954baa876c9",
+        "size": 1013
+      },
+      {
+        "path": "subagent/codex/split/chip_recognition_agent.toml",
+        "sha256": "4102869ac953b64ce1ebe1c9d568d724c549b69b72d4eac6950296c5986d9564",
+        "size": 986
+      },
+      {
+        "path": "subagent/codex/split/community_cards_agent.toml",
+        "sha256": "63c61dbd15a4175054935b318dc2445c28a782f653157b7b9915751927f9a266",
+        "size": 852
+      },
+      {
+        "path": "subagent/codex/split/held_card_recognition_agent.toml",
+        "sha256": "a0dd4692bdc908a144585dda7380eab9f188b4bdff68b8ad2672550a437e124a",
+        "size": 880
+      },
+      {
+        "path": "subagent/codex/split/robot_behavior_agent.toml",
+        "sha256": "bc0c2dd3d9649eb6dc0d566e4e9fa7bebf36713098d9aeea3e10e4aa628ba4d3",
+        "size": 996
+      },
+      {
+        "path": "subagent/codex/split/scene_stability_agent.toml",
+        "sha256": "81a214876113df43951d51fb3c5c785c0f005bdf77b22e5f8b40c8eca87bf30e",
+        "size": 994
+      },
+      {
+        "path": "subagent/codex/split/showdown_outcome_agent.toml",
+        "sha256": "f2be4c7778eedd53889d86c626d696dcbb26d0ec2ddf9b1c9f4dd2255907e5de",
+        "size": 1102
+      },
+      {
+        "path": "subagent/codex/split/turn_detection_agent.toml",
+        "sha256": "5786e2465fc3362e89bb231a202f2daf1647efe20ea01b7d7f59b841f61aa44e",
+        "size": 932
+      },
+      {
+        "path": "subagent/codex/reasoning_agent.toml",
+        "sha256": "da779078a125f945ab46a77499f2f47d94e51c80b671334aa9e293e9096b5199",
+        "size": 2103
+      }
+    ],
+    "visual_source_agents": [
+      {
+        "path": "subagent/codex/split/bet_recognition_agent.toml",
+        "sha256": "ea3e7f58f5fbf6e15e422ceb2dcbe9e98703dce44409e7ea1d3c437c1e74ed03",
+        "size": 998
+      },
+      {
+        "path": "subagent/codex/split/blind_button_recognition_agent.toml",
+        "sha256": "ad4e93be68d565cb2b733db4d993db4071ba6922779e0f3e111c4954baa876c9",
+        "size": 1013
+      },
+      {
+        "path": "subagent/codex/split/chip_recognition_agent.toml",
+        "sha256": "4102869ac953b64ce1ebe1c9d568d724c549b69b72d4eac6950296c5986d9564",
+        "size": 986
+      },
+      {
+        "path": "subagent/codex/split/community_cards_agent.toml",
+        "sha256": "63c61dbd15a4175054935b318dc2445c28a782f653157b7b9915751927f9a266",
+        "size": 852
+      },
+      {
+        "path": "subagent/codex/split/held_card_recognition_agent.toml",
+        "sha256": "a0dd4692bdc908a144585dda7380eab9f188b4bdff68b8ad2672550a437e124a",
+        "size": 880
+      },
+      {
+        "path": "subagent/codex/split/robot_behavior_agent.toml",
+        "sha256": "bc0c2dd3d9649eb6dc0d566e4e9fa7bebf36713098d9aeea3e10e4aa628ba4d3",
+        "size": 996
+      },
+      {
+        "path": "subagent/codex/split/scene_stability_agent.toml",
+        "sha256": "81a214876113df43951d51fb3c5c785c0f005bdf77b22e5f8b40c8eca87bf30e",
+        "size": 994
+      },
+      {
+        "path": "subagent/codex/split/showdown_outcome_agent.toml",
+        "sha256": "f2be4c7778eedd53889d86c626d696dcbb26d0ec2ddf9b1c9f4dd2255907e5de",
+        "size": 1102
+      },
+      {
+        "path": "subagent/codex/split/turn_detection_agent.toml",
+        "sha256": "5786e2465fc3362e89bb231a202f2daf1647efe20ea01b7d7f59b841f61aa44e",
+        "size": 932
+      }
+    ],
+    "reasoning_source_agents": [
+      {
+        "path": "subagent/codex/reasoning_agent.toml",
+        "sha256": "da779078a125f945ab46a77499f2f47d94e51c80b671334aa9e293e9096b5199",
+        "size": 2103
+      }
+    ],
+    "runtime_scripts": [
+      {
+        "path": "skills/dexholdem-v2/scripts/action_translator.py",
+        "sha256": "0294514261dd22fe6e50ea3071e8a3baedc9702c3c521a21bc52546b4b5d55af",
+        "size": 15851
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/capture.py",
+        "sha256": "e40854323be40fab287edaeab399e3a8e358769534d1899733e59c14be45c36f",
+        "size": 10348
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/executor.py",
+        "sha256": "958c1373a77856cd7d56df391bcf876cd076383dbfed9d811b5ee3309c3a20cd",
+        "size": 18235
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/preflight.py",
+        "sha256": "8d21c6a46df717c54cf320da61b397a90900ecda565558f8959ce0d9562c2ef2",
+        "size": 15834
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/remote_exec.py",
+        "sha256": "e5a2c5c69563e77b8b307c37ea708a44de6781f3984b3e1515bfd7fdd54272a3",
+        "size": 3913
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/router.py",
+        "sha256": "439772d143cfd6caf3cc28fcb1c0f7733417f1a27cd370aeab5954d6336d7407",
+        "size": 34029
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/state.py",
+        "sha256": "bca7c339c04e2ed29dab4d3c3f91c355a7b2445af650d8cf5f5f60b6253f7530",
+        "size": 25035
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/text_to_sound.py",
+        "sha256": "90d7057d5018a34ebe8ba55713eeb23d58a0da9c0d02e1f394b395a7bfaf90a5",
+        "size": 8604
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/utils.py",
+        "sha256": "1c22207adee8db5db04b762187eeac7a13b57af94d4a5db7023d1a3bce250170",
+        "size": 7641
+      }
+    ],
+    "visual_guidelines": [
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/BET_RECOGNITION.md",
+        "sha256": "3b33012b2851761c47ae8d05c01d2142b0941f9859dc2ef66e7c2a21ab333149",
+        "size": 3086
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/BLIND_BUTTON_RECOGNITION.md",
+        "sha256": "f2e37448c878b1f4f4cff86d5dfcb80ec6b0533378782dc1323b4831b8d0d9a7",
+        "size": 2210
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/CHIP_RECOGNITION.md",
+        "sha256": "cb1a268124196b0ddec3560e0d9a5620fed37884afa21c694a9920e2a84a6c66",
+        "size": 2790
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/COMMUNITY_CARDS.md",
+        "sha256": "419de9e270a31156a438a0b2f681bc87143f256a17fef851b7e6c827c9b8ab08",
+        "size": 2561
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/HELD_CARD_RECOGNITION.md",
+        "sha256": "e7aad9dd17eaf988bb5ff2702b912e7df916667ee294d58a8b2ea912e5fd6f8a",
+        "size": 2380
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/ROBOT_BEHAVIOR.md",
+        "sha256": "7b0439dd8c0acb2393bdb60f81479c5d72223cb8f10827018109f2a4acac4016",
+        "size": 7972
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/SCENE_STABILITY.md",
+        "sha256": "285a6a29cac3f47468a9a74f1bed7de6086aef1fdb33a764ea55622f16afb27d",
+        "size": 6635
+      },
+      {
+
+exec
+/bin/zsh -lc "sed -n '220,520p' agent_manifest.json" in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/SHOWDOWN_OUTCOME.md",
+        "sha256": "e56ae620ae4c279a1f86a2decc335ec0cbad3d4b78528ddbdb319c9f3efa9e11",
+        "size": 4098
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/TABLE_GEOMETRY.md",
+        "sha256": "424ee8ec1dcab5f5976542a022e6aaec964c5153e386df066d9db8b6926ca27d",
+        "size": 2583
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/TURN_DETECTION.md",
+        "sha256": "ad41a660c3598d91810fa93c260c56920614ccec464deba9fee7fbac7b7b0954",
+        "size": 2291
+      }
+    ],
+    "skill_config": {
+      "path": "skills/dexholdem-v2/config.yaml",
+      "sha256": "117671d1f97ec1c06df40085fa14b2d627bee61bd850637eb73484dffa42094f",
+      "size": 978
+    },
+    "skill_pyproject": {
+      "path": "skills/dexholdem-v2/pyproject.toml",
+      "sha256": "118cdfed9770ac728da28aea1aef5c05a58be5654bc79f90a084b1341ebb12a5",
+      "size": 220
+    }
+  }
+}
+
+exec
+/bin/zsh -lc "sed -n '1,260p' eval_report.md" in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+# DexHoldem Perception Report
+
+Run: `p24_codex_split_batch007_codexbase_split_low`
+
+## Status
+
+The current frame is not settled enough to treat as a final post-action state.
+
+## Merged Visual Evidence
+
+- Scene stability: unstable compared with the previous capture.
+- Turn detection: it is our turn; the white physical turn button is visible beside the `Your Turn` text.
+- Blind/button assignment: dealer and small blind appear to be the robot seat; big blind appears to be the opponent seat. This is partially inferred from a single visible puck near seat `6`.
+- Robot behavior: the robot arm is still extended over the table and hovering near chips.
+- Community cards: none visible.
+- Held cards: no robot-held hole card is readable in this capture.
+- Chip inventory: robot-side visible inventory appears to be 4 red `5` chips and 1 blue `10` chip.
+- Betting: robot-side visible bet area shows about 4 red `5` chips and 1 blue `10` chip; opponent-side bet area shows no visible bet chips.
+
+## Operational Note
+
+No robot actions were executed. The output directory used exactly matches the requested run directory.
+
+exec
+/bin/zsh -lc "for f in visual_raw/*.md; do printf '%s\\n' \""'$f"; sed -n '"'1,220p' \""'$f"; done' in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ succeeded in 0ms:
+visual_raw/bet_recognition_agent.md
+My current bet area, lower/robot side of the community cards: about 4 red 5-chips and 1 blue 10-chip visible. No green 50-chips or brown 100-chips seen. Count is somewhat uncertain because the robot arm occludes part of the area.
+
+Opponent bet area, upper/opponent side of the community cards: no bet chips visible.
+
+No clear bet in progress on the opponent side; the only visible current bet chips appear to be on the robot/player side.
+visual_raw/blind_button_recognition_agent.md
+Dealer button: robot seat, based on the visible white puck near the lower-left/foreground side of the table around seat `6`.
+Small blind: robot seat, if this is heads-up play the dealer and small blind are the same seat.
+Big blind: opponent seat, opposite side across the table.
+
+Evidence:
+- A single clear white button/puck is visible on the near side of the felt, next to the `6` marking.
+- No separate second button is clearly visible elsewhere in the frame.
+
+Uncertainty:
+- The exact dealer/small blind/big blind setup is partially inferred rather than fully observable.
+visual_raw/chip_recognition_agent.md
+Estimated visible remaining inventory:
+
+- Robot/player: red `4`, blue `1`
+- Opponent: no clearly countable inventory chips visible
+
+Uncertain / not countable:
+- The white chip(s) near the lower left are not in the provided denomination set, so they were not counted.
+- Any partial chips obscured by the robot arm or table edge are too unclear to count reliably.
+visual_raw/community_cards_agent.md
+0 community cards are visible on the board.
+
+No face-up board cards can be read from this capture.
+visual_raw/held_card_recognition_agent.md
+No robot-held hole card is visibly readable in this capture.
+
+Holding card: no clear card visible
+Card value: unreadable
+Uncertainty: the robot hand is in frame, but no distinct card face or rank/suit can be resolved
+visual_raw/robot_behavior_agent.md
+The scene does not look fully settled.
+
+Evidence:
+- The robot arm is extended over the table with the hand open and hovering near the chips.
+- The arm is still far from a neutral pose.
+- The forearm and hand partially block the betting area, so exact fingertip/chip contact is hard to see.
+
+Conclusion:
+- The action looks still in progress or recently paused.
+- No clear failure or human intervention is visible.
+visual_raw/scene_stability_agent.md
+Status: Unstable
+
+Compared `s21/00_capture.jpg` against `s20/00_capture.jpg`.
+
+Evidence:
+- The robot arm and hand have moved noticeably leftward.
+- The chip stacks on the table have shifted.
+- The man's posture changed from a hand near his chest to arms crossed.
+
+Conclusion:
+- The scene is still changing rather than settled.
+visual_raw/turn_detection_agent.md
+Status: it is our turn
+
+Evidence:
+- The small white physical turn button is clearly visible near the lower-left area of the table.
+- It sits just above the large `6` marking and beside the `Your Turn` text.
+
+codex
+I don’t see a callable `report_normalizer_agent` tool in this environment, so I’m applying that role locally: normalize the copied text outputs without looking at images or labels. Next I’ll write the canonical JSON if the sandbox permits it.
+exec
+/bin/zsh -lc 'rg -n "report_normalizer|normalized_visual_summary|normalize" .' in /var/folders/lm/xhlc6zss1555rkdgx66y0ly00000gn/T/normalize_p24_ti863ipk
+ exited 1 in 0ms:
+codex
+I found no existing normalizer script or schema file in the workspace, so the normalization will be a canonical merge of `visual_summary.json`, `eval_report.md`, and the raw agent markdown. I’m keeping uncertainty explicit where the old run used inference or approximate counts.
+2026-05-02T06:09:53.839521Z ERROR codex_core::tools::router: error=patch rejected: writing is blocked by read-only sandbox; rejected by user approval settings
+codex
+{
+  "schema_version": 1,
+  "problem_id": "p24",
+  "run_id": "p24_codex_split_batch007_codexbase_split_low",
+  "normalization_mode": "post_processing_only",
+  "file_write_status": "blocked_by_read_only_sandbox",
+  "source_boundaries": {
+    "workspace_only": true,
+    "images_inspected": false,
+    "benchmark_ground_truth_inspected": false,
+    "problem_labels_inspected": false
+  },
+  "scene": {
+    "stability": {
+      "status": "unstable",
+      "is_settled": false,
+      "evidence": [
+        "Robot arm and hand moved noticeably leftward.",
+        "Chip stacks on the table shifted.",
+        "Opponent posture changed."
+      ]
+    },
+    "robot_behavior": {
+      "status": "not_settled",
+      "action_state": "in_progress_or_recently_paused",
+      "failure_visible": false,
+      "human_intervention_visible": false
+    }
+  },
+  "turn_detection": {
+    "status": "our_turn"
+  },
+  "blind_buttons": {
+    "dealer": "robot",
+    "small_blind": "robot",
+    "big_blind": "opponent",
+    "confidence": "partial_inference"
+  },
+  "cards": {
+    "community": {
+      "visible_count": 0,
+      "cards": [],
+      "readable": false
+    },
+    "held": {
+      "visible": false,
+      "readable": false,
+      "cards": []
+    }
+  },
+  "chips": {
+    "inventory": {
+      "robot": {
+        "red_5": 4,
+        "blue_10": 1,
+        "green_50": 0,
+        "brown_100": 0,
+        "total_value": 30,
+        "count_confidence": "approximate"
+      },
+      "opponent": {
+        "countable_visible_chips": [],
+        "count_confidence": "none_countable"
+      }
+    }
+  },
+  "bets": {
+    "robot_side_visible_bet": {
+      "red_5": 4,
+      "blue_10": 1,
+      "green_50": 0,
+      "brown_100": 0,
+      "total_value": 30,
+      "count_confidence": "approximate"
+    },
+    "opponent_side_visible_bet": {
+      "chips_visible": 0,
+      "total_value": 0,
+      "count_confidence": "clear_no_visible_bet"
+    }
+  },
+  "operational_status": {
+    "robot_action_executed": false,
+    "robot_action_allowed_from_visual_state": false,
+    "reason": "Scene is unstable and robot behavior is not settled."
+  }
+}
+tokens used
+15,938

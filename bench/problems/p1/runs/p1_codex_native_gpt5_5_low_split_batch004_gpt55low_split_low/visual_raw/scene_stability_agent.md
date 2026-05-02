@@ -1,0 +1,1 @@
+Stable. Compared only the supplied single capture, since no previous or pre-action image was provided. The table, chips, cards, player, and robot arm appear still with no obvious motion blur or active manipulation visible. Uncertainty: without a comparison frame, this is based only on visible pose/motion cues.

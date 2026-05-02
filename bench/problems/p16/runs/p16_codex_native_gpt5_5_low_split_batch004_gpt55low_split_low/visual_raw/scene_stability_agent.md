@@ -1,0 +1,1 @@
+Stable. Compared Image #1 and Image #2; the table layout, chips, face-down cards, dealer/big blind/turn buttons, human posture, and robot gripper holding the 5♦ all remain visually unchanged. No blur, displacement, or ongoing motion is apparent, so the latest frame appears settled.

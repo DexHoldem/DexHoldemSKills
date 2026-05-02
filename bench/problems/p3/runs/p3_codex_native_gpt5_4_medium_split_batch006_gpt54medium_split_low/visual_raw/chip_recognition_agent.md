@@ -1,0 +1,1 @@
+I cannot read a full chip inventory with confidence from this frame. The stacks near the bottom and top rails appear to be inventory chips rather than bet chips, and the image is partly occluded on the right side by the robot arm.

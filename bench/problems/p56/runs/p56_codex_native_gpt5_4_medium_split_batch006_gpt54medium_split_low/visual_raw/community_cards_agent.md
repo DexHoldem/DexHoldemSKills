@@ -1,0 +1,1 @@
+Five community cards are visible from left to right. They appear to be `Kh`, `3s`, `3c`, `5h`, and `Tc`. The first card is slightly less clear than the others but still looks like `Kh`; the other four look readable.

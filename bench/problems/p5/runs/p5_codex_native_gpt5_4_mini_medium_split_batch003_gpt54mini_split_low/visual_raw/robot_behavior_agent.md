@@ -1,0 +1,7 @@
+- Hand pose: The robot hand is at the lower right, partly occluded by the robot body/camera housing, with the fingers angled downward toward the table edge.
+- Action progress: It appears stationary or near the end of a motion, not actively grasping or transferring anything in this frame.
+- Object state: I do not see the hand clearly holding a card or chips.
+- Rest pose: It looks close to a neutral/resting position relative to the table edge, though the exact joint posture is partly hidden.
+- Safety: No immediate collision or unsafe contact is visible in this capture.
+- Failure/recovery evidence: I do not see clear evidence of a failed grasp or a needed retry in this single image.
+- Occlusion / human-help concern: The hand is significantly occluded, so fine-grained confirmation of finger placement and grip state is limited; no human intervention seems required from this frame alone.

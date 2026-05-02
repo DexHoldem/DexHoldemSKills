@@ -1,0 +1,15 @@
+- Opponent current bet:
+  - Red (5): 3-4 visible, exact count uncertain
+  - Blue (10): 3-4 visible, exact count uncertain
+  - Green (50): 2 visible
+  - Brown (100): 1 visible
+  - Uncertain/not countable: a few light/white chips and some chips partly hidden by the camera rig on the right edge
+  - Confidence: low-medium
+
+- Robot/player current bet:
+  - Red (5): 3 visible
+  - Blue (10): 4 visible
+  - Green (50): 0 clearly visible
+  - Brown (100): 0 clearly visible
+  - Uncertain/not countable: the yellow BIG BLIND disk and any white/light chips are not countable as listed denominations; some chips near the right side are partially occluded
+  - Confidence: medium

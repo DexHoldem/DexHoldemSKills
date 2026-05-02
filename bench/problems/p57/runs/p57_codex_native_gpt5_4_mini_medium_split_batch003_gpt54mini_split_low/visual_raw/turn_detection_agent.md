@@ -1,0 +1,1 @@
+it is our turn. The white turn button appears near the bottom-center of the table, just above the blue dealer button and between the lower player’s chips/cards; it is visible and not heavily occluded.

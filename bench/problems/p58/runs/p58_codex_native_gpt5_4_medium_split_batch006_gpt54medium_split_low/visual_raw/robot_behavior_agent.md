@@ -1,0 +1,3 @@
+The dexterous hand is extended in from the right over the upper-right table area, around the opponent-side betting/inventory chip zone. It appears to be reaching or positioning for a chip action, with the fingers open and low over the felt. I do not see it clearly holding a card or carrying chips.
+
+It is not near its rest pose. The action looks still in progress rather than settled, and the current physical state appears safe to continue from this frame. The right side of the table is partly occluded by the robot arm/body, but I do not see a dropped card, scattered chips, or another obvious human-help condition.

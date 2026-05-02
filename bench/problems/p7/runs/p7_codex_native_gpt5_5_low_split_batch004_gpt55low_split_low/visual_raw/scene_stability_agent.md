@@ -1,0 +1,1 @@
+Unstable. Comparing the previous capture with the current capture, the robot arm/gripper has moved substantially and the card/object placement near the gripper area changed. The scene is still in progress and has not visually settled.

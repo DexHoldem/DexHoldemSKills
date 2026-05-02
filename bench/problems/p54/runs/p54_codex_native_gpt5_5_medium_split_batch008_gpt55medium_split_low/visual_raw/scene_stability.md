@@ -1,0 +1,1 @@
+Unstable. I compared only the current image, `/s0/00_capture.jpg`, because no previous capture or settled pre-action image was supplied. The robot arm is still extended over the table and appears to be in the active play area, so the scene looks like a robot action may still be in progress. I would not treat this as settled enough for the main agent to continue.

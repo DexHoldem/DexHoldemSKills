@@ -1,0 +1,1 @@
+Stable. Compared `s5/00_capture.jpg` only; the frame is sharp with no visible motion blur, cards/chips/table markings are fixed and readable, and the robot-held card appears stationary. Uncertainty: no previous or pre-action settled image was supplied for temporal comparison.

@@ -1,0 +1,1 @@
+Stable - compared Image #1 current capture only. The table, chips, cards, human posture, and robot hand all appear sharp and stationary with no visible motion blur or mid-action contact. Uncertainty: no previous or pre-action settled image was provided for frame-to-frame comparison.

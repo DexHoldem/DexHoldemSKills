@@ -1,0 +1,1 @@
+Stable. Current capture is sharp with no visible motion blur, and the table/cards/chips, person, and robot arm all appear fixed in place. No previous frame was provided, so this is a single-frame stability read only.

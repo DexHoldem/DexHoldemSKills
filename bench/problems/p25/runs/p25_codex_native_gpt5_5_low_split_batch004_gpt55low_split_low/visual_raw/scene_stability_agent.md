@@ -1,0 +1,1 @@
+Stable. Compared the latest provided capture only; no previous/pre-action image was supplied. The table, cards, chips, and dealer button appear settled with no visible motion blur. The robot arm is present and partially occludes the right side of the table, but it appears stationary and does not block the central community cards or main chip areas enough to prevent perception.

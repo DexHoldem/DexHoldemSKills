@@ -1,0 +1,1 @@
+Unstable. Compared `s25/00_capture.jpg` with previous `s24/00_capture.jpg`. The robot arm position changed substantially and is still hovering over/occluding the right side of the table, so the action appears still in progress. Cards and chips look stationary, but there is no cleared, settled frame yet.

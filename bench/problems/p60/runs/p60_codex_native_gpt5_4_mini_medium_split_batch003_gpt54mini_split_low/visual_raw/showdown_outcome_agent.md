@@ -1,0 +1,1 @@
+showdown_outcome_agent: showdown visible. Opponent hole cards are face-up in the top/opponent zone and read as 10 and 7; robot hole cards are face-up in the bottom/robot zone and read as 7♥ and 3♠. With board 3♣ J♠ K♠ 8♦ Q♥, the robot has a pair of 3s while the opponent has high card only, so the robot wins. `win`

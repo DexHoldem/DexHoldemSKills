@@ -1,0 +1,1 @@
+No readable held card is visible. The dexterous hand appears empty or not clearly holding any card; table cards and hole cards on the felt should not be used for held-card recognition. Treat the held card as unreadable.

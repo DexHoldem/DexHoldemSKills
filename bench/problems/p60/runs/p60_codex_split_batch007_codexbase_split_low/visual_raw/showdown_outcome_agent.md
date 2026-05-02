@@ -1,0 +1,1 @@
+Opponent hole cards are face-up and readable as `Tc` and `7d`. Robot hole cards are also face-up and readable as `7h` and `3s`. With the visible board `3c Js Kc 8d Qd`, the robot has a pair of 3s and the opponent has only high card, so this is a showdown and the robot wins.

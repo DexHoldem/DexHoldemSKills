@@ -1,0 +1,1 @@
+Call. You currently have two pair on the flop (`Q`s and `7`s), which is strong enough to continue, and the chip counts are partially occluded so a conservative continue is the safest supported action.

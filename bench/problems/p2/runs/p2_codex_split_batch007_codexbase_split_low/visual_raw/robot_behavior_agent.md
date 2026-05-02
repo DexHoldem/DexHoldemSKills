@@ -1,0 +1,5 @@
+- Verdict: Robot hand is extended over the table and appears to be hovering/reaching, not grasping anything.
+- Confidence: Medium
+- Visual cues: right-side robotic gripper is open or partially open; no visible card or chip between fingers; hand is close to the betting area but not touching a stack; pose is away from rest and seems mid-action.
+- Safety/progress: Action appears still in progress and visually safe in this frame.
+- Occlusion/help concern: Hand is partially occluded by the robot body or camera side; no obvious human-help issue visible.

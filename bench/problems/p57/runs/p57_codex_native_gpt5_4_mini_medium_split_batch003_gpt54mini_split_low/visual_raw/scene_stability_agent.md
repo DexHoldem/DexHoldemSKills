@@ -1,0 +1,1 @@
+Stable. I compared the provided capture itself; no prior frame was included here. The scene looks visually settled: the table, cards, chips, person, and robot arm are all sharp with no motion blur, and nothing appears mid-move. The only uncertainty is that I could not verify frame-to-frame change without a previous capture.

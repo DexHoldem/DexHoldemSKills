@@ -1,0 +1,3 @@
+Unstable. Compared only the attached current frame; no previous capture or pre-action settled image was provided. The robot hand is still occupying the bottom/robot-side hole-card area and appears to be in contact with or immediately over a face-down card, with part of that zone occluded by the hand/camera body. That is not a clearly idle or fully settled pose, so the scene is not safe to treat as finished.
+
+Uncertainty: with only one frame I cannot confirm actual motion, but the visible end-effector position over the robot hole-card zone is enough to treat this as potentially still in progress rather than stable. Human posture looks non-interfering; the instability evidence is the robot's non-idle, card-adjacent pose and occlusion.

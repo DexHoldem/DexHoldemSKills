@@ -1,0 +1,1 @@
+Unstable: comparing Image #1 to Image #2, the robot arm/end effector has clearly moved from the right edge into the center of the table, changing the visible play area and occluding different chips/cards. This is still in motion, so the scene is not stable enough to continue.

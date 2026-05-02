@@ -1,0 +1,1 @@
+Unstable. Compared s17/00_capture.jpg and s18/00_capture.jpg. The robot hand and the right hole card changed position substantially, with the card moving from being held upright to lying face-up near seat 5. In s18/00_capture.jpg the gripper is still very close to or touching the card/chip area, so the view-right-hole-card action appears still in progress rather than settled.

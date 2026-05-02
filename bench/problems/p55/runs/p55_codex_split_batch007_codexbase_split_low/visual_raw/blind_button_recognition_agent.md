@@ -1,0 +1,1 @@
+{"agent_id":"019de5d0-afaf-75f1-82c3-0528542f3e93","status":"completed","evidence":"- Dealer button: `robot` (lower-middle seat)\n- Small blind: `robot`\n- Big blind: `opponent` (upper-middle seat)\n- Evidence: white `DEALER` disk and blue `SMALL BLIND` disk are both placed in front of the lower-middle hand; no clearer conflicting blind marker is visible."}

@@ -1,0 +1,1 @@
+it is our turn. The small white turn button is visible near the bottom-center of the table, just above the blue `SMALL BLIND` button and beside the face-down cards; it is clearly identifiable with only slight clutter from nearby chips.

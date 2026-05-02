@@ -1,0 +1,6 @@
+- Hand pose: right-side robot hand is extended over the table, fingers open and angled downward; no card or chips are visibly grasped.
+- Action progress: looks mid-reach or hovering above the play area, not at a clear rest pose.
+- Safety: appears safe in this capture; it is above the table surface and not visibly colliding with the person or objects.
+- State: still in progress, not obviously failed.
+- Recovery evidence: none visible in this frame.
+- Occlusion: the hand is partly occluded by the robot body/camera housing on the right.

@@ -1,0 +1,1 @@
+Stable. The current capture shows a mostly settled poker table scene: the cards and chip stacks are in fixed positions, and there’s no visible robot atom motion or major object displacement. Main uncertainty is the person’s hands are mid-motion above the table, so a small adjustment could still be happening, but nothing suggests an active scene change.

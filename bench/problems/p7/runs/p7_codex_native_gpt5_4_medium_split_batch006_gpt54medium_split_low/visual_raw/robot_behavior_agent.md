@@ -1,0 +1,3 @@
+In `s5/00_capture.jpg`, the robot hand is extended from the right side over the bottom/robot-side area and is clearly holding a single playing card face-up. Compared with `s4/00_capture.jpg`, it has moved up from the robot hole-card area near the lower edge of the table and has lifted the card into view. The card appears to be the `9 of diamonds`.
+
+The hand is not near its rest pose. It looks like a card-view action is still in progress, not finished. I do not see it holding chips or pushing chips. The state looks physically safe so far, but the robot body and hand are occluding part of the right side of the table, so that zone is partly hidden while the action continues.

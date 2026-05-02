@@ -1,0 +1,2 @@
+Unstable. Compared only the current capture; no previous or pre-action settled image was provided. The robot hand/camera body is still extended into the lower-right robot-side inventory/bet area and is occluding nearby chips, so the scene does not show a clearly settled near-idle pose.
+Uncertainty: with only one frame, I cannot confirm actual motion, but the current pose is not stable enough to continue safely.

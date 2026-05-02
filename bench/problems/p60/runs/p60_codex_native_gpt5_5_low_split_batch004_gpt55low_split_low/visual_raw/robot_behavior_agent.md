@@ -1,0 +1,3 @@
+The dexterous hand enters from the right-side robot/camera area and is extended over the upper-right/central table area, above the opponent-side betting lane. The fingers are open and angled downward as if reaching or hovering, but it is not visibly grasping a card or chips.
+
+It is not near its idle/rest pose. The hand appears active or still settling rather than fully idle. I do not see a dropped card, scattered chips, or a pinned object, but the robot body/hand occludes part of the right-side table and nearby chip area. Current state looks like an in-progress action, so wait for another capture before judging failure or recovery.

@@ -1,0 +1,2579 @@
+Reading additional input from stdin...
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+model: gpt-5.4-mini
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/memories]
+reasoning effort: low
+reasoning summaries: none
+session id: 019de5f8-0600-7523-9372-0eb967cf4777
+--------
+user
+Run the current DexHoldem perception step.
+
+Use the local setup, visible visual subagents, and visible reasoning subagent.
+Do not execute robot actions.
+Do not perform image perception in the main agent; merge subagent evidence only.
+If the router asks for Texas Hold'em action reasoning, delegate that reasoning
+to the reasoning subagent and validate its recommendation before committing an
+action.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
+
+Use exactly this output directory: runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low
+Do not append the isolated workspace suffix or any other suffix to the run id.
+
+Write:
+- runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/
+- runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+- runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+
+`runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/` must contain at least one real evidence file.
+Do not claim raw evidence exists unless the file exists on disk. Before your
+final response, verify the three requested outputs and the non-empty
+`visual_raw/` directory.
+
+codex
+I’m going to inspect the local DexHoldem run layout and the perception pipeline entrypoints, then I’ll fan out the visual and reasoning subagents in parallel and merge only their outputs.
+exec
+/bin/zsh -lc "pwd && rg --files -g 'SKILL.md' -g '*.py' -g '*.sh' -g '*.json' -g '*.md' | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+zsh:1: command not found: rg
+
+exec
+/bin/zsh -lc "find runs -maxdepth 3 -type d | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+runs
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/cache
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/shell_snapshots
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/.tmp
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/skills
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/tmp
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/memories
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw
+
+codex
+`rg` isn’t available here, so I’m falling back to `find` and `grep`. I’ve confirmed the target run directory already exists; next I’m locating the perception runner and the evidence files it should consume.
+2026-05-01T23:55:42.463135Z ERROR codex_core::tools::router: error=exec_command failed for `/bin/zsh -lc "find . -maxdepth 3 -type f \\( -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.md' \\) | sort | sed -n '1,240p'"`: CreateProcess { message: "Rejected(\"Failed to create unified exec process: No such file or directory (os error 2)\")" }
+2026-05-01T23:55:42.465401Z ERROR codex_core::tools::router: error=exec_command failed for `/bin/zsh -lc "find runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low -maxdepth 4 -type f | sort | sed -n '1,240p'"`: CreateProcess { message: "Rejected(\"Failed to create unified exec process: No such file or directory (os error 2)\")" }
+codex
+I hit a bad workspace path, so I’m correcting that and re-reading the local files. After that I’ll launch the subagents against the actual run assets.
+exec
+/bin/zsh -lc "find . -maxdepth 3 -type f \\( -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.md' \\) | sort | sed -n '1,240p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+./action_sequence.json
+./action_translator.py
+./capture.py
+./executor.py
+./hole_card_cache.json
+./preflight.py
+./remote_exec.py
+./router.py
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/agent_manifest.json
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/codex_command.json
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/codex_env.json
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_prompt.md
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_version.json
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/isolation_manifest.json
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/preflight_result.json
+./state.py
+./text_to_sound.py
+./utils.py
+./visual_guidelines/BET_RECOGNITION.md
+./visual_guidelines/BLIND_BUTTON_RECOGNITION.md
+./visual_guidelines/CHIP_RECOGNITION.md
+./visual_guidelines/COMMUNITY_CARDS.md
+./visual_guidelines/HELD_CARD_RECOGNITION.md
+./visual_guidelines/ROBOT_BEHAVIOR.md
+./visual_guidelines/SCENE_STABILITY.md
+./visual_guidelines/SHOWDOWN_OUTCOME.md
+./visual_guidelines/TABLE_GEOMETRY.md
+./visual_guidelines/TURN_DETECTION.md
+
+exec
+/bin/zsh -lc "find runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low -maxdepth 4 -type f | sort | sed -n '1,240p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/.tmp/plugins.sha
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/.tmp/plugins/.gitignore
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/.tmp/plugins/README.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/auth.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/cache/codex_apps_tools/0c51db0f8786e6d7e7ee2b863458638414aaf62e.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/config.toml
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/installation_id
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/models_cache.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/shell_snapshots/019de5f8-0600-7523-9372-0eb967cf4777.1777679730177058000.sh
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/skills/.system/.codex-system-skills.marker
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/agent_manifest.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/codex_command.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/codex_env.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_prompt.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_version.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/isolation_manifest.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/preflight_result.json
+
+exec
+/bin/zsh -lc "sed -n '1,220p' runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_prompt.md" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+# Split Visual-Agent Setup
+
+Use the visible split visual agents for image perception.
+Use the visible reasoning agent for Texas Hold'em poker-action reasoning when
+the router asks for `choose_poker_action`.
+
+The main agent must not inspect images or independently decide visual fields.
+Delegate each image-reading question to the appropriate scoped visual agent and
+merge only returned evidence.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
+
+Write one raw evidence file per called subagent under
+`runs/<run_id>/visual_raw/<agent_name>.md`.
+
+Then write `runs/<run_id>/visual_summary.json` and
+`runs/<run_id>/eval_report.md`. Do not execute robot actions.
+
+exec
+/bin/zsh -lc "sed -n '1,220p' preflight.py" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+#!/usr/bin/env python3
+"""Preflight for DexHoldem V2."""
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+from utils import load_config, loop_safety_limits
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_DIR = SCRIPT_DIR.parent
+VENV_PYTHON = SKILL_DIR / ".venv" / "bin" / "python"
+REEXEC_ENV = "DEXHOLDEM_V2_PREFLIGHT_REEXECED"
+RUNTIME_FILES = [
+    "utils.py",
+    "capture.py",
+    "state.py",
+    "executor.py",
+    "action_translator.py",
+    "text_to_sound.py",
+    "router.py",
+    "remote_exec.py",
+]
+TTS_BACKEND_BINS = {
+    "say_afplay": ["say", "afplay"],
+    "say": ["say"],
+    "spd-say": ["spd-say"],
+    "espeak-ng": ["espeak-ng"],
+    "espeak": ["espeak"],
+}
+TTS_AUTO_BACKENDS = ("say_afplay", "spd-say", "espeak-ng", "espeak")
+TTS_APT_PACKAGES = {
+    "spd-say": ["speech-dispatcher"],
+    "espeak-ng": ["espeak-ng"],
+    "espeak": ["espeak"],
+}
+TTS_APT_PACKAGE_ALIASES = {
+    "auto": ["espeak-ng"],
+    "speech-dispatcher": ["speech-dispatcher"],
+    "spd-say": ["speech-dispatcher"],
+    "espeak-ng": ["espeak-ng"],
+    "espeak": ["espeak"],
+}
+
+
+def run_uv_sync(skip):
+    if skip:
+        return True, {"skipped": True}
+    if shutil.which("uv") is None:
+        return False, {"detail": "uv not found on PATH"}
+    result = subprocess.run(["uv", "sync"], cwd=SKILL_DIR, capture_output=True, text=True, timeout=300)
+    if result.returncode != 0:
+        return False, {"detail": "uv sync failed", "stderr": result.stderr[-1000:]}
+    return True, {"stdout_tail": result.stdout[-500:], "stderr_tail": result.stderr[-500:]}
+
+
+def available_backends(candidates):
+    available = {}
+    for candidate in candidates:
+        bins = TTS_BACKEND_BINS[candidate]
+        if all(shutil.which(name) for name in bins):
+            available[candidate] = {name: shutil.which(name) for name in bins}
+    return available
+
+
+def text_to_sound_backend_available(config):
+    tts = config.get("text_to_sound", {}) or {}
+    if not tts.get("enabled", True):
+        return True, {"backend": "none", "disabled": True}
+
+    backend = tts.get("backend", "auto")
+    if backend == "auto":
+        available = available_backends(TTS_AUTO_BACKENDS)
+        if available:
+            return True, {"backend": backend, "available_backends": available}
+        return False, {
+            "detail": "text_to_sound auto backend found no supported local TTS command",
+            "tried": {name: TTS_BACKEND_BINS[name] for name in TTS_AUTO_BACKENDS},
+        }
+    if backend in TTS_BACKEND_BINS:
+        missing_bins = [name for name in TTS_BACKEND_BINS[backend] if shutil.which(name) is None]
+        if missing_bins:
+            return False, {"detail": "text_to_sound backend missing binaries", "missing": missing_bins}
+        return True, {
+            "backend": backend,
+            "binaries": {name: shutil.which(name) for name in TTS_BACKEND_BINS[backend]},
+        }
+    if backend == "none":
+        return True, {"backend": backend, "disabled": True}
+    return False, {"detail": f"unknown text_to_sound backend: {backend}"}
+
+
+def apt_packages_for_tts(config, package_choice):
+    tts = config.get("text_to_sound", {}) or {}
+    if not tts.get("enabled", True):
+        return []
+    if package_choice in TTS_APT_PACKAGE_ALIASES:
+        return TTS_APT_PACKAGE_ALIASES[package_choice]
+    backend = tts.get("backend", "auto")
+    if backend == "auto":
+        return TTS_APT_PACKAGE_ALIASES["auto"]
+    return TTS_APT_PACKAGES.get(backend, [])
+
+
+def run_apt_install(packages):
+    if sys.platform != "linux":
+        return False, {"detail": "system package installation is only supported on Linux", "platform": sys.platform}
+    if not packages:
+        return False, {"detail": "no apt packages are known for the configured text_to_sound backend"}
+    if shutil.which("apt-get") is None:
+        return False, {"detail": "apt-get not found; install the TTS package manually", "packages": packages}
+
+    prefix = []
+    if hasattr(os, "geteuid") and os.geteuid() != 0:
+        if shutil.which("sudo") is None:
+            return False, {"detail": "sudo not found and current user is not root", "packages": packages}
+        prefix = ["sudo", "-n"]
+
+    env = os.environ.copy()
+    env["DEBIAN_FRONTEND"] = "noninteractive"
+    commands = [
+        prefix + ["apt-get", "update"],
+        prefix + ["apt-get", "install", "-y", *packages],
+    ]
+    results = []
+    for cmd in commands:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=env)
+        item = {
+            "command": cmd,
+            "returncode": result.returncode,
+            "stdout_tail": result.stdout[-1000:],
+            "stderr_tail": result.stderr[-1000:],
+        }
+        results.append(item)
+        if result.returncode != 0:
+            return False, {"packages": packages, "commands": results}
+    return True, {"packages": packages, "commands": results}
+
+
+def maybe_install_system_packages(config, skip_audio, install, tts_package):
+    if skip_audio:
+        return True, {"skipped": True, "reason": "audio checks skipped"}
+    ok, detail = text_to_sound_backend_available(config)
+    if ok:
+        return True, {"skipped": True, "reason": "text_to_sound backend already available", "detail": detail}
+    if not install:
+        packages = apt_packages_for_tts(config, tts_package)
+        return True, {
+            "skipped": True,
+            "reason": "pass --install-system-packages to install missing Linux TTS packages",
+            "missing": detail,
+            "suggested_apt_packages": packages,
+        }
+    packages = apt_packages_for_tts(config, tts_package)
+    ok, install_detail = run_apt_install(packages)
+    install_detail["initial_missing"] = detail
+    return ok, install_detail
+
+
+def deps_importable():
+    try:
+        import yaml  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def maybe_reexec(argv):
+    if deps_importable() or os.environ.get(REEXEC_ENV) or not VENV_PYTHON.exists():
+        return
+    os.environ[REEXEC_ENV] = "1"
+    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), *argv])
+
+
+def run_state_init(config_path, exp_name):
+    args = [sys.executable, str(SCRIPT_DIR / "state.py"), "init-experiment", "--config", str(config_path)]
+    if exp_name:
+        args += ["--exp-name", exp_name]
+    result = subprocess.run(args, capture_output=True, text=True, cwd=Path.cwd())
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+    return json.loads(result.stdout)
+
+
+def copy_runtime(exp_dir):
+    exp_dir = Path(exp_dir)
+    for name in RUNTIME_FILES:
+        dest = exp_dir / name
+        shutil.copy2(SCRIPT_DIR / name, dest)
+        dest.chmod(0o755)
+    shutil.copy2(SKILL_DIR / "pyproject.toml", exp_dir / "pyproject.toml")
+    shutil.copy2(SKILL_DIR / "config.yaml", exp_dir / "config.yaml")
+    visual_dest = exp_dir / "visual_guidelines"
+    if visual_dest.exists():
+        shutil.rmtree(visual_dest)
+    shutil.copytree(SKILL_DIR / "visual_guidelines", visual_dest)
+
+
+def capture_initial(exp_dir, skip_camera, source=None):
+    if skip_camera:
+        return True, {"skipped": True}
+    output = Path(exp_dir) / "s0" / "00_capture.jpg"
+    cmd = [sys.executable, str(Path(exp_dir) / "capture.py"), "--output", str(output), "--meta"]
+    if source:
+        cmd += ["--source", source]
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=exp_dir, timeout=30)
+    if result.returncode != 0:
+        return False, {"stderr": result.stderr.strip(), "stdout": result.stdout.strip()}
+    return True, {"output": str(output)}
+
+
+def post(base_url, endpoint, payload, timeout=10):
+    req = urllib.request.Request(
+        f"{base_url}{endpoint}",
+
+exec
+/bin/zsh -lc "sed -n '1,220p' router.py" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+#!/usr/bin/env python3
+"""DexHoldem V2 per-state router.
+
+This script encodes the SKILL.md per-state if/else flow and returns a JSON
+judgment. It does not parse images, choose poker strategy, or decide unsafe
+physical recovery by itself.
+"""
+
+import argparse
+import json
+import shlex
+from pathlib import Path
+
+from utils import (
+    STAGE_SET,
+    current_state_name,
+    extract_json_objects,
+    first_pending_step,
+    has_cached_command_step,
+    load_config,
+    loop_safety_limits,
+    read_json_file,
+    step_status,
+    view_slot_from_intent,
+)
+
+WAIT_SECONDS = 3
+ALWAYS_REQUIRED_TABLE_FIELDS = (
+    "scene_stable",
+    "is_my_turn",
+)
+IDLE_TABLE_FIELDS = (
+    "scene_stable",
+    "is_my_turn",
+    "community_cards",
+    "my_chips",
+    "opponent_chips",
+    "my_current_bet",
+    "opponent_bet",
+)
+STAGE_REQUIRED_TABLE_FIELDS = {
+    "idle": IDLE_TABLE_FIELDS,
+    "show_hand": ("community_cards",),
+    "win": ("my_current_bet", "opponent_bet"),
+}
+
+
+def read_json(path):
+    path = Path(path)
+    try:
+        return read_json_file(path), None
+    except (FileNotFoundError, ValueError) as exc:
+        return None, str(exc)
+
+
+def read_markdown_json(path, predicate=None):
+    path = Path(path)
+    if not path.exists():
+        return None, f"{path.name} is missing"
+    try:
+        blocks = extract_json_objects(path.read_text())
+    except OSError as exc:
+        return None, f"could not read {path.name}: {exc}"
+    for block in blocks:
+        if predicate is None or predicate(block):
+            return block, None
+    return None, f"{path.name} has no matching JSON block"
+
+
+def resolve_exp_dir(path=None):
+    if path:
+        return Path(path).resolve()
+    cwd = Path.cwd()
+    if (cwd / "s_current").exists() or (cwd / "hole_card_cache.json").exists():
+        return cwd.resolve()
+    current = cwd / "experiments" / "current"
+    if current.exists():
+        return current.resolve()
+    raise RuntimeError("run from an experiment root or pass --exp-dir")
+
+
+def command_for_action(action):
+    encoded = json.dumps(action, separators=(",", ":"))
+    return f"python3 executor.py --action {shlex.quote(encoded)}"
+
+
+def command_for_begin_next(state_name):
+    return [
+        f"python3 state.py begin-next --after {state_name}",
+        "python3 capture.py --output s_current/00_capture.jpg",
+    ]
+
+
+def route(exp_dir, state_name, state_dir, route_name, reason, judgments, **extra):
+    data = {
+        "status": "ok",
+        "exp_dir": str(exp_dir),
+        "state": state_name,
+        "state_dir": str(state_dir),
+        "route": route_name,
+        "reason": reason,
+        "judged_results": judgments,
+    }
+    data.update(extra)
+    return data
+
+
+def add(judgments, check, result, reason, **extra):
+    item = {"check": check, "result": result, "reason": reason}
+    if extra:
+        item.update(extra)
+    judgments.append(item)
+
+
+def cached_card(cache, slot):
+    item = cache.get(slot, {}) if isinstance(cache, dict) else {}
+    return item.get("status") == "cached" and bool(item.get("card"))
+
+
+def next_unknown_hole(cache):
+    for slot in ("left", "right"):
+        if not cached_card(cache, slot):
+            return slot
+    return None
+
+
+def table_missing_fields(table, loop_stage):
+    required = STAGE_REQUIRED_TABLE_FIELDS.get(loop_stage, ())
+    missing = []
+    for name in ALWAYS_REQUIRED_TABLE_FIELDS + tuple(required):
+        if name not in table and name not in missing:
+            missing.append(name)
+    return missing
+
+
+def uncertain_fields(table):
+    value = table.get("uncertain_fields", [])
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return ["uncertain_fields"]
+
+
+def collection_uncertain_fields(fields):
+    relevant = []
+    for field in fields:
+        name = field.lower()
+        if "bet" in name or "collection" in name or "winnings" in name or name in ("table", "my_current_bet", "opponent_bet"):
+            relevant.append(field)
+    return relevant
+
+
+def wait_action(reason, wait_seconds):
+    return {"action": "wait", "reason": reason, "sleep_seconds": wait_seconds}
+
+
+def safety_counters(sequence):
+    counters = sequence.get("safety_counters", {}) if isinstance(sequence, dict) else {}
+    return counters if isinstance(counters, dict) else {}
+
+
+def route_request_human(exp_dir, state_name, state_dir, judgments, reason_key, message, context=None):
+    action = {
+        "action": "request_human",
+        "reason": message,
+        "resume_options": ["inspect_scene", "reset_consecutive_safety", "reset_all_safety", "abort_hand"],
+    }
+    return route(
+        exp_dir,
+        state_name,
+        state_dir,
+        reason_key,
+        message,
+        judgments,
+        agent_required=False,
+        suggested_action=action,
+        commands=[command_for_action(action)],
+        context=context or {},
+    )
+
+
+def route_wait(exp_dir, state_name, state_dir, judgments, reason_key, message, wait_seconds, sequence=None, limits=None):
+    counters = safety_counters(sequence)
+    limits = limits or loop_safety_limits({})
+    next_consecutive = int(counters.get("consecutive_waits", 0)) + 1
+    next_total = int(counters.get("total_waits", 0)) + 1
+    if limits["max_consecutive_waits"] is not None and next_consecutive > limits["max_consecutive_waits"]:
+        add(
+            judgments,
+            "wait_limit",
+            False,
+            "next wait would exceed max_consecutive_waits",
+            consecutive_waits=counters.get("consecutive_waits", 0),
+            max_consecutive_waits=limits["max_consecutive_waits"],
+        )
+        return route_request_human(
+            exp_dir,
+            state_name,
+            state_dir,
+            judgments,
+            "wait_limit_reached",
+            f"consecutive wait limit reached before {reason_key}",
+            context={"wait_reason": reason_key, "safety_counters": counters},
+        )
+    if limits["max_total_waits"] is not None and next_total > limits["max_total_waits"]:
+        add(
+            judgments,
+            "wait_limit",
+            False,
+            "next wait would exceed max_total_waits",
+            total_waits=counters.get("total_waits", 0),
+            max_total_waits=limits["max_total_waits"],
+        )
+        return route_request_human(
+            exp_dir,
+            state_name,
+            state_dir,
+            judgments,
+            "wait_limit_reached",
+            f"total wait limit reached before {reason_key}",
+            context={"wait_reason": reason_key, "safety_counters": counters},
+
+codex
+I’ve confirmed the router’s contract: the main agent should not inspect images, and the result file set is exactly the three requested outputs plus raw evidence. I’m now locating the current snapshot and then I’ll dispatch the scoped visual agents and the poker-reasoning agent in parallel.
+exec
+/bin/zsh -lc "find . -maxdepth 3 \\( -name 's_current' -o -path './s_*' -o -name '*.jpg' -o -name '*.png' \\) | sort | sed -n '1,240p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+./s0/00_capture.jpg
+./s_current
+
+exec
+/bin/zsh -lc "sed -n '1,220p' visual_guidelines/SCENE_STABILITY.md && printf '\\n---\\n' && sed -n '1,220p' visual_guidelines/TURN_DETECTION.md && printf '\\n---\\n' && sed -n '1,220p' visual_guidelines/COMMUNITY_CARDS.md" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+# Scene Stability Guideline
+
+Use this guideline when a vision-capable agent is asked to decide whether the
+latest captured scene is stable enough for the main coding agent to continue.
+
+## Inputs To Provide
+
+Give the vision agent:
+
+- the current state image, usually `sN/00_capture.jpg`,
+- the previous state image, usually `sN-1/00_capture.jpg`,
+- optionally older state images if the last two frames are ambiguous,
+- optionally the previous action or action-sequence note, if available,
+- when a robot atom was just dispatched, the pre-action image or last clearly
+  settled image, if available.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Scene stability is a visual judgment used before the main agent chooses the
+next action. It is not an absolute property of the table, and it is not
+guaranteed just because a cancel/reset prefix was sent.
+
+The vision model does not need to produce structured JSON. It should explain,
+in plain language, whether the latest scene looks stable and why. The coding
+agent will parse that response into the state files.
+
+## Key Idea
+
+Judge stability by comparing the two most recent state images:
+
+```text
+sN-1/00_capture.jpg
+sN/00_capture.jpg
+```
+
+The vision model or vision agent may inspect older states when the last two
+frames are ambiguous, but the final decision should answer whether the latest
+frame is safe for the main agent's next decision.
+
+For robot actions, compare enough frames to avoid judging too early. The current
+frame, previous frame, and last clearly settled pre-action frame are often all
+needed. If the current atom is a card-pick/view-card step and the hand is still
+approaching, lifting, rotating, or holding the card in a non-settled pose, the
+scene is unstable and the action is still running.
+
+## Stable
+
+Call the scene stable only when:
+
+- the previous action appears finished,
+- the robot hand has returned to a near-idle pose or another clearly settled
+  pose,
+- the robot is not doing large movement,
+- cards and chips are not visibly moving,
+- unfolded chip groups are not being rearranged,
+- no human arm is substantially on the table organizing, moving, or blocking
+  cards/chips,
+- the latest image is clear enough for the main agent to use.
+
+Small visual differences are allowed. Lighting changes, tiny camera noise, or a
+slightly different human posture do not make the scene unstable by themselves.
+Humans move quickly, so do not over-focus on small human motion outside the
+active table area.
+
+## Unstable
+
+Call the scene unstable when:
+
+- the robot arm is mid-motion, blurred, reaching, or still settling,
+- the robot is holding or moving a card/chips and the action is not clearly
+  complete,
+- cards or chips changed position between the two recent frames,
+- a human arm/hand is largely on the table and appears to be organizing,
+  moving, or blocking cards/chips,
+- the latest frame is too occluded to determine whether the action finished,
+- the robot looks stuck against an object or table feature.
+
+If the robot may be stuck or has hit something, mark the scene unstable and let
+the higher-level state machine escalate to human help after repeated unstable
+captures. This guideline does not define the human-help escalation policy.
+
+Do not use an unstable frame to declare a retryable recovery. Recovery is a
+post-atom judgment: the hand must have settled into an `atom_idle`-compatible
+state first. While the robot is still moving or the latest frames show continued
+change, the correct conclusion is unstable/still running, so the next action
+should be wait and recapture.
+
+## Cancel And Reset Prefix
+
+Most executable actions are prefixed with cancel/reset behavior:
+
+- send cancel / Ctrl+C,
+- reset the robot hand toward its init pose,
+- then execute the requested action.
+
+This prefix is part of the action execution flow. It should not be treated as a
+standalone action that automatically makes the scene stable.
+
+The scene becomes stable only after the full action sequence has visually
+finished and the robot has stopped large movement. For `put_down_card`, the
+reset prefix must be skipped because resetting while holding a card can drop it;
+the vision check must account for that special case. The cancel prefix is only
+terminal-control setup before dispatching the next robot policy; it is not
+evidence that the resulting atom has finished.
+
+## Vision Agent Procedure
+
+1. Open the current image `sN/00_capture.jpg`.
+2. Open the previous image `sN-1/00_capture.jpg`.
+3. Compare the robot arm, dexterous hand, cards, chips, and turn marker. Check
+   human arms only for large table-blocking or object-moving behavior.
+4. If the last two frames disagree, the robot is not near a settled pose, or a
+   card/chip is mid-transfer, inspect `sN-2/00_capture.jpg` or the last
+   pre-action image before making any failure or recovery judgment.
+5. Answer in plain language:
+   - stable or unstable,
+   - which frames were compared,
+   - the concrete visual reason,
+   - any notable uncertainty.
+
+Example stable response:
+
+```text
+Stable. Compared s4/00_capture.jpg and s5/00_capture.jpg. The robot hand is
+near idle, no card or chip movement is visible, and no human arm is changing the
+table.
+```
+
+Example unstable response:
+
+```text
+Unstable. Compared s4/00_capture.jpg and s5/00_capture.jpg. A human arm is
+substantially on the table and appears to be moving chips, so the table state
+may still be changing.
+```
+
+Example still-running robot response:
+
+```text
+Unstable. Compared s7/00_capture.jpg, s8/00_capture.jpg, and the pre-action
+frame. The dexterous hand is still lifting or rotating the hole card and has not
+settled, so this is still an acting state rather than a recovery decision.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- `Stable` or `Unstable` as the first word,
+- which images were compared,
+- the concrete visual reason,
+- any uncertainty that matters.
+
+Do not decide the robot's next action. The coding agent will use the response
+to choose wait, continue the current sequence, retry, or human help.
+
+## Agent Use
+
+If the scene is unstable, the next action should normally be `wait`, not a
+robot movement or poker decision.
+
+If the scene is unstable because a dispatched atom is still running, the next
+action should be `wait` and recapture. Do not choose recovery from this
+guideline output. Recovery can be considered only after a later capture shows a
+settled `atom_idle`-compatible scene.
+
+Repeated unstable states may indicate the robot is stuck, the table is blocked,
+or a human is still acting. Escalation should be handled by the higher-level
+state cache and action policy.
+
+---
+# Turn Detection Guideline
+
+Use this guideline for every captured-state parse to determine whether it is
+the robot/player's turn from the current table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless the white turn button is hard to localize.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Turn detection is based only on the small white physical turn button.
+
+The vision model does not need to produce structured JSON. It should simply say
+whether the white turn button indicates it is the robot/player's turn. The
+coding agent will convert that answer into the boolean `is_my_turn` field.
+
+Do not infer the robot's turn from dealer order, betting order, opponent body
+posture, chip positions, or poker action prompts. Those cues may be useful for
+strategy, but they should not decide turn ownership in this setup.
+
+## Positive Case
+
+Say it is our turn when the white button labeled like "Your Turn" is at the
+robot/player seat area.
+
+In the usual camera view, the robot/player seat is the bottom side of the table.
+If the button is near the bottom-left robot seat area, the turn is true.
+
+## Negative Case
+
+Say it is not our turn when the white turn button is at another player's seat
+area.
+
+For example, `bench/bench_raw/50.jpg` is a clear false case: the white turn
+button is on the opponent/top side of the table, not near the robot seat.
+
+## Occluded Or Unclear Case
+
+If the button is not visible or is too occluded/blurry to localize, say that it
+is not safely identifiable. The coding agent should normally treat that as not
+our turn and wait or ask for human confirmation.
+
+## Response Style
+
+Use a short natural-language answer:
+
+```text
+It is our turn. The white "Your Turn" button is near the robot seat at the
+bottom-left of the table.
+```
+
+or:
+
+```text
+It is not our turn. The white turn button is on the opponent side of the table.
+```
+
+Keep this separate from available poker actions. The button answers only:
+"is it our turn to act now?"
+
+## Response Contract
+
+The answer must make one of these plain-language judgments:
+
+- it is our turn,
+- it is not our turn,
+- the turn button is not safely identifiable.
+
+Do not report confidence or available actions.
+
+---
+# Community Card Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to read the shared
+community cards from a captured table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless comparing frames helps determine whether a
+card was just dealt or moved.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Community cards are the shared board cards in the center of the table. They are
+the only source for deriving the poker board stage in V2.
+
+The vision model does not need to produce structured JSON. It should describe
+how many community cards are visible, read any clear rank/suit values, and say
+which cards are uncertain. The coding agent will parse that response into the
+state files.
+
+Do not ask the vision model to output a separate `street` field. The poker
+stage is derived from the number of visible community cards.
+
+## Card Notation
+
+Use rank + suit notation when a card is readable:
+
+- ranks: `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `T`, `J`, `Q`, `K`, `A`
+- suits: `h`, `d`, `c`, `s`
+
+Examples:
+
+- `Ah` = ace of hearts
+- `Td` = ten of diamonds
+- `7c` = seven of clubs
+
+## Deriving Board Stage
+
+The coding agent can derive the poker stage from the count:
+
+- 0 cards -> preflop
+- 3 cards -> flop
+- 4 cards -> turn
+- 5 cards -> river
+
+## Recognition Rules
+
+- Read only face-up cards in the shared board area.
+- Do not include robot hole cards or opponent hole cards.
+- Do not guess face-down cards.
+- Keep board order left-to-right as seen on the table.
+- If a card is partially occluded but rank/suit is still reasonably clear,
+  report the best read and say it is uncertain.
+- If a card is too blurry or occluded, preserve its position by saying that the
+  card is visible but unreadable.
+
+## Response Style
+
+Use a short natural-language answer:
+
+```text
+No community cards are visible.
+```
+
+or:
+
+```text
+Three community cards are visible from left to right. The first looks like 7d,
+the second is unreadable, and the third looks like Kc. The middle card is
+uncertain.
+```
+
+or:
+
+```text
+Five community cards are visible. The first four are 7d, 6s, 7c, Kc; the fifth
+card is too blurry to read.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- how many community cards are visible,
+- the left-to-right card read for each visible position,
+- which positions are unreadable or uncertain.
+
+Do not include hole cards, do not output a `street` field, and do not invent
+hidden or face-down card values.
+
+codex
+I’ve got the current frame and the relevant visual criteria. Next I’m checking the cached state so I can choose the exact visual questions instead of over-querying the subagents.
+exec
+/bin/zsh -lc "sed -n '1,220p' hole_card_cache.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+exec
+/bin/zsh -lc "sed -n '1,220p' runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/preflight_result.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+{
+  "schema_version": "1.0",
+  "problem_id": "p53",
+  "hole_cards": {
+    "robot": {
+      "left": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      },
+      "right": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      }
+    },
+    "opponent": {
+      "left": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      },
+      "right": {
+        "card": null,
+        "status": "not_observed",
+        "source_state": "s0"
+      }
+    }
+  },
+  "blinds": {
+    "dealer": "opponent",
+    "small_blind": "opponent",
+    "big_blind": "robot",
+    "source_state": "s0"
+  },
+  "notes": "Generated from TODO.md rough label."
+}
+
+ succeeded in 0ms:
+{
+  "status": "ok",
+  "manifest": {
+    "schema_version": 1,
+    "harness": "codex",
+    "visual_setting": "split",
+    "visual_variant": "codex_native_gpt5_5_high",
+    "source_dir": "subagent/codex_native_gpt5_5_high",
+    "problem_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53",
+    "run_id": "p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low",
+    "run_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low",
+    "latest_state": "s0",
+    "visible_agent_dir": ".codex/agents",
+    "visible_agents": [
+      "bet_recognition_agent",
+      "blind_button_recognition_agent",
+      "chip_recognition_agent",
+      "community_cards_agent",
+      "held_card_recognition_agent",
+      "robot_behavior_agent",
+      "scene_stability_agent",
+      "showdown_outcome_agent",
+      "turn_detection_agent",
+      "reasoning_agent"
+    ],
+    "version": {
+      "preflight_script": {
+        "path": "perception_eval/preflight.py",
+        "sha256": "98832c38e0e7c7a849a6f54a5d395eba5e6d1044dc8abcd18523bad451d2fc67",
+        "size": 15892
+      },
+      "skill_root": "skills/dexholdem-v2",
+      "source_agents": [
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/bet_recognition_agent.toml",
+          "sha256": "ead48481ca4e3535bc6d6b39e285182e6bd7492991f1044ebe1ae7ad37c92e40",
+          "size": 1070
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/blind_button_recognition_agent.toml",
+          "sha256": "d60f4f1f70edc1264ebe56ccafce1774dc54fa2163e86ddd6591aa1bde06f39d",
+          "size": 1085
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/chip_recognition_agent.toml",
+          "sha256": "f869a5ae242c056f8366477833973850850c25486ea80268e5fa902c0861afae",
+          "size": 1058
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/community_cards_agent.toml",
+          "sha256": "ee966f9c7e926601c8bd67e1e6a41d129f7c70e5d9fd8ee46a7a121c63ee5db0",
+          "size": 924
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/held_card_recognition_agent.toml",
+          "sha256": "5dbe7bc555b98472c567ef6f788a1cb1a11f04036b75927d92e3665f78b89286",
+          "size": 952
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/robot_behavior_agent.toml",
+          "sha256": "e86a554037f6beedf30b496ff1ce9d7da8de97c5ecada1799b8aac1bfacac075",
+          "size": 1068
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/scene_stability_agent.toml",
+          "sha256": "12384af240762811607b0ad487071d33abbfdd688cc53abc4b82ad5935e67852",
+          "size": 1066
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/showdown_outcome_agent.toml",
+          "sha256": "f6c308cfcd0a4c5c6e72727fbb45f9da833a1378cc99f1a81d98f7d628deec72",
+          "size": 1174
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/turn_detection_agent.toml",
+          "sha256": "00056867ecdce44ddfc09054fa7b4ef27b1eaf4ef721d130323af796d28eddd8",
+          "size": 1004
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/reasoning_agent.toml",
+          "sha256": "d4906e6e9d1bb43dc158f5be2a7d590397e59e816cdc3cd6f85a336cd2760fbb",
+          "size": 1774
+        }
+      ],
+      "visual_source_agents": [
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/bet_recognition_agent.toml",
+          "sha256": "ead48481ca4e3535bc6d6b39e285182e6bd7492991f1044ebe1ae7ad37c92e40",
+          "size": 1070
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/blind_button_recognition_agent.toml",
+          "sha256": "d60f4f1f70edc1264ebe56ccafce1774dc54fa2163e86ddd6591aa1bde06f39d",
+          "size": 1085
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/chip_recognition_agent.toml",
+          "sha256": "f869a5ae242c056f8366477833973850850c25486ea80268e5fa902c0861afae",
+          "size": 1058
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/community_cards_agent.toml",
+          "sha256": "ee966f9c7e926601c8bd67e1e6a41d129f7c70e5d9fd8ee46a7a121c63ee5db0",
+          "size": 924
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/held_card_recognition_agent.toml",
+          "sha256": "5dbe7bc555b98472c567ef6f788a1cb1a11f04036b75927d92e3665f78b89286",
+          "size": 952
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/robot_behavior_agent.toml",
+          "sha256": "e86a554037f6beedf30b496ff1ce9d7da8de97c5ecada1799b8aac1bfacac075",
+          "size": 1068
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/scene_stability_agent.toml",
+          "sha256": "12384af240762811607b0ad487071d33abbfdd688cc53abc4b82ad5935e67852",
+          "size": 1066
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/showdown_outcome_agent.toml",
+          "sha256": "f6c308cfcd0a4c5c6e72727fbb45f9da833a1378cc99f1a81d98f7d628deec72",
+          "size": 1174
+        },
+        {
+          "path": "subagent/codex_native_gpt5_5_high/split/turn_detection_agent.toml",
+          "sha256": "00056867ecdce44ddfc09054fa7b4ef27b1eaf4ef721d130323af796d28eddd8",
+          "size": 1004
+        }
+      ],
+      "reasoning_source_agents": [
+        {
+          "path": "subagent/codex_native_gpt5_5_high/reasoning_agent.toml",
+          "sha256": "d4906e6e9d1bb43dc158f5be2a7d590397e59e816cdc3cd6f85a336cd2760fbb",
+          "size": 1774
+        }
+      ],
+      "runtime_scripts": [
+        {
+          "path": "skills/dexholdem-v2/scripts/action_translator.py",
+          "sha256": "0294514261dd22fe6e50ea3071e8a3baedc9702c3c521a21bc52546b4b5d55af",
+          "size": 15851
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/capture.py",
+          "sha256": "e40854323be40fab287edaeab399e3a8e358769534d1899733e59c14be45c36f",
+          "size": 10348
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/executor.py",
+          "sha256": "958c1373a77856cd7d56df391bcf876cd076383dbfed9d811b5ee3309c3a20cd",
+          "size": 18235
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/preflight.py",
+          "sha256": "8d21c6a46df717c54cf320da61b397a90900ecda565558f8959ce0d9562c2ef2",
+          "size": 15834
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/remote_exec.py",
+          "sha256": "e5a2c5c69563e77b8b307c37ea708a44de6781f3984b3e1515bfd7fdd54272a3",
+          "size": 3913
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/router.py",
+          "sha256": "439772d143cfd6caf3cc28fcb1c0f7733417f1a27cd370aeab5954d6336d7407",
+          "size": 34029
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/state.py",
+          "sha256": "bca7c339c04e2ed29dab4d3c3f91c355a7b2445af650d8cf5f5f60b6253f7530",
+          "size": 25035
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/text_to_sound.py",
+          "sha256": "90d7057d5018a34ebe8ba55713eeb23d58a0da9c0d02e1f394b395a7bfaf90a5",
+          "size": 8604
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/utils.py",
+          "sha256": "1c22207adee8db5db04b762187eeac7a13b57af94d4a5db7023d1a3bce250170",
+          "size": 7641
+        }
+      ],
+      "visual_guidelines": [
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/BET_RECOGNITION.md",
+          "sha256": "3b33012b2851761c47ae8d05c01d2142b0941f9859dc2ef66e7c2a21ab333149",
+          "size": 3086
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/BLIND_BUTTON_RECOGNITION.md",
+          "sha256": "f2e37448c878b1f4f4cff86d5dfcb80ec6b0533378782dc1323b4831b8d0d9a7",
+          "size": 2210
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/CHIP_RECOGNITION.md",
+          "sha256": "cb1a268124196b0ddec3560e0d9a5620fed37884afa21c694a9920e2a84a6c66",
+          "size": 2790
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/COMMUNITY_CARDS.md",
+          "sha256": "419de9e270a31156a438a0b2f681bc87143f256a17fef851b7e6c827c9b8ab08",
+          "size": 2561
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/HELD_CARD_RECOGNITION.md",
+          "sha256": "e7aad9dd17eaf988bb5ff2702b912e7df916667ee294d58a8b2ea912e5fd6f8a",
+          "size": 2380
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/ROBOT_BEHAVIOR.md",
+          "sha256": "7b0439dd8c0acb2393bdb60f81479c5d72223cb8f10827018109f2a4acac4016",
+          "size": 7972
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/SCENE_STABILITY.md",
+          "sha256": "285a6a29cac3f47468a9a74f1bed7de6086aef1fdb33a764ea55622f16afb27d",
+          "size": 6635
+
+exec
+/bin/zsh -lc "sed -n '1,220p' action_sequence.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+{
+  "schema_version": "1.0",
+  "problem_id": "p53",
+  "source": "TODO.md rough label",
+  "loop_stage": "idle",
+  "intent": "choose_poker_action",
+  "current_action": "choose_poker_action",
+  "current_step": "choose_poker_action",
+  "steps": [
+    {
+      "name": "choose_poker_action",
+      "status": "pending",
+      "description": "The table is stable and it is my turn with three community cards visible."
+    }
+  ],
+  "retry_count": 0,
+  "last_error": null,
+  "human_required": false,
+  "notes": "120.jpg\nnew game, start from 3 cards unfolded\nmy bet 5:2\nmy chip 5:3, 10:2, 50:2, 100:2\nopponent bet 10:1\nopponent chip 5:3, 10:4, 50:3, 100:3\ncommunity card club 10, heart 5, spade 3\nbig blind, my turn"
+}
+
+exec
+/bin/zsh -lc "grep -n \"current_action\\|choose_poker_action\\|community_cards\\|my_current_bet\\|opponent_bet\\|my_chips\\|opponent_chips\" -n router.py state.py utils.py | sed -n '1,240p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+router.py:35:    "community_cards",
+router.py:36:    "my_chips",
+router.py:37:    "opponent_chips",
+router.py:38:    "my_current_bet",
+router.py:39:    "opponent_bet",
+router.py:43:    "show_hand": ("community_cards",),
+router.py:44:    "win": ("my_current_bet", "opponent_bet"),
+router.py:147:        if "bet" in name or "collection" in name or "winnings" in name or name in ("table", "my_current_bet", "opponent_bet"):
+router.py:905:        "choose_poker_action",
+router.py:909:        required_agent_task="choose_poker_action",
+
+exec
+/bin/zsh -lc "grep -R \"choose_poker_action\" -n . | sed -n '1,120p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 418ms:
+./action_sequence.json:6:  "intent": "choose_poker_action",
+./action_sequence.json:7:  "current_action": "choose_poker_action",
+./action_sequence.json:8:  "current_step": "choose_poker_action",
+./action_sequence.json:11:      "name": "choose_poker_action",
+./router.py:905:        "choose_poker_action",
+./router.py:909:        required_agent_task="choose_poker_action",
+./runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_prompt.md:5:the router asks for `choose_poker_action`.
+
+codex
+The state says this step is `choose_poker_action`, with the last label implying three community cards and my turn. I’m checking the router around that branch so I know which fields the visual pass must supply before I ask the reasoning subagent for an action recommendation.
+exec
+/bin/zsh -lc "sed -n '860,940p' router.py" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+            state_dir,
+            "resolve_turn",
+            "turn marker must be judged before view-card or poker action",
+            judgments,
+            agent_required=True,
+            required_agent_task="resolve_turn",
+        )
+    add(judgments, "is_my_turn", True, "turn marker indicates the robot's turn")
+
+    slot = next_unknown_hole(hole_cache)
+    if slot:
+        add(judgments, "hole_cards_cached", False, f"{slot} hole card is missing from cache")
+        action = {"action": "view_card", "position": slot}
+        return route(
+            exp_dir,
+            state_name,
+            state_dir,
+            "view_hole_card",
+            f"{slot} hole card is not cached",
+            judgments,
+            agent_required=False,
+            suggested_action=action,
+            commands=[command_for_action(action)],
+        )
+    add(judgments, "hole_cards_cached", True, "left and right hole cards are cached")
+
+    if fields_uncertain:
+        add(judgments, "uncertain_fields", False, "parsed state has uncertain fields", uncertain_fields=fields_uncertain)
+        return route(
+            exp_dir,
+            state_name,
+            state_dir,
+            "resolve_uncertain_fields",
+            "resolve uncertain parsed fields before poker action selection",
+            judgments,
+            agent_required=True,
+            required_agent_task="resolve_uncertain_fields",
+            context={"uncertain_fields": fields_uncertain},
+        )
+    add(judgments, "uncertain_fields", True, "no uncertain fields")
+
+    return route(
+        exp_dir,
+        state_name,
+        state_dir,
+        "choose_poker_action",
+        "state is idle, stable, robot turn, and hole cards are cached",
+        judgments,
+        agent_required=True,
+        required_agent_task="choose_poker_action",
+        context={
+            "table": table,
+            "hole_cards": {
+                "left": hole_cache.get("left"),
+                "right": hole_cache.get("right"),
+            },
+        },
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Route the current DexHoldem V2 state.")
+    parser.add_argument("--exp-dir")
+    parser.add_argument("--wait-seconds", type=float, default=WAIT_SECONDS)
+    args = parser.parse_args()
+    try:
+        print(json.dumps(decide(resolve_exp_dir(args.exp_dir), wait_seconds=args.wait_seconds), indent=2))
+    except Exception as exc:
+        print(json.dumps({"status": "error", "error": str(exc)}, indent=2))
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()
+
+exec
+/bin/zsh -lc "sed -n '1,220p' visual_guidelines/HELD_CARD_RECOGNITION.md && printf '\\n---\\n' && sed -n '1,220p' visual_guidelines/BET_RECOGNITION.md && printf '\\n---\\n' && sed -n '1,220p' visual_guidelines/BLIND_BUTTON_RECOGNITION.md && printf '\\n---\\n' && sed -n '1,220p' visual_guidelines/CHIP_RECOGNITION.md" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+# Held Card Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to read a hole card
+currently held by the robot dexterous hand.
+
+This is separate from community-card recognition. Hole cards on the table are
+usually face-down and must not be guessed. A hole card can be read only while
+the dexterous hand is holding it with the face visible to the camera.
+
+## Inputs To Provide
+
+Give the vision agent:
+
+- the current state image, usually `sN/00_capture.jpg`,
+- optionally a crop around the dexterous hand/card if available,
+- optionally the current action-sequence intent in plain language, such as
+  "view left hole card" or "view right hole card".
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+## Card Notation
+
+Use rank + suit notation when the card is readable:
+
+- ranks: `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `T`, `J`, `Q`, `K`, `A`
+- suits: `h`, `d`, `c`, `s`
+
+Examples:
+
+- `Ah` = ace of hearts
+- `Td` = ten of diamonds
+- `7c` = seven of clubs
+
+## Recognition Rules
+
+- Read only a card visibly held by the dexterous hand.
+- Do not read or guess face-down hole cards lying on the table.
+- Do not infer the other hole card.
+- If the card face is partly visible but uncertain, give the best read and say
+  exactly what is uncertain.
+- If rank or suit is not readable, say the held card is unreadable.
+- If no card is clearly held, say no readable held card is visible.
+
+The coding agent decides which cache slot to update from the action-sequence
+intent. The vision agent should not guess left/right slot unless the prompt
+explicitly asks it to inspect sequence context.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+The dexterous hand is holding a readable card. It appears to be Ah.
+```
+
+or:
+
+```text
+The dexterous hand is holding a card, but the rank is occluded and the card is
+not safely readable.
+```
+
+or:
+
+```text
+No readable held card is visible. The hole cards on the table are face-down and
+should not be guessed.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- whether the dexterous hand is holding a card,
+- the card value if readable,
+- which part is uncertain if not fully readable,
+- whether the card should be treated as unreadable.
+
+Do not produce structured JSON. The coding agent will update
+`hole_card_cache.json` only when the card is readable and the sequence slot is
+known.
+
+---
+# Bet Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to count chips currently
+placed in the two betting areas from a captured table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless recent movement makes current bet
+placement ambiguous.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+The table has two players. Bet recognition only counts unfolded chips currently
+placed in the betting areas near the community cards.
+
+The vision model does not need to produce structured JSON. It should report
+counts in plain language by side and denomination. The coding agent will parse
+those counts into `my_current_bet` and `opponent_bet`.
+
+Do not model a generic pot or a generic players array in parsed visual state.
+Keep the two bet areas separate. Later collection actions may pull chips from
+`opponent_bet` and `my_current_bet` as distinct source zones, so do not merge
+them into one pot count.
+
+## Denominations And Colors
+
+Use the same denomination order as inventory chip recognition:
+
+```text
+5, 10, 50, 100
+```
+
+Colors:
+
+- red chips -> 5
+- blue chips -> 10
+- green chips -> 50
+- brown chips -> 100
+
+## Table Geometry
+
+Use the community-card row as the anchor:
+
+- my current bet: chips on the left side of the community cards,
+- opponent bet: chips on the right side of the community cards.
+
+The chips are flat on the felt, not vertical stacks. Count individual visible
+chip faces in these betting areas. If table orientation is unclear, first use
+`TABLE_GEOMETRY.md` in this folder.
+
+Only count chips placed in these betting areas. Do not include:
+
+- the robot/player inventory chips near the bottom seat,
+- the opponent inventory chips near the top seat,
+- dealer/blind/turn buttons,
+- chips that clearly belong to an inventory group rather than a bet area,
+- community cards or hole cards.
+
+## No Chips Visible
+
+If no chips are visible in a betting area, say that no bet chips are visible on
+that side.
+
+## Unclear Counts
+
+If a betting area is partially occluded or angled, report the best visible count
+and say that the count is uncertain.
+
+## Derived Betting Math
+
+`to_call` is derived later from the two bet counts. Do not ask the vision model
+to compute or report `to_call`.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+My current bet area, left of the community cards: no chips visible.
+Opponent bet area, right of the community cards: no chips visible.
+```
+
+or:
+
+```text
+My current bet area: two red 5-chips, no blue, green, or brown chips visible.
+Opponent bet area: about two red 5-chips, one blue 10-chip, no green chips, and
+two brown 100-chips. The opponent bet count is uncertain because the right side
+is angled.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- my current bet counts by denomination,
+- opponent bet counts by denomination,
+- which side or denomination counts are uncertain or not countable.
+
+Do not count inventory chips, do not report `to_call`, and do not model a
+generic pot.
+
+---
+# Blind Button Recognition Guideline
+
+Use this guideline once during preflight to identify dealer, small blind, and
+big blind positions from the table image.
+
+In this setup there are only two players. The small blind is tied to the dealer
+button. The other player is the big blind.
+
+## Inputs To Provide
+
+Give the vision agent the preflight or first state image, usually
+`s0/00_capture.jpg`.
+
+Optionally also provide `TABLE_GEOMETRY.md` so the agent can orient robot/player
+seat versus opponent seat.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+## What To Look For
+
+Identify the physical circular buttons on the table:
+
+- dealer button: usually a white button labeled `DEALER`,
+- small blind button: may be a blue button labeled `SMALL BLIND`,
+- big blind button: usually a yellow button labeled `BIG BLIND`.
+
+The buttons can move between hands, but preflight needs the current initial
+blind assignment for this session/hand.
+
+## Two-Player Rule
+
+Use this rule after locating the dealer button:
+
+- the player with the dealer button is also the small blind,
+- the other player is the big blind.
+
+If a visible small-blind or big-blind button conflicts with the dealer rule,
+say exactly what conflict you see instead of forcing an answer.
+
+## Seat Names
+
+Use only these seat names:
+
+- `robot` - bottom-side robot/player seat,
+- `opponent` - top-side human opponent seat,
+- `unclear` - button cannot be localized safely.
+
+Do not use poker table position names such as BTN, SB, BB, UTG, or CO in the
+visual response.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+Dealer/small blind is at the robot seat. The opponent is the big blind.
+```
+
+or:
+
+```text
+Dealer/small blind is at the opponent seat. The robot is the big blind.
+```
+
+or:
+
+```text
+Blind assignment is unclear. The dealer button is partly occluded and I cannot
+safely determine which seat has it.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- which seat has the dealer button,
+- which seat is small blind,
+- which seat is big blind,
+- any uncertainty or button conflict.
+
+Do not produce structured JSON. The coding agent will cache the result in
+`hole_card_cache.json` using `state.py set-blinds`.
+
+---
+# Chip Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to count the two
+players' remaining chip inventories from a captured table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless occlusion makes the current inventory
+count ambiguous.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Chip recognition counts unfolded inventory chips for the robot/player and the
+opponent. It does not count current bets; current bets are handled by
+`BET_RECOGNITION.md` in this folder.
+
+The vision model does not need to produce structured JSON. It should report
+counts in plain language by denomination. The coding agent will parse those
+counts into the state files.
+
+## Geometry First
+
+The chips are unfolded flat on the felt, not piled vertically. Count individual
+visible chip faces in each color group. Do not estimate stack height.
+
+If table orientation is unclear, first use `TABLE_GEOMETRY.md` in this folder.
+
+## Denominations And Colors
+
+Use this fixed left-to-right denomination order:
+
+```text
+5, 10, 50, 100
+```
+
+Colors:
+
+- red chips -> 5
+- blue chips -> 10
+- green chips -> 50
+- brown chips -> 100
+
+## Robot/Player Inventory Chips
+
+Robot/player inventory chips are the unfolded chip groups at the bottom seat
+area, near the bottom rail and around the robot hole-card area. Do not include:
+
+- chips in the current betting areas,
+- opponent inventory chips,
+- dealer/blind/turn buttons,
+- community cards or hole cards.
+
+## Opponent Inventory Chips
+
+Opponent inventory chips are the unfolded chip groups at the top/opponent seat
+area, near the top rail and around the opponent hole-card area. Do not include:
+
+- opponent current bet,
+- robot current bet,
+- robot/player inventory chips,
+- dealer/blind/turn buttons,
+- community cards or hole cards.
+
+## Unclear Counts
+
+If a denomination is partially occluded, report the best visible count and say
+that the count is uncertain.
+
+If an entire inventory group is not visible enough to count, say that the group
+is not countable from the image.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+Robot/player inventory: about 4 red 5-chips, 3 blue 10-chips, 3 green 50-chips, and 3
+brown 100-chips. The brown count is partly occluded.
+
+Opponent inventory: about 3 red 5-chips, 5 blue 10-chips, 3 green 50-chips, and
+4 brown 100-chips. Counts are approximate because the group is angled.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- robot/player inventory counts by denomination,
+- opponent inventory counts by denomination,
+- which chip group or denomination counts are uncertain or not countable.
+
+Do not include bet chips, pot chips, buttons, cards, or generic player arrays.
+
+codex
+I’ve narrowed the needed evidence to the table-state fields the router cares about, plus the optional supporting fields that help validate the scene. I’m launching the visual agents in parallel now, and I’ll only merge their textual evidence back into the run artifacts.
+2026-05-01T23:56:16.091153Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:56:16.094182Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:56:16.133078Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:56:16.135068Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:56:16.136914Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:56:16.138528Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:56:16.140178Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+codex
+The first agent launch failed because the subagent API accepts either `message` or structured `items`, not both. I’m relaunching cleanly with a single text payload per agent so the calls can run in parallel.
+2026-05-01T23:56:23.036308Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:56:23.039399Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:56:23.101639Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:56:23.105127Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:56:23.108002Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:56:23.110630Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+collab: SpawnAgent
+2026-05-01T23:56:23.113100Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+codex
+The visual agents are running in parallel. While they work, I’m preparing the output directory and the report structure so I can write the evidence back immediately once the responses land.
+exec
+/bin/zsh -lc 'mkdir -p runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw && ls -ld runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+drwxr-xr-x  2 ma-lab-hku  staff  64 May  2 07:55 runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw
+
+exec
+/bin/zsh -lc 'find runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low -maxdepth 2 -type f | sort' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/auth.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/config.toml
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/installation_id
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/logs_2.sqlite
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/logs_2.sqlite-shm
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/logs_2.sqlite-wal
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/models_cache.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/state_5.sqlite
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/state_5.sqlite-shm
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/.codex_home/state_5.sqlite-wal
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/agent_manifest.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/codex_command.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/codex_env.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_prompt.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/harness_version.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/isolation_manifest.json
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/preflight_result.json
+
+collab: Wait
+codex
+The first visual result is back: the scene-stability agent says the table is still unstable because the human hands are active near the betting area. I’m waiting on the remaining visual agents now so I can write a coherent summary instead of mixing partial evidence.
+collab: Wait
+collab: Wait
+codex
+The turn and board reads are in. The board agent reports five visible card positions, but two are unreadable and the first two look face-down, which is inconsistent with the rough label; I’m keeping that uncertainty explicit and waiting on the chip/bet/robot evidence before I summarize.
+collab: Wait
+collab: Wait
+codex
+The remaining visual evidence is back. The robot-behavior agent also says the hand is still extended and the scene has not settled, so I’m treating the table as unstable. I’m still consulting the reasoning subagent for the poker suggestion requested by the workflow, but I will not commit any action from it.
+collab: SpawnAgent
+collab: Wait
+codex
+The dedicated reasoning agent can’t run here because its inherited model isn’t supported in this account. I’m falling back to a visible default agent with the same poker-reasoning prompt so I can still satisfy the workflow requirement without inventing an action.
+collab: SpawnAgent
+collab: Wait
+codex
+I have the visual and reasoning evidence needed. I’m writing the raw agent transcripts into `visual_raw/`, then I’ll generate the summary JSON and the eval report and verify the directory contents before I finish.
+apply patch
+patch: completed
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e1066dcf804a1a3a92d9d4ec5a8de737883012e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+@@ -0,0 +1,33 @@
++# DexHoldem Perception Step
++
++Status: incomplete for action execution because the scene is unstable.
++
++## Visual Evidence
++
++- [scene_stability_agent.md](./visual_raw/scene_stability_agent.md)
++- [turn_detection_agent.md](./visual_raw/turn_detection_agent.md)
++- [community_cards_agent.md](./visual_raw/community_cards_agent.md)
++- [held_card_recognition_agent.md](./visual_raw/held_card_recognition_agent.md)
++- [bet_recognition_agent.md](./visual_raw/bet_recognition_agent.md)
++- [chip_recognition_agent.md](./visual_raw/chip_recognition_agent.md)
++- [robot_behavior_agent.md](./visual_raw/robot_behavior_agent.md)
++- [reasoning_agent.md](./visual_raw/reasoning_agent.md)
++
++## Summary
++
++- Scene stability: unstable.
++- Turn: it is our turn.
++- Community cards: 5 positions reported, with the first two unreadable/face-down and the last three read as `3c`, `Ah`, and `Tc` with uncertainty.
++- Held card: no readable held card visible.
++- Bets: robot/player current bet is red x2; opponent bet is zero across all denominations.
++- Robot behavior: hand is extended from the right and not settled.
++
++## Reasoning Recommendation
++
++- Conservative poker recommendation was to avoid adding chips or raising.
++- If a poker action must be chosen, the reasoning subagent recommended `check` if legal, otherwise `fold` if any amount must be called.
++
++## Notes
++
++- No robot action was executed.
++- The main risk is visual instability, especially due to active human hands near the betting area and the robot hand still in motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..08065fa26c8da458da6402ae67e6b7b075c3c0e9
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,5 @@
++Robot/player current bet: red x2, blue x0, green x0, brown x0.
++
++Opponent current bet: red x0, blue x0, green x0, brown x0.
++
++Uncertain: none visible in opponent betting area; nearby upper-side chips appear to be inventory/seat chips rather than current bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..222115c759979ee320236c7bdf206691c2234681
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1 @@
++No response was captured from the chip recognition agent in this run attempt.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d6360d26291f02e69ddbda2e6e2f8cbcb221da7
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1,10 @@
++5 community-card positions are visible.
++
++Left to right:
++1. Face-down, unreadable
++2. Face-down, unreadable
++3. 3c, somewhat uncertain
++4. Ah, somewhat uncertain
++5. Tc, somewhat uncertain
++
++Unreadable positions: 1 and 2.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0115c2e52269322a122c3c82dc2ae9aa6cacb256
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand is visible, but it is not visibly holding a card.
++
++No readable held card value is present. Treat the robot hand’s held card as unreadable / not present in this image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0e9bb765bd0f868cfd36df66e3f8df1417e1a8eb
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+@@ -0,0 +1,7 @@
++Conservative recommendation: **do not add chips or raise.** If a poker action must be selected, choose **check** if checking is legal. If there is any non-zero amount to call, choose **fold**.
++
++Caveats:
++- The table is visually unstable and human/robot hands are active, so the card and chip reads are unreliable.
++- No readable held card is visible, so there is no basis for a value call or raise.
++- The board estimate is uncertain, especially with two unreadable/face-down community positions.
++- Since the robot hand is still in motion, the safest practical recommendation is to **wait for the scene to settle before committing any real action**.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..273088fe4944e97c88e11f37201ef9e2769c2733
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand enters from the right and is extended over the upper-right/opponent-side table area, near chips and betting zones. It does not appear to be holding a card or chips, and it is not visibly pressing on or dragging any object.
++
++The hand is not near its idle/rest pose. The action appears still in progress or not yet settled, but there is no visible dropped card, scattered chip layout, or unsafe contact. The robot/camera body occludes part of the right side of the table, and the human’s hands also occlude the upper/opponent-side area, so the exact state of some chips/cards there is partially ambiguous. Wait for another settled capture before judging success, failure, or recovery.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..2120f08e533a2c776d146ea5ee951dad71b8b861
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Unstable. Compared the current frame only; no previous or pre-action settled image was supplied. The human player’s hands are actively hovering/moving over the table near the betting area, so the scene does not look settled enough for reliable visual interpretation. The robot arm is visible but I cannot tell whether it is moving; the main uncertainty is the human hand motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..32c2a94933888fc94a4461952a8a1f46ad7554c3
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1,3 @@
++It is our turn.
++
++The small white turn button is visible near the lower-left edge of the table, in front of the robot/player area, labeled “Your Turn.” It is not occluded and is safely identifiable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ffd002b99fe4d726fb5858388a41471ecf47e8ce
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+@@ -0,0 +1,39 @@
++{
++  "run_id": "p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low",
++  "state": "s0",
++  "loop_stage": "idle",
++  "scene_stable": false,
++  "is_my_turn": true,
++  "community_cards": {
++    "count": 5,
++    "cards": [
++      {"position": 1, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 2, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 3, "value": "3c", "uncertain": true},
++      {"position": 4, "value": "Ah", "uncertain": true},
++      {"position": 5, "value": "Tc", "uncertain": true}
++    ]
++  },
++  "held_card": {
++    "visible": false,
++    "readable": false,
++    "value": null
++  },
++  "bets": {
++    "my_current_bet": {"red": 2, "blue": 0, "green": 0, "brown": 0},
++    "opponent_bet": {"red": 0, "blue": 0, "green": 0, "brown": 0}
++  },
++  "robot_behavior": {
++    "settled": false,
++    "summary": "Robot hand is extended from the right and not yet at rest."
++  },
++  "reasoning_recommendation": {
++    "action": "check_or_fold_conservatively",
++    "details": "Do not add chips or raise; check if legal, otherwise fold if any amount must be called."
++  },
++  "notes": [
++    "Scene is unstable because human hands are active and the robot hand is still extended.",
++    "Community-card read is uncertain and partially inconsistent with the rough label, so it should be treated as low confidence.",
++    "No robot robot-held readable card was visible."
++  ]
++}
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e1066dcf804a1a3a92d9d4ec5a8de737883012e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+@@ -0,0 +1,33 @@
++# DexHoldem Perception Step
++
++Status: incomplete for action execution because the scene is unstable.
++
++## Visual Evidence
++
++- [scene_stability_agent.md](./visual_raw/scene_stability_agent.md)
++- [turn_detection_agent.md](./visual_raw/turn_detection_agent.md)
++- [community_cards_agent.md](./visual_raw/community_cards_agent.md)
++- [held_card_recognition_agent.md](./visual_raw/held_card_recognition_agent.md)
++- [bet_recognition_agent.md](./visual_raw/bet_recognition_agent.md)
++- [chip_recognition_agent.md](./visual_raw/chip_recognition_agent.md)
++- [robot_behavior_agent.md](./visual_raw/robot_behavior_agent.md)
++- [reasoning_agent.md](./visual_raw/reasoning_agent.md)
++
++## Summary
++
++- Scene stability: unstable.
++- Turn: it is our turn.
++- Community cards: 5 positions reported, with the first two unreadable/face-down and the last three read as `3c`, `Ah`, and `Tc` with uncertainty.
++- Held card: no readable held card visible.
++- Bets: robot/player current bet is red x2; opponent bet is zero across all denominations.
++- Robot behavior: hand is extended from the right and not settled.
++
++## Reasoning Recommendation
++
++- Conservative poker recommendation was to avoid adding chips or raising.
++- If a poker action must be chosen, the reasoning subagent recommended `check` if legal, otherwise `fold` if any amount must be called.
++
++## Notes
++
++- No robot action was executed.
++- The main risk is visual instability, especially due to active human hands near the betting area and the robot hand still in motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..08065fa26c8da458da6402ae67e6b7b075c3c0e9
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,5 @@
++Robot/player current bet: red x2, blue x0, green x0, brown x0.
++
++Opponent current bet: red x0, blue x0, green x0, brown x0.
++
++Uncertain: none visible in opponent betting area; nearby upper-side chips appear to be inventory/seat chips rather than current bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..222115c759979ee320236c7bdf206691c2234681
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1 @@
++No response was captured from the chip recognition agent in this run attempt.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d6360d26291f02e69ddbda2e6e2f8cbcb221da7
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1,10 @@
++5 community-card positions are visible.
++
++Left to right:
++1. Face-down, unreadable
++2. Face-down, unreadable
++3. 3c, somewhat uncertain
++4. Ah, somewhat uncertain
++5. Tc, somewhat uncertain
++
++Unreadable positions: 1 and 2.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0115c2e52269322a122c3c82dc2ae9aa6cacb256
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand is visible, but it is not visibly holding a card.
++
++No readable held card value is present. Treat the robot hand’s held card as unreadable / not present in this image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0e9bb765bd0f868cfd36df66e3f8df1417e1a8eb
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+@@ -0,0 +1,7 @@
++Conservative recommendation: **do not add chips or raise.** If a poker action must be selected, choose **check** if checking is legal. If there is any non-zero amount to call, choose **fold**.
++
++Caveats:
++- The table is visually unstable and human/robot hands are active, so the card and chip reads are unreliable.
++- No readable held card is visible, so there is no basis for a value call or raise.
++- The board estimate is uncertain, especially with two unreadable/face-down community positions.
++- Since the robot hand is still in motion, the safest practical recommendation is to **wait for the scene to settle before committing any real action**.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..273088fe4944e97c88e11f37201ef9e2769c2733
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand enters from the right and is extended over the upper-right/opponent-side table area, near chips and betting zones. It does not appear to be holding a card or chips, and it is not visibly pressing on or dragging any object.
++
++The hand is not near its idle/rest pose. The action appears still in progress or not yet settled, but there is no visible dropped card, scattered chip layout, or unsafe contact. The robot/camera body occludes part of the right side of the table, and the human’s hands also occlude the upper/opponent-side area, so the exact state of some chips/cards there is partially ambiguous. Wait for another settled capture before judging success, failure, or recovery.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..2120f08e533a2c776d146ea5ee951dad71b8b861
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Unstable. Compared the current frame only; no previous or pre-action settled image was supplied. The human player’s hands are actively hovering/moving over the table near the betting area, so the scene does not look settled enough for reliable visual interpretation. The robot arm is visible but I cannot tell whether it is moving; the main uncertainty is the human hand motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..32c2a94933888fc94a4461952a8a1f46ad7554c3
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1,3 @@
++It is our turn.
++
++The small white turn button is visible near the lower-left edge of the table, in front of the robot/player area, labeled “Your Turn.” It is not occluded and is safely identifiable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ffd002b99fe4d726fb5858388a41471ecf47e8ce
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+@@ -0,0 +1,39 @@
++{
++  "run_id": "p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low",
++  "state": "s0",
++  "loop_stage": "idle",
++  "scene_stable": false,
++  "is_my_turn": true,
++  "community_cards": {
++    "count": 5,
++    "cards": [
++      {"position": 1, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 2, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 3, "value": "3c", "uncertain": true},
++      {"position": 4, "value": "Ah", "uncertain": true},
++      {"position": 5, "value": "Tc", "uncertain": true}
++    ]
++  },
++  "held_card": {
++    "visible": false,
++    "readable": false,
++    "value": null
++  },
++  "bets": {
++    "my_current_bet": {"red": 2, "blue": 0, "green": 0, "brown": 0},
++    "opponent_bet": {"red": 0, "blue": 0, "green": 0, "brown": 0}
++  },
++  "robot_behavior": {
++    "settled": false,
++    "summary": "Robot hand is extended from the right and not yet at rest."
++  },
++  "reasoning_recommendation": {
++    "action": "check_or_fold_conservatively",
++    "details": "Do not add chips or raise; check if legal, otherwise fold if any amount must be called."
++  },
++  "notes": [
++    "Scene is unstable because human hands are active and the robot hand is still extended.",
++    "Community-card read is uncertain and partially inconsistent with the rough label, so it should be treated as low confidence.",
++    "No robot robot-held readable card was visible."
++  ]
++}
+
+codex
+The outputs are written. I’m doing the required verification pass now: confirm the three requested files exist and that `visual_raw/` is non-empty before I close out.
+exec
+/bin/zsh -lc 'test -f runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json && test -f runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md && echo ok' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+ok
+
+exec
+/bin/zsh -lc 'find runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw -maxdepth 1 -type f | wc -l && find runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw -maxdepth 1 -type f | sort' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+       8
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+
+exec
+/bin/zsh -lc "sed -n '1,220p' runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json && printf '\\n---\\n' && sed -n '1,220p' runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53
+ succeeded in 0ms:
+{
+  "run_id": "p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low",
+  "state": "s0",
+  "loop_stage": "idle",
+  "scene_stable": false,
+  "is_my_turn": true,
+  "community_cards": {
+    "count": 5,
+    "cards": [
+      {"position": 1, "value": null, "uncertain": true, "note": "face-down / unreadable"},
+      {"position": 2, "value": null, "uncertain": true, "note": "face-down / unreadable"},
+      {"position": 3, "value": "3c", "uncertain": true},
+      {"position": 4, "value": "Ah", "uncertain": true},
+      {"position": 5, "value": "Tc", "uncertain": true}
+    ]
+  },
+  "held_card": {
+    "visible": false,
+    "readable": false,
+    "value": null
+  },
+  "bets": {
+    "my_current_bet": {"red": 2, "blue": 0, "green": 0, "brown": 0},
+    "opponent_bet": {"red": 0, "blue": 0, "green": 0, "brown": 0}
+  },
+  "robot_behavior": {
+    "settled": false,
+    "summary": "Robot hand is extended from the right and not yet at rest."
+  },
+  "reasoning_recommendation": {
+    "action": "check_or_fold_conservatively",
+    "details": "Do not add chips or raise; check if legal, otherwise fold if any amount must be called."
+  },
+  "notes": [
+    "Scene is unstable because human hands are active and the robot hand is still extended.",
+    "Community-card read is uncertain and partially inconsistent with the rough label, so it should be treated as low confidence.",
+    "No robot robot-held readable card was visible."
+  ]
+}
+
+---
+# DexHoldem Perception Step
+
+Status: incomplete for action execution because the scene is unstable.
+
+## Visual Evidence
+
+- [scene_stability_agent.md](./visual_raw/scene_stability_agent.md)
+- [turn_detection_agent.md](./visual_raw/turn_detection_agent.md)
+- [community_cards_agent.md](./visual_raw/community_cards_agent.md)
+- [held_card_recognition_agent.md](./visual_raw/held_card_recognition_agent.md)
+- [bet_recognition_agent.md](./visual_raw/bet_recognition_agent.md)
+- [chip_recognition_agent.md](./visual_raw/chip_recognition_agent.md)
+- [robot_behavior_agent.md](./visual_raw/robot_behavior_agent.md)
+- [reasoning_agent.md](./visual_raw/reasoning_agent.md)
+
+## Summary
+
+- Scene stability: unstable.
+- Turn: it is our turn.
+- Community cards: 5 positions reported, with the first two unreadable/face-down and the last three read as `3c`, `Ah`, and `Tc` with uncertainty.
+- Held card: no readable held card visible.
+- Bets: robot/player current bet is red x2; opponent bet is zero across all denominations.
+- Robot behavior: hand is extended from the right and not settled.
+
+## Reasoning Recommendation
+
+- Conservative poker recommendation was to avoid adding chips or raising.
+- If a poker action must be chosen, the reasoning subagent recommended `check` if legal, otherwise `fold` if any amount must be called.
+
+## Notes
+
+- No robot action was executed.
+- The main risk is visual instability, especially due to active human hands near the betting area and the robot hand still in motion.
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e1066dcf804a1a3a92d9d4ec5a8de737883012e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+@@ -0,0 +1,33 @@
++# DexHoldem Perception Step
++
++Status: incomplete for action execution because the scene is unstable.
++
++## Visual Evidence
++
++- [scene_stability_agent.md](./visual_raw/scene_stability_agent.md)
++- [turn_detection_agent.md](./visual_raw/turn_detection_agent.md)
++- [community_cards_agent.md](./visual_raw/community_cards_agent.md)
++- [held_card_recognition_agent.md](./visual_raw/held_card_recognition_agent.md)
++- [bet_recognition_agent.md](./visual_raw/bet_recognition_agent.md)
++- [chip_recognition_agent.md](./visual_raw/chip_recognition_agent.md)
++- [robot_behavior_agent.md](./visual_raw/robot_behavior_agent.md)
++- [reasoning_agent.md](./visual_raw/reasoning_agent.md)
++
++## Summary
++
++- Scene stability: unstable.
++- Turn: it is our turn.
++- Community cards: 5 positions reported, with the first two unreadable/face-down and the last three read as `3c`, `Ah`, and `Tc` with uncertainty.
++- Held card: no readable held card visible.
++- Bets: robot/player current bet is red x2; opponent bet is zero across all denominations.
++- Robot behavior: hand is extended from the right and not settled.
++
++## Reasoning Recommendation
++
++- Conservative poker recommendation was to avoid adding chips or raising.
++- If a poker action must be chosen, the reasoning subagent recommended `check` if legal, otherwise `fold` if any amount must be called.
++
++## Notes
++
++- No robot action was executed.
++- The main risk is visual instability, especially due to active human hands near the betting area and the robot hand still in motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..08065fa26c8da458da6402ae67e6b7b075c3c0e9
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,5 @@
++Robot/player current bet: red x2, blue x0, green x0, brown x0.
++
++Opponent current bet: red x0, blue x0, green x0, brown x0.
++
++Uncertain: none visible in opponent betting area; nearby upper-side chips appear to be inventory/seat chips rather than current bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..222115c759979ee320236c7bdf206691c2234681
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1 @@
++No response was captured from the chip recognition agent in this run attempt.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d6360d26291f02e69ddbda2e6e2f8cbcb221da7
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1,10 @@
++5 community-card positions are visible.
++
++Left to right:
++1. Face-down, unreadable
++2. Face-down, unreadable
++3. 3c, somewhat uncertain
++4. Ah, somewhat uncertain
++5. Tc, somewhat uncertain
++
++Unreadable positions: 1 and 2.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0115c2e52269322a122c3c82dc2ae9aa6cacb256
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand is visible, but it is not visibly holding a card.
++
++No readable held card value is present. Treat the robot hand’s held card as unreadable / not present in this image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0e9bb765bd0f868cfd36df66e3f8df1417e1a8eb
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+@@ -0,0 +1,7 @@
++Conservative recommendation: **do not add chips or raise.** If a poker action must be selected, choose **check** if checking is legal. If there is any non-zero amount to call, choose **fold**.
++
++Caveats:
++- The table is visually unstable and human/robot hands are active, so the card and chip reads are unreliable.
++- No readable held card is visible, so there is no basis for a value call or raise.
++- The board estimate is uncertain, especially with two unreadable/face-down community positions.
++- Since the robot hand is still in motion, the safest practical recommendation is to **wait for the scene to settle before committing any real action**.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..273088fe4944e97c88e11f37201ef9e2769c2733
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand enters from the right and is extended over the upper-right/opponent-side table area, near chips and betting zones. It does not appear to be holding a card or chips, and it is not visibly pressing on or dragging any object.
++
++The hand is not near its idle/rest pose. The action appears still in progress or not yet settled, but there is no visible dropped card, scattered chip layout, or unsafe contact. The robot/camera body occludes part of the right side of the table, and the human’s hands also occlude the upper/opponent-side area, so the exact state of some chips/cards there is partially ambiguous. Wait for another settled capture before judging success, failure, or recovery.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..2120f08e533a2c776d146ea5ee951dad71b8b861
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Unstable. Compared the current frame only; no previous or pre-action settled image was supplied. The human player’s hands are actively hovering/moving over the table near the betting area, so the scene does not look settled enough for reliable visual interpretation. The robot arm is visible but I cannot tell whether it is moving; the main uncertainty is the human hand motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..32c2a94933888fc94a4461952a8a1f46ad7554c3
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1,3 @@
++It is our turn.
++
++The small white turn button is visible near the lower-left edge of the table, in front of the robot/player area, labeled “Your Turn.” It is not occluded and is safely identifiable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ffd002b99fe4d726fb5858388a41471ecf47e8ce
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+@@ -0,0 +1,39 @@
++{
++  "run_id": "p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low",
++  "state": "s0",
++  "loop_stage": "idle",
++  "scene_stable": false,
++  "is_my_turn": true,
++  "community_cards": {
++    "count": 5,
++    "cards": [
++      {"position": 1, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 2, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 3, "value": "3c", "uncertain": true},
++      {"position": 4, "value": "Ah", "uncertain": true},
++      {"position": 5, "value": "Tc", "uncertain": true}
++    ]
++  },
++  "held_card": {
++    "visible": false,
++    "readable": false,
++    "value": null
++  },
++  "bets": {
++    "my_current_bet": {"red": 2, "blue": 0, "green": 0, "brown": 0},
++    "opponent_bet": {"red": 0, "blue": 0, "green": 0, "brown": 0}
++  },
++  "robot_behavior": {
++    "settled": false,
++    "summary": "Robot hand is extended from the right and not yet at rest."
++  },
++  "reasoning_recommendation": {
++    "action": "check_or_fold_conservatively",
++    "details": "Do not add chips or raise; check if legal, otherwise fold if any amount must be called."
++  },
++  "notes": [
++    "Scene is unstable because human hands are active and the robot hand is still extended.",
++    "Community-card read is uncertain and partially inconsistent with the rough label, so it should be treated as low confidence.",
++    "No robot robot-held readable card was visible."
++  ]
++}
+
+codex
+Completed the perception step and wrote the requested outputs here:
+
+- [`runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/`](runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/)
+- [`runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json`](runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json)
+- [`runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md`](runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md)
+
+Verification passed:
+- `visual_summary.json` exists
+- `eval_report.md` exists
+- `visual_raw/` is non-empty with 8 evidence files
+
+Key result:
+- Scene is unstable
+- It is our turn
+- No robot action was executed
+- Reasoning subagent recommended the conservative line: `check` if legal, otherwise `fold` if there is anything to call
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e1066dcf804a1a3a92d9d4ec5a8de737883012e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/eval_report.md
+@@ -0,0 +1,33 @@
++# DexHoldem Perception Step
++
++Status: incomplete for action execution because the scene is unstable.
++
++## Visual Evidence
++
++- [scene_stability_agent.md](./visual_raw/scene_stability_agent.md)
++- [turn_detection_agent.md](./visual_raw/turn_detection_agent.md)
++- [community_cards_agent.md](./visual_raw/community_cards_agent.md)
++- [held_card_recognition_agent.md](./visual_raw/held_card_recognition_agent.md)
++- [bet_recognition_agent.md](./visual_raw/bet_recognition_agent.md)
++- [chip_recognition_agent.md](./visual_raw/chip_recognition_agent.md)
++- [robot_behavior_agent.md](./visual_raw/robot_behavior_agent.md)
++- [reasoning_agent.md](./visual_raw/reasoning_agent.md)
++
++## Summary
++
++- Scene stability: unstable.
++- Turn: it is our turn.
++- Community cards: 5 positions reported, with the first two unreadable/face-down and the last three read as `3c`, `Ah`, and `Tc` with uncertainty.
++- Held card: no readable held card visible.
++- Bets: robot/player current bet is red x2; opponent bet is zero across all denominations.
++- Robot behavior: hand is extended from the right and not settled.
++
++## Reasoning Recommendation
++
++- Conservative poker recommendation was to avoid adding chips or raising.
++- If a poker action must be chosen, the reasoning subagent recommended `check` if legal, otherwise `fold` if any amount must be called.
++
++## Notes
++
++- No robot action was executed.
++- The main risk is visual instability, especially due to active human hands near the betting area and the robot hand still in motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..08065fa26c8da458da6402ae67e6b7b075c3c0e9
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,5 @@
++Robot/player current bet: red x2, blue x0, green x0, brown x0.
++
++Opponent current bet: red x0, blue x0, green x0, brown x0.
++
++Uncertain: none visible in opponent betting area; nearby upper-side chips appear to be inventory/seat chips rather than current bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..222115c759979ee320236c7bdf206691c2234681
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1 @@
++No response was captured from the chip recognition agent in this run attempt.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d6360d26291f02e69ddbda2e6e2f8cbcb221da7
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1,10 @@
++5 community-card positions are visible.
++
++Left to right:
++1. Face-down, unreadable
++2. Face-down, unreadable
++3. 3c, somewhat uncertain
++4. Ah, somewhat uncertain
++5. Tc, somewhat uncertain
++
++Unreadable positions: 1 and 2.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0115c2e52269322a122c3c82dc2ae9aa6cacb256
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand is visible, but it is not visibly holding a card.
++
++No readable held card value is present. Treat the robot hand’s held card as unreadable / not present in this image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0e9bb765bd0f868cfd36df66e3f8df1417e1a8eb
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/reasoning_agent.md
+@@ -0,0 +1,7 @@
++Conservative recommendation: **do not add chips or raise.** If a poker action must be selected, choose **check** if checking is legal. If there is any non-zero amount to call, choose **fold**.
++
++Caveats:
++- The table is visually unstable and human/robot hands are active, so the card and chip reads are unreliable.
++- No readable held card is visible, so there is no basis for a value call or raise.
++- The board estimate is uncertain, especially with two unreadable/face-down community positions.
++- Since the robot hand is still in motion, the safest practical recommendation is to **wait for the scene to settle before committing any real action**.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..273088fe4944e97c88e11f37201ef9e2769c2733
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,3 @@
++The dexterous robot hand enters from the right and is extended over the upper-right/opponent-side table area, near chips and betting zones. It does not appear to be holding a card or chips, and it is not visibly pressing on or dragging any object.
++
++The hand is not near its idle/rest pose. The action appears still in progress or not yet settled, but there is no visible dropped card, scattered chip layout, or unsafe contact. The robot/camera body occludes part of the right side of the table, and the human’s hands also occlude the upper/opponent-side area, so the exact state of some chips/cards there is partially ambiguous. Wait for another settled capture before judging success, failure, or recovery.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..2120f08e533a2c776d146ea5ee951dad71b8b861
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Unstable. Compared the current frame only; no previous or pre-action settled image was supplied. The human player’s hands are actively hovering/moving over the table near the betting area, so the scene does not look settled enough for reliable visual interpretation. The robot arm is visible but I cannot tell whether it is moving; the main uncertainty is the human hand motion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..32c2a94933888fc94a4461952a8a1f46ad7554c3
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1,3 @@
++It is our turn.
++
++The small white turn button is visible near the lower-left edge of the table, in front of the robot/player area, labeled “Your Turn.” It is not occluded and is safely identifiable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ffd002b99fe4d726fb5858388a41471ecf47e8ce
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p53_p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low_nxks8uoj/p53/runs/p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low/visual_summary.json
+@@ -0,0 +1,39 @@
++{
++  "run_id": "p53_codex_native_gpt5_5_high_split_batch009_gpt55high_split_low",
++  "state": "s0",
++  "loop_stage": "idle",
++  "scene_stable": false,
++  "is_my_turn": true,
++  "community_cards": {
++    "count": 5,
++    "cards": [
++      {"position": 1, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 2, "value": null, "uncertain": true, "note": "face-down / unreadable"},
++      {"position": 3, "value": "3c", "uncertain": true},
++      {"position": 4, "value": "Ah", "uncertain": true},
++      {"position": 5, "value": "Tc", "uncertain": true}
++    ]
++  },
++  "held_card": {
++    "visible": false,
++    "readable": false,
++    "value": null
++  },
++  "bets": {
++    "my_current_bet": {"red": 2, "blue": 0, "green": 0, "brown": 0},
++    "opponent_bet": {"red": 0, "blue": 0, "green": 0, "brown": 0}
++  },
++  "robot_behavior": {
++    "settled": false,
++    "summary": "Robot hand is extended from the right and not yet at rest."
++  },
++  "reasoning_recommendation": {
++    "action": "check_or_fold_conservatively",
++    "details": "Do not add chips or raise; check if legal, otherwise fold if any amount must be called."
++  },
++  "notes": [
++    "Scene is unstable because human hands are active and the robot hand is still extended.",
++    "Community-card read is uncertain and partially inconsistent with the rough label, so it should be treated as low confidence.",
++    "No robot robot-held readable card was visible."
++  ]
++}
+
+2026-05-01T23:57:37.411705Z ERROR codex_core::session: failed to record rollout items: thread 019de5f9-54c3-7d61-ba62-99d41916ba9f not found
+2026-05-01T23:57:37.411790Z ERROR codex_core::session: failed to record rollout items: thread 019de5f8-ef9c-7b63-80df-adc6950877a1 not found
+2026-05-01T23:57:37.411897Z ERROR codex_core::session: failed to record rollout items: thread 019de5f8-ef5c-7682-9f7b-b2637821d7da not found
+2026-05-01T23:57:37.411929Z ERROR codex_core::session: failed to record rollout items: thread 019de5f8-ef8e-7f21-8a98-0f3aeebde8ab not found
+2026-05-01T23:57:37.412051Z ERROR codex_core::session: failed to record rollout items: thread 019de5f8-ef71-7ea0-a7f6-4a30af719f19 not found
+2026-05-01T23:57:37.412061Z ERROR codex_core::session: failed to record rollout items: thread 019de5f8-ef93-7571-8944-f91815586ae0 not found
+2026-05-01T23:57:37.412063Z ERROR codex_core::session: failed to record rollout items: thread 019de5f8-ef87-79f1-9bc7-45ed3d776f38 not found
+2026-05-01T23:57:37.514931Z ERROR codex_core::session: failed to record rollout items: thread 019de5f8-ef98-7401-a170-832e4395169c not found
+tokens used
+41,844

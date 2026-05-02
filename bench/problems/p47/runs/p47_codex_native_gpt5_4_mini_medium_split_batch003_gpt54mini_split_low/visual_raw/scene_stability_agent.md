@@ -1,0 +1,1 @@
+Stable. The scene appears visually still: the person, cards, chips, and robot arm all look fixed with no motion blur or obvious displacement. I do not see signs that the robot atom is still in progress. Uncertainty: I only have this single capture here, so there is no direct before/after comparison.

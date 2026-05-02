@@ -1,0 +1,1 @@
+Unstable. Compared only the current capture, since no previous or pre-action settled image was supplied. The robot gripper is still holding the 5♦ card above the table rather than being retracted, so the scene appears still in progress and not settled enough to continue.

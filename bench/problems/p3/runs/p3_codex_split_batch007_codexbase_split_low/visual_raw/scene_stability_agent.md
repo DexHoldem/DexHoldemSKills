@@ -1,0 +1,1 @@
+Stable/Unstable judgment: Unstable. Compared s0/00_capture.jpg and s1/00_capture.jpg. The robot arm/camera assembly has clearly shifted position across the frame, with its end effector and housing moving leftward and downward relative to the table, so the scene is still changing. There is no indication the setup has settled yet.

@@ -1,0 +1,1 @@
+Stable. Compared only `/s7/00_capture.jpg` because no previous or pre-action settled image was supplied. The scene appears settled: chips, cards, table, player, and robot arm show no visible motion blur or active manipulation. Uncertainty: stability is judged from a single frame, so no inter-frame movement comparison is possible.

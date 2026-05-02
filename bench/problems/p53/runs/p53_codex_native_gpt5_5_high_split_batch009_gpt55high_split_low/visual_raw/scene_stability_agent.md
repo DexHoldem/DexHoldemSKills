@@ -1,0 +1,1 @@
+Unstable. Compared the current frame only; no previous or pre-action settled image was supplied. The human player’s hands are actively hovering/moving over the table near the betting area, so the scene does not look settled enough for reliable visual interpretation. The robot arm is visible but I cannot tell whether it is moving; the main uncertainty is the human hand motion.

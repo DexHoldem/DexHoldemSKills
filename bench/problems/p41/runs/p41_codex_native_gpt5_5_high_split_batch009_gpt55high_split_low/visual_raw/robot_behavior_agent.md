@@ -1,0 +1,10 @@
+- Robot hand is extended over the lower-right player area near seat 5, close to the face-down hole cards and nearby chip stacks.
+- The gripper/fingers are angled downward toward the table surface, appearing to hover or point near the card/chip area.
+- No card or chips are visibly held in the robot hand.
+- The hand is not near a rest pose; it is deployed over the active table area.
+- The scene appears visually settled in this single frame: no obvious motion blur or displaced objects indicating ongoing motion.
+- No clear evidence that a robot atom is still running, but a single image cannot confirm controller state.
+- Current pose appears close to cards/chips but not visibly colliding with them.
+- No obvious failure is visible. No retry need is evident from the image alone.
+- Human player is seated across the table and looking downward; no direct human-hand interference is visible.
+- Occlusion concern: the robot wrist/body partially blocks the lower-right table area, including part of the chip/card region near seat 5.

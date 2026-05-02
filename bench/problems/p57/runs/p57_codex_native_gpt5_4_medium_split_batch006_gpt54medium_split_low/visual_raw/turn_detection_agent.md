@@ -1,0 +1,1 @@
+The turn button is not safely identifiable. A white round marker is visible near the bottom robot-side area, but its label is not legible enough to confirm it is the white “Your Turn” button, and there are other chips/buttons nearby that add ambiguity.

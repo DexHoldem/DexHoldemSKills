@@ -1,0 +1,1 @@
+Lower robot area: about 5 red chips, 4 blue chips, 1 yellow chip, and 2 green chips; some are partly obscured so this is uncertain. Upper opponent area: about 3 red chips and 5 blue/white chips, plus 4 mixed chips on the right; counts there are also partly unclear.

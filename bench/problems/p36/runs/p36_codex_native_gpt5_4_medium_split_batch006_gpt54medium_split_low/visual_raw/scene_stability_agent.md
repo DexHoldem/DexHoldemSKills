@@ -1,0 +1,1 @@
+Unstable. Compared the current capture only; no previous or pre-action settled image was provided. The robot hand/camera assembly is still extended over the upper-right/opponent side and occludes part of the table, so it is not in a clearly settled near-idle pose; without a comparison frame, ongoing motion or recent chip/card changes cannot be ruled out.

@@ -1,0 +1,1 @@
+it is our turn; the small white physical turn button is visible near the lower-left area of the table, just above the player-side `6`, and it reads `Your Turn`. It appears unobstructed enough to identify.

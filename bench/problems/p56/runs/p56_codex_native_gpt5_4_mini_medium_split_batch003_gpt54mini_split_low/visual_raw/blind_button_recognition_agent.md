@@ -1,0 +1,1 @@
+Dealer button is at the `robot` seat. Under the two-player rule, `robot` is the small blind and `opponent` is the big blind. Evidence: the white `DEALER` button is visible on the lower/robot side, and the visible blind markers are consistent with that placement.

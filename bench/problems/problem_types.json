@@ -1,0 +1,2505 @@
+{
+  "schema_version": 1,
+  "type_specs": {
+    "initial_turn_gate": {
+      "description": "Initial state where the main difficulty is turn/blind gate and starting the right route.",
+      "field_weights": {
+        "expected_route_action": 0.25,
+        "blind": 0.15,
+        "is_my_turn": 0.15,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "table_layout": 0.15,
+        "robot": 0.05
+      },
+      "low_priority_fields": []
+    },
+    "opponent_wait": {
+      "description": "Stable state where opponent owns the turn; routing should wait rather than parse for a new robot action.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "is_my_turn": 0.3,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "blind": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_when_not_needed_for_route",
+        "chip_exactness_unless_table_layout_tagged"
+      ]
+    },
+    "robot_action_progress": {
+      "description": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ]
+    },
+    "held_card_read": {
+      "description": "Robot is holding a readable hole card; held-card recognition matters along with cached sequence routing.",
+      "field_weights": {
+        "held_card": 0.25,
+        "expected_route_action": 0.2,
+        "loop_stage": 0.2,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets"
+      ]
+    },
+    "cached_sequence_gate": {
+      "description": "A cached action sequence should continue; judge atom_idle/route from robot and cache context more than table re-reading.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "loop_stage": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_if_unchanged",
+        "chip_inventory_if_unchanged",
+        "bets_if_unchanged"
+      ]
+    },
+    "recovery_safety": {
+      "description": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ]
+    },
+    "poker_table_decision": {
+      "description": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": []
+    },
+    "fold_win_judge": {
+      "description": "Opponent fold or non-showdown win condition; outcome/route dominates, card recognition is usually inherited or irrelevant.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_unless_needed_for_fold_context",
+        "hole_cards"
+      ]
+    },
+    "showdown_outcome": {
+      "description": "Showdown or hand result state; outcome judgment and visible/cached cards matter most.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "community_cards": 0.2,
+        "hole_cards": 0.2,
+        "expected_route_action": 0.15,
+        "loop_stage": 0.1,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "chip_inventory_exactness_unless_collecting",
+        "bets_exactness_unless_collecting"
+      ]
+    },
+    "collect_winnings_sequence": {
+      "description": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ]
+    }
+  },
+  "problems": [
+    {
+      "problem_id": "p1",
+      "latest_state": "s0",
+      "primary_type": "initial_turn_gate",
+      "tags": [
+        "turn_button_heavy",
+        "coarse:turn_gate",
+        "turn_gate_family"
+      ],
+      "expected_route": "start_hole_card_view_sequence",
+      "expected_action": "view_card_left",
+      "loop_stage": "idle",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Initial state where the main difficulty is turn/blind gate and starting the right route.",
+      "field_weights": {
+        "expected_route_action": 0.25,
+        "blind": 0.15,
+        "is_my_turn": 0.15,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "table_layout": 0.15,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "initial preflop state, robot is big blind and it is my turn; begin by viewing the left hole card",
+      "coarse_type": "turn_gate"
+    },
+    {
+      "problem_id": "p2",
+      "latest_state": "s0",
+      "primary_type": "opponent_wait",
+      "tags": [
+        "turn_button_heavy",
+        "coarse:turn_gate",
+        "turn_gate_family"
+      ],
+      "expected_route": "wait_for_opponent",
+      "expected_action": "wait_for_opponent",
+      "loop_stage": "idle",
+      "community_card_count": 0,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Stable state where opponent owns the turn; routing should wait rather than parse for a new robot action.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "is_my_turn": 0.3,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "blind": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_when_not_needed_for_route",
+        "chip_exactness_unless_table_layout_tagged"
+      ],
+      "reason": "initial preflop state, robot is big blind and the turn button is on the opponent side",
+      "coarse_type": "turn_gate"
+    },
+    {
+      "problem_id": "p3",
+      "latest_state": "s1",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "left hole-card pickup/view sequence is still in progress",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p4",
+      "latest_state": "s2",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait",
+      "expected_action": {
+        "action": "wait",
+        "reason": "robot_action_in_progress",
+        "sleep_seconds": 30
+      },
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "jpgs: 1, 3, 4; similar to p3, still picking up",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p5",
+      "latest_state": "s3",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait",
+      "expected_action": {
+        "action": "wait",
+        "reason": "robot_action_in_progress",
+        "sleep_seconds": 30
+      },
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "jpgs: 1, 3, 4, 5; similar to p4",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p6",
+      "latest_state": "s4",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait",
+      "expected_action": {
+        "action": "wait",
+        "reason": "robot_action_in_progress",
+        "sleep_seconds": 30
+      },
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "jpgs: 1, 3, 4, 5, 6; similar to p5",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p7",
+      "latest_state": "s5",
+      "primary_type": "held_card_read",
+      "tags": [
+        "loop_stage_heavy",
+        "held_card_relevant",
+        "coarse:held_card_read",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "held_card_identity_high_priority"
+      ],
+      "expected_route": "put_down_left",
+      "expected_action": {
+        "action": "put_down_card",
+        "position": "left",
+        "face_up": false
+      },
+      "loop_stage": "atom_idle",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Robot is holding a readable hole card; held-card recognition matters along with cached sequence routing.",
+      "field_weights": {
+        "held_card": 0.25,
+        "expected_route_action": 0.2,
+        "loop_stage": 0.2,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets"
+      ],
+      "reason": "dexterous hand is holding the left hole card face-visible to the camera",
+      "coarse_type": "held_card_read"
+    },
+    {
+      "problem_id": "p8",
+      "latest_state": "s6",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "held_card_relevant",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait",
+      "expected_action": {
+        "action": "wait",
+        "reason": "robot_action_in_progress",
+        "sleep_seconds": 30
+      },
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "p7 + 8.jpg; acting putting down",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p9",
+      "latest_state": "s7",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "held_card_relevant",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait",
+      "expected_action": {
+        "action": "wait",
+        "reason": "robot_action_in_progress",
+        "sleep_seconds": 30
+      },
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "p8 + 9.jpg; acting putting down",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p10",
+      "latest_state": "s3",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "recover_retryable",
+      "expected_action": {
+        "action": "recover_retryable",
+        "reason": "left hole card was not picked up"
+      },
+      "loop_stage": "to_recover",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "jpgs: 1, 3, 4, 10; failed to pick up, no card seen, ready to recover",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p11",
+      "latest_state": "s3",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human",
+      "expected_action": {
+        "action": "request_human",
+        "reason": "left hole card dropped during pickup"
+      },
+      "loop_stage": "down",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "jpgs: 1, 3, 4, 11; card dropped when picking up, down, call for help",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p12",
+      "latest_state": "s7",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human",
+      "expected_action": {
+        "action": "request_human",
+        "reason": "left hole card covers chips after put-down"
+      },
+      "loop_stage": "down",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "p8 + 12.jpg; finished putting down but card covers chips, call for help",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p13",
+      "latest_state": "s7",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human",
+      "expected_action": {
+        "action": "request_human",
+        "reason": "left hole card dropped during put-down"
+      },
+      "loop_stage": "down",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "p8 + 13.jpg; card dropped when putting down, call for help",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p14",
+      "latest_state": "s9",
+      "primary_type": "cached_sequence_gate",
+      "tags": [
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "cached_sequence_relevant"
+      ],
+      "expected_route": "view_right",
+      "expected_action": {
+        "action": "view_card",
+        "position": "right"
+      },
+      "loop_stage": "idle",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "A cached action sequence should continue; judge atom_idle/route from robot and cache context more than table re-reading.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "loop_stage": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_if_unchanged",
+        "chip_inventory_if_unchanged",
+        "bets_if_unchanged"
+      ],
+      "reason": "p8 + 9.jpg + 14.jpg + 14.jpg; stable idle after put-down, ready to pick up right, left card cache 9d",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p15",
+      "latest_state": "s10",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait",
+      "expected_action": {
+        "action": "wait",
+        "reason": "robot_action_in_progress",
+        "sleep_seconds": 30
+      },
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "p14 + 15.jpg; acting picking up right",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p16",
+      "latest_state": "s15",
+      "primary_type": "held_card_read",
+      "tags": [
+        "loop_stage_heavy",
+        "held_card_relevant",
+        "coarse:held_card_read",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "held_card_identity_high_priority"
+      ],
+      "expected_route": "put_down_right",
+      "expected_action": {
+        "action": "put_down_card",
+        "position": "right",
+        "face_up": false
+      },
+      "loop_stage": "atom_idle",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Robot is holding a readable hole card; held-card recognition matters along with cached sequence routing.",
+      "field_weights": {
+        "held_card": 0.25,
+        "expected_route_action": 0.2,
+        "loop_stage": 0.2,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets"
+      ],
+      "reason": "dexterous hand is holding the right hole card face-visible to the camera",
+      "coarse_type": "held_card_read"
+    },
+    {
+      "problem_id": "p17",
+      "latest_state": "s17",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "held_card_relevant",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait",
+      "expected_action": {
+        "action": "wait",
+        "reason": "robot_action_in_progress",
+        "sleep_seconds": 30
+      },
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "p16 + 19.jpg + 20.jpg; putting down right, acting",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p18",
+      "latest_state": "s18",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": {
+        "action": "choose_poker_action",
+        "hole_cards": [
+          "9d",
+          "5d"
+        ]
+      },
+      "loop_stage": "idle",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "p17 + 21.jpg; putting down finished, idle, ready for next move",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p19",
+      "latest_state": "s18",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human",
+      "expected_action": {
+        "action": "request_human",
+        "reason": "right hole card dropped during put-down"
+      },
+      "loop_stage": "down",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "p17 + 22.jpg; down, cards dropped during putting down cards, call for help",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p20",
+      "latest_state": "s18",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human",
+      "expected_action": {
+        "action": "request_human",
+        "reason": "right hole card covers chips after put-down"
+      },
+      "loop_stage": "down",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "p17 + 23.jpg; down, cards cover chips, call for help",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p21",
+      "latest_state": "s18",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human",
+      "expected_action": {
+        "action": "request_human",
+        "reason": "right hole card face-up and covering chips"
+      },
+      "loop_stage": "down",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "p17 + 24.jpg; down, card face-up and covering chips, call for help",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p22",
+      "latest_state": "s20",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "acting pushing chips 10, wait",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p23",
+      "latest_state": "s22",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "recover_cached_action",
+      "expected_action": "recover_cached_action",
+      "loop_stage": "to_recover",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "simulate pausing of 3 frames, should recover cached action",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p24",
+      "latest_state": "s21",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "recover_cached_action",
+      "expected_action": "recover_cached_action",
+      "loop_stage": "to_recover",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "chip 10 drops along the way, no chip pushed by the finger, should recover cached action",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p25",
+      "latest_state": "s23",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "chip pushed, idle, ready for next move.",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p26",
+      "latest_state": "s23",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "recover_cached_action",
+      "expected_action": "recover_cached_action",
+      "loop_stage": "to_recover",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "chip not successfully pushed to destination, stuck in middle\nrecover cached action",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p27",
+      "latest_state": "s22",
+      "primary_type": "opponent_wait",
+      "tags": [
+        "turn_button_heavy",
+        "coarse:turn_gate",
+        "turn_gate_family"
+      ],
+      "expected_route": "wait_for_opponent",
+      "expected_action": "wait_for_opponent",
+      "loop_stage": "idle",
+      "community_card_count": 0,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Stable state where opponent owns the turn; routing should wait rather than parse for a new robot action.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "is_my_turn": 0.3,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "blind": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_when_not_needed_for_route",
+        "chip_exactness_unless_table_layout_tagged"
+      ],
+      "reason": "the opponent's turn",
+      "coarse_type": "turn_gate"
+    },
+    {
+      "problem_id": "p28",
+      "latest_state": "s24",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_3",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 3,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "3 community cards unfolded, acting to push 100 chips.",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p29",
+      "latest_state": "s25",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "community_cards_3",
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 3,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "finish pushing 100 chips (bet 1*10+1*100), the opponent raise the bet (2*5+1*50+1*100 in bet), idle",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p30",
+      "latest_state": "s28",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "community_cards_4",
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 4,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "finished acting call to push 50 chip to fit the opponent's bet, idle, 4 cards unfolded, ready for next turn",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p31",
+      "latest_state": "s30",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_4",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 4,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "acting to push 100 chip to raise",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p32",
+      "latest_state": "s30",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_4",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "recover_cached_action",
+      "expected_action": "recover_cached_action",
+      "loop_stage": "to_recover",
+      "community_card_count": 4,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "failed acting to push 100 chips cuz the chip does not follow the finger, should recover",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p33",
+      "latest_state": "s30",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_4",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human_help",
+      "expected_action": "request_human_help",
+      "loop_stage": "down",
+      "community_card_count": 4,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "failed acting to push 100 chips, still in the middle of the trajectory, should call for human help to reorgnize",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p34",
+      "latest_state": "s31",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "community_cards_4",
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 4,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "finished pushing 100 chips, idle",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p35",
+      "latest_state": "s32",
+      "primary_type": "fold_win_judge",
+      "tags": [
+        "outcome_heavy",
+        "community_cards_4",
+        "coarse:outcome_judge",
+        "outcome_judge_family"
+      ],
+      "expected_route": "collect_winnings",
+      "expected_action": "collect_winnings",
+      "loop_stage": "win",
+      "community_card_count": 4,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Opponent fold or non-showdown win condition; outcome/route dominates, card recognition is usually inherited or irrelevant.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_unless_needed_for_fold_context",
+        "hole_cards"
+      ],
+      "reason": "opponent fold, judge conidtion to win.",
+      "coarse_type": "outcome_judge"
+    },
+    {
+      "problem_id": "p36",
+      "latest_state": "s33",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "community_cards_5",
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "the previous stage choose to check, current idle",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p37",
+      "latest_state": "s35",
+      "primary_type": "robot_action_progress",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Robot atom or multi-step action is in progress; loop-stage, robot progress, and scene stability dominate.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.15,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards",
+        "chip_inventory",
+        "bets",
+        "card_identity"
+      ],
+      "reason": "the opponent show hand, act to show hand in 69.jpg, executing pick up left and put down face up.",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p38",
+      "latest_state": "s34",
+      "primary_type": "cached_sequence_gate",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "cached_sequence_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "A cached action sequence should continue; judge atom_idle/route from robot and cache context more than table re-reading.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "loop_stage": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_if_unchanged",
+        "chip_inventory_if_unchanged",
+        "bets_if_unchanged"
+      ],
+      "reason": "Atom_idle, viewed the hand card, ready to put down face up",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p39",
+      "latest_state": "s36",
+      "primary_type": "cached_sequence_gate",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "cached_sequence_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "A cached action sequence should continue; judge atom_idle/route from robot and cache context more than table re-reading.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "loop_stage": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_if_unchanged",
+        "chip_inventory_if_unchanged",
+        "bets_if_unchanged"
+      ],
+      "reason": "atom_idle, put down finished, ready to pick up right",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p40",
+      "latest_state": "s36",
+      "primary_type": "recovery_safety",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "recovery_or_safety_heavy",
+        "coarse:recovery_safety",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "recovery_safety_family",
+        "human_help_or_retry_decision"
+      ],
+      "expected_route": "request_human_help",
+      "expected_action": "request_human_help",
+      "loop_stage": "down",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Failed or abnormal physical state; distinguish retryable recovery from down/human-help conditions.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.25,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "chip_exactness_unless_failure_affects_chips",
+        "bets_unless_failure_affects_bets"
+      ],
+      "reason": "down, card put on the left, request human help",
+      "coarse_type": "recovery_safety"
+    },
+    {
+      "problem_id": "p41",
+      "latest_state": "s37",
+      "primary_type": "cached_sequence_gate",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "cached_sequence_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "A cached action sequence should continue; judge atom_idle/route from robot and cache context more than table re-reading.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "loop_stage": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_if_unchanged",
+        "chip_inventory_if_unchanged",
+        "bets_if_unchanged"
+      ],
+      "reason": "acting picking up right",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p42",
+      "latest_state": "s38",
+      "primary_type": "cached_sequence_gate",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "cached_sequence_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "A cached action sequence should continue; judge atom_idle/route from robot and cache context more than table re-reading.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "loop_stage": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "is_my_turn": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_if_unchanged",
+        "chip_inventory_if_unchanged",
+        "bets_if_unchanged"
+      ],
+      "reason": "atom idle, ready to put down",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p43",
+      "latest_state": "s39",
+      "primary_type": "showdown_outcome",
+      "tags": [
+        "outcome_heavy",
+        "community_cards_5",
+        "table_layout_heavy",
+        "coarse:outcome_judge",
+        "outcome_judge_family"
+      ],
+      "expected_route": "collect_winnings",
+      "expected_action": "collect_winnings",
+      "loop_stage": "win",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Showdown or hand result state; outcome judgment and visible/cached cards matter most.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "community_cards": 0.2,
+        "hole_cards": 0.2,
+        "expected_route_action": 0.15,
+        "loop_stage": 0.1,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "chip_inventory_exactness_unless_collecting",
+        "bets_exactness_unless_collecting"
+      ],
+      "reason": "finished putting down, all cards visible, judging win.",
+      "coarse_type": "outcome_judge"
+    },
+    {
+      "problem_id": "p44",
+      "latest_state": "s41",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "after winning, acting pull back 100 from sequence of [pull back 100*4, pull back 50*2, pull back 10*1, pull back 5*2.]",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p45",
+      "latest_state": "s42",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "atom_idle, ready to act the second pull back 100 action",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p46",
+      "latest_state": "s45",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "atom_idle, ready to act the third pull back 100 action",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p47",
+      "latest_state": "s46",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "acting pulling back 100",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p48",
+      "latest_state": "s48",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "atom_idle, finished pull back 100 action, ready to act the final pull back 100 action.",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p49",
+      "latest_state": "s48",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "continue_cached_action_sequence",
+      "expected_action": "continue_cached_action_sequence",
+      "loop_stage": "atom_idle",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "atom_idle, finished pull back 100 action, ready to act the final pull back 100 action.",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p50",
+      "latest_state": "s50",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "acting pull back 100 action",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p51",
+      "latest_state": "s52",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "acting pull back 50 action",
+      "coarse_type": "robot_progress"
+    },
+    {
+      "problem_id": "p52",
+      "latest_state": "s0",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 0,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "new game, initial state, idle, need to read table\nmy bet 0\nmy chip 5:4, 10:3, 50:2, 100:2\nopponent bet 0\nopponent chip 5:4, 10:4, 50:3, 100:3\ncommunity card: no\nbig blind, my turn",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p53",
+      "latest_state": "s0",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "community_cards_3",
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 3,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "new game, start from 3 cards unfolded\nmy bet 5:2\nmy chip 5:3, 10:2, 50:2, 100:2\nopponent bet 10:1\nopponent chip 5:3, 10:4, 50:3, 100:3\ncommunity card club 10, heart 5, spade 3\nbig blind, my turn",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p54",
+      "latest_state": "s0",
+      "primary_type": "opponent_wait",
+      "tags": [
+        "community_cards_3",
+        "turn_button_heavy",
+        "coarse:turn_gate",
+        "turn_gate_family"
+      ],
+      "expected_route": "wait_for_opponent",
+      "expected_action": "wait_for_opponent",
+      "loop_stage": "idle",
+      "community_card_count": 3,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Stable state where opponent owns the turn; routing should wait rather than parse for a new robot action.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "is_my_turn": 0.3,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "blind": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_when_not_needed_for_route",
+        "chip_exactness_unless_table_layout_tagged"
+      ],
+      "reason": "new game, start from 3 cards unfolded\nmy bet 5:2,\nmy chip 5:3, 10:2, 50:2, 100:2\nopponent bet 10:1\nopponent chip 5:3, 10:4, 50:3, 100:3\ncommunity card club 10, heart 5, club 3\nsmall blind, opponent's turn",
+      "coarse_type": "turn_gate"
+    },
+    {
+      "problem_id": "p55",
+      "latest_state": "s0",
+      "primary_type": "opponent_wait",
+      "tags": [
+        "community_cards_4",
+        "turn_button_heavy",
+        "coarse:turn_gate",
+        "turn_gate_family"
+      ],
+      "expected_route": "wait_for_opponent",
+      "expected_action": "wait_for_opponent",
+      "loop_stage": "idle",
+      "community_card_count": 4,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Stable state where opponent owns the turn; routing should wait rather than parse for a new robot action.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "is_my_turn": 0.3,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "blind": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_when_not_needed_for_route",
+        "chip_exactness_unless_table_layout_tagged"
+      ],
+      "reason": "new game, 4 cards unfolded\nmy bet 5:2, 100:1\nmy chip: 5:3,10:2, 50:1, 100;1\nopponent bet 50:3\nopponent chip 5:3,10:4,50:2,100:3\ncommunity card club 10, heart 5, club 3, spade 3\nsmall blind, opponent's turn",
+      "coarse_type": "turn_gate"
+    },
+    {
+      "problem_id": "p56",
+      "latest_state": "s0",
+      "primary_type": "opponent_wait",
+      "tags": [
+        "community_cards_5",
+        "turn_button_heavy",
+        "coarse:turn_gate",
+        "turn_gate_family"
+      ],
+      "expected_route": "wait_for_opponent",
+      "expected_action": "wait_for_opponent",
+      "loop_stage": "idle",
+      "community_card_count": 5,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Stable state where opponent owns the turn; routing should wait rather than parse for a new robot action.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "is_my_turn": 0.3,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "blind": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_when_not_needed_for_route",
+        "chip_exactness_unless_table_layout_tagged"
+      ],
+      "reason": "new game, 5 cards unfolded\nmy bet 50:1, 100:1\nmy chip: 5:4,10:4, 50:1, 100;2\nopponent bet 50:3\nopponent chip 5:3,10:4,50:2,100:3\ncommunity card club 10, heart 5, club 3, spade 3, heart K\nsmall blind, opponent's turn",
+      "coarse_type": "turn_gate"
+    },
+    {
+      "problem_id": "p57",
+      "latest_state": "s0",
+      "primary_type": "showdown_outcome",
+      "tags": [
+        "outcome_heavy",
+        "community_cards_5",
+        "table_layout_heavy",
+        "coarse:outcome_judge",
+        "outcome_judge_family"
+      ],
+      "expected_route": "hand_lost",
+      "expected_action": "handle_lost_hand",
+      "loop_stage": "lose",
+      "community_card_count": 5,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Showdown or hand result state; outcome judgment and visible/cached cards matter most.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "community_cards": 0.2,
+        "hole_cards": 0.2,
+        "expected_route_action": 0.15,
+        "loop_stage": 0.1,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "chip_inventory_exactness_unless_collecting",
+        "bets_exactness_unless_collecting"
+      ],
+      "reason": "new game, 5 cards unfolded, winning stage judge\nmy bet 50:1, 100:1\nmy chip: 5:4,10:4, 50:1, 100;2\nmy hole cards club J, heart 6\nopponent bet 50:3\nopponent chip 5:3,10:4,50:2,100:3\nopponent hole cards spade Q, diamond J\ncommunity card club 10, heart 5, club 3, spade 3, heart K\nsmall blind, opponent's turn",
+      "coarse_type": "outcome_judge"
+    },
+    {
+      "problem_id": "p58",
+      "latest_state": "s0",
+      "primary_type": "showdown_outcome",
+      "tags": [
+        "outcome_heavy",
+        "community_cards_5",
+        "table_layout_heavy",
+        "coarse:outcome_judge",
+        "outcome_judge_family"
+      ],
+      "expected_route": "collect_winnings",
+      "expected_action": "collect_winnings",
+      "loop_stage": "win",
+      "community_card_count": 5,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Showdown or hand result state; outcome judgment and visible/cached cards matter most.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "community_cards": 0.2,
+        "hole_cards": 0.2,
+        "expected_route_action": 0.15,
+        "loop_stage": 0.1,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "chip_inventory_exactness_unless_collecting",
+        "bets_exactness_unless_collecting"
+      ],
+      "reason": "new game, 5 cards unfolded, winning stage judge\nmy bet 5:3\nmy chip: 5:1,10:3, 50:3, 100:3\nmy hole cards heart q, spade 10\nopponent bet 5:1,10:1\nopponent chip 5:3,10:3,50:3,100:2\nopponent hole cards diamond 6, heart 7\ncommunity card diamond k, club 4, spade k, club A, heart J\nsmall blind, opponent's turn",
+      "coarse_type": "outcome_judge"
+    },
+    {
+      "problem_id": "p59",
+      "latest_state": "s0",
+      "primary_type": "showdown_outcome",
+      "tags": [
+        "outcome_heavy",
+        "community_cards_5",
+        "table_layout_heavy",
+        "coarse:outcome_judge",
+        "outcome_judge_family"
+      ],
+      "expected_route": "hand_lost",
+      "expected_action": "handle_lost_hand",
+      "loop_stage": "lose",
+      "community_card_count": 5,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Showdown or hand result state; outcome judgment and visible/cached cards matter most.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "community_cards": 0.2,
+        "hole_cards": 0.2,
+        "expected_route_action": 0.15,
+        "loop_stage": 0.1,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "chip_inventory_exactness_unless_collecting",
+        "bets_exactness_unless_collecting"
+      ],
+      "reason": "new game, 5 cards unfolded, winning stage judge\nmy bet 5:2,10:4\nmy chip: 5:2,10:1, 50:32, 100:3\nmy hole cards heart 7, diamond 6\nopponent bet 50;1\nopponent chip 5:3,10:2,50:3,100:2\nopponent hole cards spade 10, spade 3\ncommunity card heart q, club 33, spade j, club k, diamond 8\nsmall blind, opponent's turn",
+      "coarse_type": "outcome_judge"
+    },
+    {
+      "problem_id": "p60",
+      "latest_state": "s0",
+      "primary_type": "showdown_outcome",
+      "tags": [
+        "outcome_heavy",
+        "community_cards_5",
+        "table_layout_heavy",
+        "coarse:outcome_judge",
+        "outcome_judge_family"
+      ],
+      "expected_route": "hand_lost",
+      "expected_action": "handle_lost_hand",
+      "loop_stage": "lose",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Showdown or hand result state; outcome judgment and visible/cached cards matter most.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "community_cards": 0.2,
+        "hole_cards": 0.2,
+        "expected_route_action": 0.15,
+        "loop_stage": 0.1,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "chip_inventory_exactness_unless_collecting",
+        "bets_exactness_unless_collecting"
+      ],
+      "reason": "new game, 5 cards unfolded, winning stage judge\nmy bet 5:2,10:4\nmy chip: 5:2,10:1, 50:32, 100:3\nmy hole cards heart 7, diamond 6\nopponent bet 50;1\nopponent chip 5:3,10:1,50:4,100:2\nopponent hole cards spade 10, diamond 6\ncommunity card heart heart q, diamond 8, club k, spade j, club 3\nsmall blind, my turn",
+      "coarse_type": "outcome_judge"
+    },
+    {
+      "problem_id": "p61",
+      "latest_state": "s0",
+      "primary_type": "opponent_wait",
+      "tags": [
+        "community_cards_3",
+        "turn_button_heavy",
+        "coarse:turn_gate",
+        "turn_gate_family"
+      ],
+      "expected_route": "wait_for_opponent",
+      "expected_action": "wait_for_opponent",
+      "loop_stage": "idle",
+      "community_card_count": 3,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Stable state where opponent owns the turn; routing should wait rather than parse for a new robot action.",
+      "field_weights": {
+        "expected_route_action": 0.3,
+        "is_my_turn": 0.3,
+        "loop_stage": 0.15,
+        "scene_stable": 0.1,
+        "blind": 0.05,
+        "table_layout": 0.1
+      },
+      "low_priority_fields": [
+        "community_cards_identity_when_not_needed_for_route",
+        "chip_exactness_unless_table_layout_tagged"
+      ],
+      "reason": "new game, start from 3 cards unfolded; opponent's turn",
+      "coarse_type": "turn_gate"
+    },
+    {
+      "problem_id": "p62",
+      "latest_state": "s1",
+      "primary_type": "poker_table_decision",
+      "tags": [
+        "community_cards_3",
+        "table_layout_heavy",
+        "coarse:table_decision",
+        "table_layout_family",
+        "chips_bets_cards_high_priority"
+      ],
+      "expected_route": "choose_poker_action",
+      "expected_action": "choose_poker_action",
+      "loop_stage": "idle",
+      "community_card_count": 3,
+      "is_my_turn": true,
+      "scene_stable": true,
+      "evaluation_focus": "Stable robot decision state; accurate table layout drives route and poker reasoning.",
+      "field_weights": {
+        "table_layout": 0.35,
+        "expected_route_action": 0.25,
+        "loop_stage": 0.15,
+        "is_my_turn": 0.1,
+        "blind": 0.05,
+        "scene_stable": 0.05,
+        "robot": 0.05
+      },
+      "low_priority_fields": [],
+      "reason": "opponent has raised by one 100 chip; robot is idle and it is my turn",
+      "coarse_type": "table_decision"
+    },
+    {
+      "problem_id": "p63",
+      "latest_state": "s0",
+      "primary_type": "showdown_outcome",
+      "tags": [
+        "outcome_heavy",
+        "community_cards_5",
+        "table_layout_heavy",
+        "coarse:outcome_judge",
+        "outcome_judge_family"
+      ],
+      "expected_route": "collect_winnings",
+      "expected_action": "collect_winnings",
+      "loop_stage": "win",
+      "community_card_count": 5,
+      "is_my_turn": false,
+      "scene_stable": true,
+      "evaluation_focus": "Showdown or hand result state; outcome judgment and visible/cached cards matter most.",
+      "field_weights": {
+        "win_condition": 0.3,
+        "community_cards": 0.2,
+        "hole_cards": 0.2,
+        "expected_route_action": 0.15,
+        "loop_stage": 0.1,
+        "table_layout": 0.05
+      },
+      "low_priority_fields": [
+        "chip_inventory_exactness_unless_collecting",
+        "bets_exactness_unless_collecting"
+      ],
+      "reason": "new game from five unfolded community cards; showdown/winning judgement state",
+      "coarse_type": "outcome_judge"
+    },
+    {
+      "problem_id": "p64",
+      "latest_state": "s1",
+      "primary_type": "collect_winnings_sequence",
+      "tags": [
+        "loop_stage_heavy",
+        "community_cards_5",
+        "cards_inheritable_from_cache",
+        "collect_winnings",
+        "coarse:robot_progress",
+        "workflow_stage_heavy",
+        "cards_may_be_inherited_from_previous_state",
+        "robot_progress_family",
+        "collect_winnings_subtype",
+        "pot_or_bet_cleanup_relevant"
+      ],
+      "expected_route": "wait_for_motion_completion",
+      "expected_action": "wait",
+      "loop_stage": "acting",
+      "community_card_count": 5,
+      "is_my_turn": true,
+      "scene_stable": false,
+      "evaluation_focus": "Collect-winnings physical sequence; route/action progress and robot state dominate, while card recognition is inherited.",
+      "field_weights": {
+        "loop_stage": 0.3,
+        "expected_route_action": 0.25,
+        "robot": 0.2,
+        "scene_stable": 0.1,
+        "bet_or_pot_chips": 0.1,
+        "is_my_turn": 0.05
+      },
+      "low_priority_fields": [
+        "community_cards_identity",
+        "hole_cards",
+        "full_chip_inventory"
+      ],
+      "reason": "after winning, acting pull back chips from the collect-winnings sequence; wait for motion completion",
+      "coarse_type": "robot_progress"
+    }
+  ],
+  "coarse_type_specs": {
+    "turn_gate": {
+      "description": "Turn/blind gate states where route correctness depends mainly on whose turn it is and whether the hand should start/wait.",
+      "primary_types": [
+        "initial_turn_gate",
+        "opponent_wait"
+      ]
+    },
+    "robot_progress": {
+      "description": "Embodied action-progress states, including ordinary robot motion, cached-sequence continuation, and collect-winnings progress.",
+      "primary_types": [
+        "robot_action_progress",
+        "cached_sequence_gate",
+        "collect_winnings_sequence"
+      ]
+    },
+    "recovery_safety": {
+      "description": "Abnormal physical states requiring retryable recovery versus down/human-help classification.",
+      "primary_types": [
+        "recovery_safety"
+      ]
+    },
+    "held_card_read": {
+      "description": "States where the robot holds a readable hole card and card identity is the key perception target.",
+      "primary_types": [
+        "held_card_read"
+      ]
+    },
+    "table_decision": {
+      "description": "Stable poker-decision states where table cards, chips, bets, and turn state drive choose_poker_action.",
+      "primary_types": [
+        "poker_table_decision"
+      ]
+    },
+    "outcome_judge": {
+      "description": "Fold/showdown/win/loss states where outcome and resulting route/action dominate evaluation.",
+      "primary_types": [
+        "fold_win_judge",
+        "showdown_outcome"
+      ]
+    }
+  }
+}

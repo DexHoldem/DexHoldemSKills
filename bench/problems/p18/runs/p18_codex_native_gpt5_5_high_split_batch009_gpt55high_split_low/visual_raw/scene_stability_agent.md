@@ -1,0 +1,1 @@
+Unstable. Compared current capture only; no previous or pre-action settled image was supplied. The robot arm/gripper is still extended over the player-5 area near chips/cards and occludes part of the table, so the action may still be in progress. No obvious motion blur, but without a prior settled frame I cannot confirm the scene has stabilized.

@@ -1,0 +1,1 @@
+it is not our turn. The small white turn button appears on the right side of the table, near the right-side player’s chips/cards area, just below-right of the community cards. It is visible and not safely associated with our bottom seat.

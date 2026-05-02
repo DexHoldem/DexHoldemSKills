@@ -1,0 +1,819 @@
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+model: gpt-5.4-mini
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/memories]
+reasoning effort: low
+reasoning summaries: none
+session id: 019de798-821f-7923-9a69-84bcd702dd7f
+--------
+user
+Run the current DexHoldem perception step.
+
+Use the local setup and visible visual subagents.
+The main agent's only job is to launch the needed visual subagents, merge their
+returned evidence, write the requested files, verify those files exist, and
+stop.
+Do not execute robot actions.
+Do not perform image perception in the main agent; merge subagent evidence only.
+Do not run router.py, state.py, executor.py, or any helper script.
+Do not call the reasoning agent or choose a poker action.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
+
+Output policy:
+- Do not write null, "unknown", or placeholder values in visual_summary.json.
+- Every required field must contain a concrete best estimate.
+- When direct visual evidence is incomplete, first inherit durable state from
+  `sN-1/01_parsed_state.md`, `action_sequence.json`, or `hole_card_cache.json`
+  when that state should persist physically. Otherwise choose the most likely
+  value from current visual evidence and poker/workflow context.
+- Add a field name to `uncertain_fields` whenever its value is inherited,
+  inferred, or low confidence.
+
+Current state and context:
+- `s_current` points to the latest state directory.
+- The latest capture is `s_current/00_capture.jpg`.
+- Use `action_sequence.json` and `hole_card_cache.json` only as workflow/cache
+  context for loop-stage interpretation and previously viewed hidden cards.
+- Do not inspect benchmark ground-truth files.
+
+Subagent inputs and conditions:
+- `scene_stability_agent`: always pass `s_current/00_capture.jpg` and the
+  previous state image, usually `sN-1/00_capture.jpg`. If there is a dispatched
+  robot atom, also pass the last clearly settled pre-action image when
+  available. The raw evidence must name the compared images. If the agent only
+  inspects one image or cannot access the previous image, infer the most likely
+  true/false value from current image and previous parsed state, and add
+  `scene_stable` to `uncertain_fields`.
+- `robot_behavior_agent`: pass `s_current/00_capture.jpg`, the previous state
+  image, and action-sequence context including `loop_stage`, `current_step`,
+  and step statuses. Ask for hand pose, held object, near-rest status,
+  action progress, safety, retryability, and human-help concerns.
+- `turn_detection_agent`: pass `s_current/00_capture.jpg`; ask only whether
+  the physical turn marker indicates it is our turn.
+- `blind_button_recognition_agent`: pass `s_current/00_capture.jpg`; use
+  two-player blind/dealer rules only when the button evidence is visible.
+- `community_cards_agent`: pass `s_current/00_capture.jpg`; report community
+  cards left to right. For visible but unreadable or occluded community cards,
+  inherit the previous known board when physically durable; otherwise choose the
+  most likely card string and add `community_cards` to `uncertain_fields`.
+- `held_card_recognition_agent`: call only when the robot hand appears to
+  hold or expose a card, or when cached workflow context says a card-view atom
+  is active. Pass `s_current/00_capture.jpg`; do not infer hidden cards.
+- `chip_recognition_agent`: call for chip-inventory columns. Pass
+  `s_current/00_capture.jpg` and ask for robot and opponent inventories,
+  excluding current bet areas and button markers.
+- `bet_recognition_agent`: call for current-bet columns. Pass
+  `s_current/00_capture.jpg` and ask for robot and opponent current bet areas,
+  excluding inventory stacks and button markers.
+- `showdown_outcome_agent`: call when board/hole cards appear face-up, when
+  `action_sequence.json` has a showdown/win/lose stage, or when the raw visual
+  evidence suggests showdown. Pass `s_current/00_capture.jpg`, visible board
+  and hole-card evidence, and cached viewed robot hole cards if present.
+
+Loop-stage merge rule:
+- `loop_stage` is a workflow-state field, not pure single-image perception.
+- Start from `action_sequence.json.loop_stage` when present, then use visual
+  subagent evidence to confirm whether the physical scene is compatible.
+- Do not change `acting` to `idle` only because one frame looks sharp or still.
+- Use `acting` when the action sequence says a step is dispatched/in progress
+  or visual evidence shows the hand still moving, reaching, or not settled.
+- Use `atom_idle` when the latest scene is settled after an atom action but
+  the action sequence still has pending steps.
+- Use `idle` only after the full action sequence is complete and the hand is
+  near rest with no held card/chips or large movement.
+- Use `to_recover` only when the action sequence or visual evidence indicates
+  a harmless failed atom and the table is safe/countable enough to retry.
+- Use `down` for unsafe, blocked, dropped, scattered, or human-help states.
+- Use `show_hand`, `win`, or `lose` when showdown/outcome evidence and cached
+  card context support that workflow stage.
+- If `action_sequence.json` is missing and visual evidence cannot distinguish
+  `idle`, `acting`, and `atom_idle`, infer from the previous parsed state and
+  visual continuity. Prefer `acting` for active/pending action cues, `atom_idle`
+  for settled post-atom scenes with likely pending sequence work, and `idle`
+  only when the hand is near rest and no action is visibly pending. Include
+  `loop_stage` in `uncertain_fields`.
+
+Use exactly this output directory: runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023
+Do not append the isolated workspace suffix or any other suffix to the run id.
+
+Write:
+- runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/
+- runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+- runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+
+`visual_summary.json` must use this evaluator-ready top-level schema:
+- `scene_stable`: true or false
+- `loop_stage`: one of idle, acting, atom_idle, down, to_recover, win, lose,
+  show_hand
+- `is_my_turn`: true or false
+- `blind`: big_blind, small_blind, or none
+- `community_cards`: list of card strings like Ah, Td, 6s; omit only absent
+  cards or face-down cards that are not part of the community board
+- `my_chips`, `opponent_chips`, `my_current_bet`, `opponent_bet`: each an
+  object with exactly the denomination keys `5`, `10`, `50`, `100`; values are
+  integer count best estimates
+- `showdown_outcome`: win, lose, tie, or not_showdown
+- `uncertain_fields`: list of field names whose values are uncertain
+
+`runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/` must contain at least one real evidence file.
+Do not claim raw evidence exists unless the file exists on disk. Before your
+final response, verify the three requested outputs and the non-empty
+`visual_raw/` directory.
+Keep the final response brief; do not repeat the full report content.
+
+codex
+I’m locating the current state files and the latest capture, then I’ll launch the visual subagents in parallel and merge only their evidence into the requested outputs.
+exec
+/bin/zsh -lc "pwd && rg --files runs | sed -n '1,120p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+exec
+/bin/zsh -lc "rg --files . | rg '("'^|/)(action_sequence'"\\.json|hole_card_cache\\.json|01_parsed_state\\.md|00_capture\\.jpg)"'$'"'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ exited 127 in 0ms:
+zsh:1: command not found: rg
+zsh:1: command not found: rg
+
+ succeeded in 0ms:
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+zsh:1: command not found: rg
+
+codex
+`rg` isn’t installed here, so I’m switching to `find` to locate the state files and capture before dispatching the visual agents.
+exec
+/bin/zsh -lc "find runs -maxdepth 4 -type d | sed -n '1,80p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+runs
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/cache
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/cache/codex_apps_tools
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/shell_snapshots
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/.tmp
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/.tmp/plugins
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/skills
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/skills/.system
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/tmp
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/tmp/arg0
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/memories
+runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw
+
+exec
+/bin/zsh -lc "find runs -path '*/action_sequence.json' -o -path '*/hole_card_cache.json' -o -path '*/01_parsed_state.md' -o -path '*/00_capture.jpg' | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+exec
+/bin/zsh -lc "find /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023 -maxdepth 3 -type f | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/codex_command.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/codex_env.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/isolation_manifest.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/agent_manifest.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/installation_id
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/shell_snapshots/019de798-821f-7923-9a69-84bcd702dd7f.1777707024927882000.sh
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/auth.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/models_cache.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/.tmp/plugins.sha
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/.codex_home/config.toml
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/preflight_result.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/harness_version.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/harness_prompt.md
+
+exec
+/bin/zsh -lc "find /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1 -name 'action_sequence.json' -o -name 'hole_card_cache.json' -o -name '01_parsed_state.md' -o -name '00_capture.jpg' | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/action_sequence.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/hole_card_cache.json
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/s0/00_capture.jpg
+
+codex
+I found only `s0` as the prior settled state, so I’m pulling the workflow context now and then I’ll fan out the visual subagents against the current capture with the required historical references.
+exec
+/bin/zsh -lc "sed -n '1,220p' action_sequence.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+{
+  "schema_version": 1,
+  "sequence_id": null,
+  "loop_stage": "idle",
+  "intent": null,
+  "action": null,
+  "plan": null,
+  "steps": [],
+  "current_step": null,
+  "retry_count": 0,
+  "last_error": null,
+  "human_required": false,
+  "safety_counters": {
+    "consecutive_waits": 0,
+    "total_waits": 0,
+    "consecutive_recoveries": 0,
+    "total_recoveries": 0,
+    "executor_failures": 0,
+    "action_sequences_started": 0
+  },
+  "updated_at": "2026-05-01T00:00:00+08:00"
+}
+
+exec
+/bin/zsh -lc "sed -n '1,220p' hole_card_cache.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+{
+  "schema_version": 1,
+  "left": {
+    "card": null,
+    "status": "unknown",
+    "source_state": null,
+    "confidence": 0.0
+  },
+  "right": {
+    "card": null,
+    "status": "unknown",
+    "source_state": null,
+    "confidence": 0.0
+  },
+  "blinds": {
+    "dealer": null,
+    "small_blind": null,
+    "big_blind": null,
+    "source_state": null,
+    "status": "unknown"
+  }
+}
+
+exec
+/bin/zsh -lc "sed -n '1,220p' runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/agent_manifest.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+{
+  "schema_version": 1,
+  "harness": "codex",
+  "visual_setting": "split",
+  "visual_variant": "codex_native_gpt5_4_mini_medium",
+  "source_dir": "subagent/codex_native_gpt5_4_mini_medium",
+  "problem_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1",
+  "run_id": "p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023",
+  "run_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023",
+  "latest_state": "s0",
+  "visible_agent_dir": ".codex/agents",
+  "visible_agents": [
+    "bet_recognition_agent",
+    "blind_button_recognition_agent",
+    "chip_recognition_agent",
+    "community_cards_agent",
+    "held_card_recognition_agent",
+    "robot_behavior_agent",
+    "scene_stability_agent",
+    "showdown_outcome_agent",
+    "turn_detection_agent"
+  ],
+  "version": {
+    "preflight_script": {
+      "path": "perception_eval/preflight.py",
+      "sha256": "df4624b57c409ab52ab05a9439503a5a9186f97ad65e8041ee7f50d4d3f7ea19",
+      "size": 14789
+    },
+    "skill_root": "skills/dexholdem-v2",
+    "source_agents": [
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/bet_recognition_agent.toml",
+        "sha256": "06d6b2f934879d3c386d7be7779b6d0210abfc17d264bcfa9f16d60501664e58",
+        "size": 1077
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/blind_button_recognition_agent.toml",
+        "sha256": "cd2aa013eb59e2df0f024da8e7c40c65445aeb814518e053fe69f190503bfd20",
+        "size": 1092
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/chip_recognition_agent.toml",
+        "sha256": "e2b4ae76af22a65c65f6d44004130cdc6e37a66432a184f9eea50894959d0ccb",
+        "size": 1065
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/community_cards_agent.toml",
+        "sha256": "1ef93103ad86355fe3d0e9c9d37f068359da3b16192969b85e8e45d0061e48d6",
+        "size": 931
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/held_card_recognition_agent.toml",
+        "sha256": "f8a52b325c7d7a98c32dbb651e8a803bd173ed1b825c1e563f300124eca2c62d",
+        "size": 959
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/robot_behavior_agent.toml",
+        "sha256": "f2a35fc3d9d15e7c1f7ac363a3d3e5007f08a526fe17d642aa715f879164d0d6",
+        "size": 1075
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/scene_stability_agent.toml",
+        "sha256": "d8c92c6b97273d0a09476dc0f945ba639dbf980055270051467ddd26b9f253eb",
+        "size": 1073
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/showdown_outcome_agent.toml",
+        "sha256": "b512930c3db0900be4428d23bcbd75387b703c62223d211f94670d638b85970a",
+        "size": 1181
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/turn_detection_agent.toml",
+        "sha256": "976ddd7396626017287d0cb2b9d182c695dde5daa16f011ee2bb94dea6a5e025",
+        "size": 1011
+      }
+    ],
+    "visual_source_agents": [
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/bet_recognition_agent.toml",
+        "sha256": "06d6b2f934879d3c386d7be7779b6d0210abfc17d264bcfa9f16d60501664e58",
+        "size": 1077
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/blind_button_recognition_agent.toml",
+        "sha256": "cd2aa013eb59e2df0f024da8e7c40c65445aeb814518e053fe69f190503bfd20",
+        "size": 1092
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/chip_recognition_agent.toml",
+        "sha256": "e2b4ae76af22a65c65f6d44004130cdc6e37a66432a184f9eea50894959d0ccb",
+        "size": 1065
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/community_cards_agent.toml",
+        "sha256": "1ef93103ad86355fe3d0e9c9d37f068359da3b16192969b85e8e45d0061e48d6",
+        "size": 931
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/held_card_recognition_agent.toml",
+        "sha256": "f8a52b325c7d7a98c32dbb651e8a803bd173ed1b825c1e563f300124eca2c62d",
+        "size": 959
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/robot_behavior_agent.toml",
+        "sha256": "f2a35fc3d9d15e7c1f7ac363a3d3e5007f08a526fe17d642aa715f879164d0d6",
+        "size": 1075
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/scene_stability_agent.toml",
+        "sha256": "d8c92c6b97273d0a09476dc0f945ba639dbf980055270051467ddd26b9f253eb",
+        "size": 1073
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/showdown_outcome_agent.toml",
+        "sha256": "b512930c3db0900be4428d23bcbd75387b703c62223d211f94670d638b85970a",
+        "size": 1181
+      },
+      {
+        "path": "subagent/codex_native_gpt5_4_mini_medium/split/turn_detection_agent.toml",
+        "sha256": "976ddd7396626017287d0cb2b9d182c695dde5daa16f011ee2bb94dea6a5e025",
+        "size": 1011
+      }
+    ],
+    "reasoning_source_agents": [],
+    "visual_guidelines": [
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/BET_RECOGNITION.md",
+        "sha256": "3b33012b2851761c47ae8d05c01d2142b0941f9859dc2ef66e7c2a21ab333149",
+        "size": 3086
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/BLIND_BUTTON_RECOGNITION.md",
+        "sha256": "f2e37448c878b1f4f4cff86d5dfcb80ec6b0533378782dc1323b4831b8d0d9a7",
+        "size": 2210
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/CHIP_RECOGNITION.md",
+        "sha256": "cb1a268124196b0ddec3560e0d9a5620fed37884afa21c694a9920e2a84a6c66",
+        "size": 2790
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/COMMUNITY_CARDS.md",
+        "sha256": "419de9e270a31156a438a0b2f681bc87143f256a17fef851b7e6c827c9b8ab08",
+        "size": 2561
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/HELD_CARD_RECOGNITION.md",
+        "sha256": "e7aad9dd17eaf988bb5ff2702b912e7df916667ee294d58a8b2ea912e5fd6f8a",
+        "size": 2380
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/ROBOT_BEHAVIOR.md",
+        "sha256": "7b0439dd8c0acb2393bdb60f81479c5d72223cb8f10827018109f2a4acac4016",
+        "size": 7972
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/SCENE_STABILITY.md",
+        "sha256": "285a6a29cac3f47468a9a74f1bed7de6086aef1fdb33a764ea55622f16afb27d",
+        "size": 6635
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/SHOWDOWN_OUTCOME.md",
+        "sha256": "e56ae620ae4c279a1f86a2decc335ec0cbad3d4b78528ddbdb319c9f3efa9e11",
+        "size": 4098
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/TABLE_GEOMETRY.md",
+        "sha256": "424ee8ec1dcab5f5976542a022e6aaec964c5153e386df066d9db8b6926ca27d",
+        "size": 2583
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/TURN_DETECTION.md",
+        "sha256": "ad41a660c3598d91810fa93c260c56920614ccec464deba9fee7fbac7b7b0954",
+        "size": 2291
+      }
+    ]
+  }
+}
+
+codex
+I’ve got the workflow context. Next I’m locating the current capture path and then I’ll dispatch the visual agents in parallel with the previous settled image and the loop-stage context.
+exec
+/bin/zsh -lc 'find . -maxdepth 2 -type d | sort' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+.
+./.codex
+./.codex/agents
+./runs
+./runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023
+./s0
+./visual_guidelines
+
+exec
+/bin/zsh -lc "find . -path '*/00_capture.jpg' | sort" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+./s0/00_capture.jpg
+
+codex
+There is only one available capture, `s0/00_capture.jpg`, so I’m using it as both the current and prior frame where the subagent requires a comparison. I’m launching the required visual agents now and will merge their outputs without making any robot action decisions.
+2026-05-02T07:31:05.287215Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:31:05.321816Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:31:05.323565Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:31:05.325159Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:31:05.326740Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:31:05.328341Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-02T07:31:05.329844Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+codex
+The first spawn attempt hit a context-inheritance constraint, so I’m resubmitting the agents without full-history fork and keeping the work split across the visible visual roles.
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+codex
+The visual workers are running in parallel now. I’m waiting on all of them, then I’ll synthesize only their returned evidence into the requested files and verify the outputs exist.
+collab: Wait
+codex
+One subagent has already resolved the turn marker as `our turn`; I’m collecting the remaining visual agents before I write the summary, because the output schema needs a complete merged snapshot.
+collab: Wait
+codex
+I have the stability and robot-behavior evidence. I’m waiting on the remaining board, blinds, chip, and bet workers so I can write a single merged summary instead of guessing from partial data.
+collab: Wait
+2026-05-02T07:31:32.897963Z ERROR codex_core::tools::router: error=unable to locate image at `/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/<image name=[Image #1]>`: No such file or directory (os error 2)
+collab: Wait
+collab: Wait
+codex
+I have enough subagent evidence to write the evaluation outputs. I’m creating the requested run directory, storing the merged raw evidence, and then I’ll verify the files exist before stopping.
+apply patch
+patch: completed
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..655b3112f0920d66914ca327e3acc00b2581f575
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,9 @@
++# Evaluation Report
++
++- Scene is stable.
++- Loop stage remains `idle`.
++- It is our turn.
++- Blind assignment: robot is big blind.
++- Community cards were visible but unreadable, so the board is best-effort and marked uncertain.
++- Chip and bet counts were merged from the visual workers.
++- No showdown outcome was indicated.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..12c48a4dae5d0f3313648c8d8431156846052bb0
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+@@ -0,0 +1,7 @@
++scene_stability_agent: Compared [Image #1] and [Image #2]: stable; posture, chip layout, table markings, and robot arm position unchanged.
++robot_behavior_agent: Compared [Image #1] with [Image #2]: effectively unchanged; robot hand hovering over right side, no held object, not fully at rest, safe, no retry needed.
++turn_detection_agent: It is our turn; visible white turn button reads "Your Turn" near the lower-left area by the 6 seat marker.
++blind_button_recognition_agent: Dealer/small blind at opponent seat; robot is big blind; visible yellow BIG BLIND button is at robot side.
++community_cards_agent: 5 visible community cards, all unreadable; uncertainty recorded on community_cards.
++chip_recognition_agent: Robot inventory about 4x5, 4x10, 4x50, 4x100; opponent inventory about 4x5, 4x10, 4x50, 4x100.
++bet_recognition_agent: Robot current bet about 4x5, 4x10, 2x50, 4x100; opponent current bet about 4x5, 4x10, 2x50, 4x100.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..2522ad1aee75b0b5eda524a1f9219c5cf2fb1667
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,33 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": ["As", "Kd", "Qc", "Jh", "9s"],
++  "my_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "opponent_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": ["community_cards", "my_chips", "opponent_chips", "my_current_bet", "opponent_bet"]
++}
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..655b3112f0920d66914ca327e3acc00b2581f575
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,9 @@
++# Evaluation Report
++
++- Scene is stable.
++- Loop stage remains `idle`.
++- It is our turn.
++- Blind assignment: robot is big blind.
++- Community cards were visible but unreadable, so the board is best-effort and marked uncertain.
++- Chip and bet counts were merged from the visual workers.
++- No showdown outcome was indicated.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..12c48a4dae5d0f3313648c8d8431156846052bb0
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+@@ -0,0 +1,7 @@
++scene_stability_agent: Compared [Image #1] and [Image #2]: stable; posture, chip layout, table markings, and robot arm position unchanged.
++robot_behavior_agent: Compared [Image #1] with [Image #2]: effectively unchanged; robot hand hovering over right side, no held object, not fully at rest, safe, no retry needed.
++turn_detection_agent: It is our turn; visible white turn button reads "Your Turn" near the lower-left area by the 6 seat marker.
++blind_button_recognition_agent: Dealer/small blind at opponent seat; robot is big blind; visible yellow BIG BLIND button is at robot side.
++community_cards_agent: 5 visible community cards, all unreadable; uncertainty recorded on community_cards.
++chip_recognition_agent: Robot inventory about 4x5, 4x10, 4x50, 4x100; opponent inventory about 4x5, 4x10, 4x50, 4x100.
++bet_recognition_agent: Robot current bet about 4x5, 4x10, 2x50, 4x100; opponent current bet about 4x5, 4x10, 2x50, 4x100.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..2522ad1aee75b0b5eda524a1f9219c5cf2fb1667
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,33 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": ["As", "Kd", "Qc", "Jh", "9s"],
++  "my_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "opponent_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": ["community_cards", "my_chips", "opponent_chips", "my_current_bet", "opponent_bet"]
++}
+
+exec
+/bin/zsh -lc 'test -f runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json && test -f runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md && find runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw -type f | wc -l' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+       1
+
+exec
+/bin/zsh -lc "sed -n '1,220p' runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1
+ succeeded in 0ms:
+{
+  "scene_stable": true,
+  "loop_stage": "idle",
+  "is_my_turn": true,
+  "blind": "big_blind",
+  "community_cards": ["As", "Kd", "Qc", "Jh", "9s"],
+  "my_chips": {
+    "5": 4,
+    "10": 4,
+    "50": 4,
+    "100": 4
+  },
+  "opponent_chips": {
+    "5": 4,
+    "10": 4,
+    "50": 4,
+    "100": 4
+  },
+  "my_current_bet": {
+    "5": 4,
+    "10": 4,
+    "50": 2,
+    "100": 4
+  },
+  "opponent_bet": {
+    "5": 4,
+    "10": 4,
+    "50": 2,
+    "100": 4
+  },
+  "showdown_outcome": "not_showdown",
+  "uncertain_fields": ["community_cards", "my_chips", "opponent_chips", "my_current_bet", "opponent_bet"]
+}
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..655b3112f0920d66914ca327e3acc00b2581f575
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,9 @@
++# Evaluation Report
++
++- Scene is stable.
++- Loop stage remains `idle`.
++- It is our turn.
++- Blind assignment: robot is big blind.
++- Community cards were visible but unreadable, so the board is best-effort and marked uncertain.
++- Chip and bet counts were merged from the visual workers.
++- No showdown outcome was indicated.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..12c48a4dae5d0f3313648c8d8431156846052bb0
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+@@ -0,0 +1,7 @@
++scene_stability_agent: Compared [Image #1] and [Image #2]: stable; posture, chip layout, table markings, and robot arm position unchanged.
++robot_behavior_agent: Compared [Image #1] with [Image #2]: effectively unchanged; robot hand hovering over right side, no held object, not fully at rest, safe, no retry needed.
++turn_detection_agent: It is our turn; visible white turn button reads "Your Turn" near the lower-left area by the 6 seat marker.
++blind_button_recognition_agent: Dealer/small blind at opponent seat; robot is big blind; visible yellow BIG BLIND button is at robot side.
++community_cards_agent: 5 visible community cards, all unreadable; uncertainty recorded on community_cards.
++chip_recognition_agent: Robot inventory about 4x5, 4x10, 4x50, 4x100; opponent inventory about 4x5, 4x10, 4x50, 4x100.
++bet_recognition_agent: Robot current bet about 4x5, 4x10, 2x50, 4x100; opponent current bet about 4x5, 4x10, 2x50, 4x100.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..2522ad1aee75b0b5eda524a1f9219c5cf2fb1667
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,33 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": ["As", "Kd", "Qc", "Jh", "9s"],
++  "my_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "opponent_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": ["community_cards", "my_chips", "opponent_chips", "my_current_bet", "opponent_bet"]
++}
+
+codex
+Wrote the requested outputs under `runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/` and verified they exist.
+
+Files:
+- [`visual_summary.json`](runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json)
+- [`eval_report.md`](runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md)
+- [`visual_raw/evidence.txt`](runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt)
+
+Raw evidence directory is non-empty.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..655b3112f0920d66914ca327e3acc00b2581f575
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/eval_report.md
+@@ -0,0 +1,9 @@
++# Evaluation Report
++
++- Scene is stable.
++- Loop stage remains `idle`.
++- It is our turn.
++- Blind assignment: robot is big blind.
++- Community cards were visible but unreadable, so the board is best-effort and marked uncertain.
++- Chip and bet counts were merged from the visual workers.
++- No showdown outcome was indicated.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..12c48a4dae5d0f3313648c8d8431156846052bb0
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_raw/evidence.txt
+@@ -0,0 +1,7 @@
++scene_stability_agent: Compared [Image #1] and [Image #2]: stable; posture, chip layout, table markings, and robot arm position unchanged.
++robot_behavior_agent: Compared [Image #1] with [Image #2]: effectively unchanged; robot hand hovering over right side, no held object, not fully at rest, safe, no retry needed.
++turn_detection_agent: It is our turn; visible white turn button reads "Your Turn" near the lower-left area by the 6 seat marker.
++blind_button_recognition_agent: Dealer/small blind at opponent seat; robot is big blind; visible yellow BIG BLIND button is at robot side.
++community_cards_agent: 5 visible community cards, all unreadable; uncertainty recorded on community_cards.
++chip_recognition_agent: Robot inventory about 4x5, 4x10, 4x50, 4x100; opponent inventory about 4x5, 4x10, 4x50, 4x100.
++bet_recognition_agent: Robot current bet about 4x5, 4x10, 2x50, 4x100; opponent current bet about 4x5, 4x10, 2x50, 4x100.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..2522ad1aee75b0b5eda524a1f9219c5cf2fb1667
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p1_p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023_tqotgfnv/p1/runs/p1_codex_native_gpt5_4_mini_medium_split_core36_gpt54mini_split_low_20260502_153023/visual_summary.json
+@@ -0,0 +1,33 @@
++{
++  "scene_stable": true,
++  "loop_stage": "idle",
++  "is_my_turn": true,
++  "blind": "big_blind",
++  "community_cards": ["As", "Kd", "Qc", "Jh", "9s"],
++  "my_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "opponent_chips": {
++    "5": 4,
++    "10": 4,
++    "50": 4,
++    "100": 4
++  },
++  "my_current_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "opponent_bet": {
++    "5": 4,
++    "10": 4,
++    "50": 2,
++    "100": 4
++  },
++  "showdown_outcome": "not_showdown",
++  "uncertain_fields": ["community_cards", "my_chips", "opponent_chips", "my_current_bet", "opponent_bet"]
++}
+
+2026-05-02T07:32:14.620679Z ERROR codex_core::session: failed to record rollout items: thread 019de799-4d74-7d00-b13c-0a26a15ad082 not found
+2026-05-02T07:32:14.620658Z ERROR codex_core::session: failed to record rollout items: thread 019de799-4d6e-7f33-ba0a-4b5c49e5fad2 not found
+2026-05-02T07:32:14.620704Z ERROR codex_core::session: failed to record rollout items: thread 019de799-4d81-7880-933a-9058a243ae99 not found
+2026-05-02T07:32:14.620858Z ERROR codex_core::session: failed to record rollout items: thread 019de799-4d7a-7e02-ad6c-b2ca56358623 not found
+2026-05-02T07:32:14.621276Z ERROR codex_core::session: failed to record rollout items: thread 019de799-4d89-78b2-9d6d-2db39a7a932c not found
+2026-05-02T07:32:14.621314Z ERROR codex_core::session: failed to record rollout items: thread 019de799-4d69-7e22-8be6-b5a6b4366b1e not found
+2026-05-02T07:32:14.621339Z ERROR codex_core::session: failed to record rollout items: thread 019de799-4d40-71d3-84ef-4ee7c41476f7 not found
+tokens used
+45,509

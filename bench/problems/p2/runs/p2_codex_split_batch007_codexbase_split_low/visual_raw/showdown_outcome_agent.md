@@ -1,0 +1,3 @@
+- Verdict: Not showdown / outcome not decidable
+- Confidence: High
+- Visual cues: Five community-card backs are still face down in the center; no exposed board cards, no readable hole cards, and no visible winner indicator or pot-award cue.

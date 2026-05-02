@@ -1,0 +1,1 @@
+{"agent_id":"019de5d0-afa0-74e2-a4be-5164b466ffb8","status":"completed","evidence":"Stable. Single capture shows a static poker table scene: cards and chips are settled, the person is motionless with arms crossed, and the robot arm is fixed in place; no visible blur or ongoing interaction."}

@@ -1,0 +1,3 @@
+Robot/player inventory, using the bottom/robot-side inventory zones near the lower rail and robot hole cards: 1 red 5-chip, 3 blue 10-chips, about 3 green 50-chips, and 4 brown 100-chips. I excluded the 3 red chips in the lower betting lane as bet chips. The green count is slightly uncertain because the right-side inventory cluster is crowded.
+
+Opponent inventory, using the top/opponent-side inventory zones near the top rail and opponent hole cards: about 5 red 5-chips, 5 blue 10-chips, 2 green 50-chips, and 2 brown 100-chips. I excluded chips that appear to be in the upper betting lane near the board. The top-right opponent inventory cluster is partly occluded by the robot hand, so those counts are slightly uncertain.

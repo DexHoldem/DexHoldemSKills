@@ -1,0 +1,1 @@
+Stable. Compared the current capture only; cards, chips, button markers, player, and robot arm all appear sharp and settled with no visible motion blur or mid-action displacement. Uncertainty: no previous or pre-action image was supplied for direct change comparison.

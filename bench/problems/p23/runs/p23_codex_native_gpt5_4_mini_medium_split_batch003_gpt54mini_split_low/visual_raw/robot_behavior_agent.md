@@ -1,0 +1,5 @@
+- Hand is extended over the table, not near rest pose.
+- Fingers are partially open and appear to be contacting or hovering just above a chip stack near the center-left of the hand.
+- No card is visibly held; no clear chip lift is visible yet.
+- Current action looks still in progress and appears physically safe in this frame.
+- Minor occlusion from the robot forearm blocks part of the hand; no human-help concern is evident.

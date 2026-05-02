@@ -1,0 +1,1 @@
+it is our turn. The small white physical turn button labeled "Your Turn" is clearly visible in front of our seat at the lower-left side of the table, near the seat 6 marking. It is not meaningfully occluded.

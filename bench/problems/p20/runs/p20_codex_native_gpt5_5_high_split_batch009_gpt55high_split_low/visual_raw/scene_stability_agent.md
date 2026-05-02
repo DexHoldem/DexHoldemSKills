@@ -1,0 +1,1 @@
+Unstable. Compared only Image #1; no previous or pre-action settled image was supplied. The robot hand is still extended over the table and occluding the lower-right player area/cards, so the scene does not look settled enough for reliable perception. Uncertainty: single frame shows no motion blur, but cannot confirm the robot atom has finished.

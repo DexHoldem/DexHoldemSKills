@@ -1,0 +1,2 @@
+- Opponent/top bet: red 3, blue 2, green 1, brown 2; one pale white disc/chip at far left is not countable.
+- Player/bottom bet: red 4, blue 4, green 1, brown 2; right-side chip edges are partly occluded.

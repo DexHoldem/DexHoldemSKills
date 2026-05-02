@@ -1,0 +1,3 @@
+The dexterous robot hand enters from the right and is extended over the upper-right/opponent-side table area, near chips and betting zones. It does not appear to be holding a card or chips, and it is not visibly pressing on or dragging any object.
+
+The hand is not near its idle/rest pose. The action appears still in progress or not yet settled, but there is no visible dropped card, scattered chip layout, or unsafe contact. The robot/camera body occludes part of the right side of the table, and the human’s hands also occlude the upper/opponent-side area, so the exact state of some chips/cards there is partially ambiguous. Wait for another settled capture before judging success, failure, or recovery.

@@ -1,0 +1,1 @@
+The opponent seat has the white circular `DEALER` button, and the blue circular `SMALL BLIND` button is also on the opponent side. The robot seat has the yellow circular `BIG BLIND` button. So dealer is the opponent, small blind is the opponent, and big blind is the robot. No visible conflict; the buttons are consistent and clearly placed.

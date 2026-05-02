@@ -1,0 +1,1 @@
+{"agent_id":"019de5d0-afa8-7ce3-aa5c-39bafa61cb59","status":"completed","evidence":"4 community cards visible.\n\nLeft to right:\n1. Unreadable face-down card\n2. 3s\n3. 3c\n4. 5h\n5. Tc\n\nUncertain:\n- Position 1 is face-down/unreadable."}

@@ -1,0 +1,3 @@
+Stable. The robot hand has moved between s19 and s20 and is now extended over the near-center betting area, close to or lightly touching the chip stack. It does not appear to be holding a card or chips in the gripper.
+
+The hand is not near rest pose. It appears to be still acting or paused mid-action rather than idle, with the fingers positioned around/near chips. No obvious collision or dangerous contact is visible, but the hand is close to chips and the table surface, so the action should be considered in progress. No human-help concern is apparent; the human is seated back with arms folded and not interfering.

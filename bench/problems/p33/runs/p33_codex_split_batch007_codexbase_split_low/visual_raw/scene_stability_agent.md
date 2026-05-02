@@ -1,0 +1,1 @@
+Stable. Compared only the latest capture here; no prior frame was available in the workspace. The table layout, chips, cards, and camera/robot arm all appear fixed with no visible motion blur or position change, so the scene looks settled enough for the main agent to continue.

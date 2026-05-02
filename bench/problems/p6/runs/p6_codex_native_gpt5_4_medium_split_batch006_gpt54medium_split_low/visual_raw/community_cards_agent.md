@@ -1,0 +1,1 @@
+Using the community-card row zone in the center of the table: no face-up community cards are visible. There appear to be five board positions present left-to-right, but all five cards are face-down, so positions 1 through 5 are unreadable/hidden.

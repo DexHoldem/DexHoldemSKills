@@ -1,0 +1,3 @@
+- Card: Unreadable
+- Evidence: The robot hand is visible, but no robot-held card face/corner with rank or suit is clearly exposed. Visible readable cards appear to be on the table, not held by the robot.
+- Confidence: High that no held card value is readable; low for any specific card.

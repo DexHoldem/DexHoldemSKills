@@ -1,0 +1,1 @@
+Evidence note: dealer button is the white chip marked `DEALER` in the upper-center cluster; small blind is the blue chip immediately above it in that same cluster; big blind is the yellow chip clearly marked `BIG BLIND` in the lower-center/right area. Seat/owner is unclear for all three due occlusion.

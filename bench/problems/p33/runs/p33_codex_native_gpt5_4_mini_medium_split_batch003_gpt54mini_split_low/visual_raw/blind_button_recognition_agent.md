@@ -1,0 +1,4 @@
+- Dealer button: `opponent` seat, visible as the white chip labeled `DEALER` near the upper-middle of the table.
+- Small blind: `opponent` seat, because this is heads-up and the dealer is also the small blind.
+- Big blind: `robot` seat, visible as the yellow chip labeled `BIG BLIND` near the lower-middle/right side of the table.
+- Uncertainty: there is no separate visible small-blind button; the dealer marker is the only clear button for that role.

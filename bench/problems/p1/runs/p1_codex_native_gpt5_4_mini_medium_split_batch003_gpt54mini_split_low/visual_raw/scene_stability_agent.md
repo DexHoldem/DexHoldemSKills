@@ -1,0 +1,1 @@
+Stable. Compared the current capture only: the table layout, chips, cards, and the person’s pose all look fixed, with no visible motion blur or active movement. The robot arm is present but appears in a steady position, so the scene looks stable enough to continue.

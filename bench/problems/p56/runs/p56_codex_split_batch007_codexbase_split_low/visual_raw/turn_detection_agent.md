@@ -1,0 +1,1 @@
+It is our turn. The small white turn button/dealer disc is visible near the bottom-center of the table, on our side next to our facedown cards. There is some uncertainty because the robot arm and chips partially crowd that area, but the button is still identifiable.

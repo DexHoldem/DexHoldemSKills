@@ -1,0 +1,2406 @@
+Reading additional input from stdin...
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+model: gpt-5.4-mini
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/memories]
+reasoning effort: low
+reasoning summaries: none
+session id: 019de5c8-4e03-7db0-952e-9a87809a04d2
+--------
+user
+Run the current DexHoldem perception step.
+
+Use the local setup, visible visual subagents, and visible reasoning subagent.
+Do not execute robot actions.
+Do not perform image perception in the main agent; merge subagent evidence only.
+If the router asks for Texas Hold'em action reasoning, delegate that reasoning
+to the reasoning subagent and validate its recommendation before committing an
+action.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
+
+Use exactly this output directory: runs/p23_codex_split_batch007_codexbase_split_low
+Do not append the isolated workspace suffix or any other suffix to the run id.
+
+Write:
+- runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/
+- runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+- runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+
+codex
+I’m going to inspect the local DexHoldem run layout and then launch the visual and reasoning subagents needed for this perception step. I’ll keep the main agent out of image interpretation and only merge the subagent outputs into the required run directory.
+exec
+/bin/zsh -lc "pwd && rg --files . | rg '("'^|/)(README|run|eval|perception|DexHoldem|visual|summary|report|router|agent).*(md|py|json)?$'"'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ exited 127 in 0ms:
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+zsh:1: command not found: rg
+zsh:1: command not found: rg
+
+exec
+/bin/zsh -lc "find . -maxdepth 3 -type d | sed 's#"'^./##'"' | sort | head -200" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+.
+.codex
+.codex/agents
+runs
+runs/p23_codex_split_batch007_codexbase_split_low
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw
+s0
+s1
+s10
+s11
+s12
+s13
+s14
+s15
+s16
+s17
+s18
+s19
+s2
+s20
+s21
+s22
+s3
+s4
+s5
+s6
+s7
+s8
+s9
+visual_guidelines
+
+codex
+I found the target run directory already present, so I’m checking the local harness files and the existing run artifacts before I dispatch the perception agents. The shell in this workspace does not have `rg`, so I’m using `find` and `sed` instead.
+exec
+/bin/zsh -lc 'find runs/p23_codex_split_batch007_codexbase_split_low -maxdepth 3 -type f | sort' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/.tmp/plugins.sha
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/auth.json
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/config.toml
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/installation_id
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/models_cache.json
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/shell_snapshots/019de5c8-4e03-7db0-952e-9a87809a04d2.1777676602884243000.sh
+runs/p23_codex_split_batch007_codexbase_split_low/agent_manifest.json
+runs/p23_codex_split_batch007_codexbase_split_low/codex_command.json
+runs/p23_codex_split_batch007_codexbase_split_low/codex_env.json
+runs/p23_codex_split_batch007_codexbase_split_low/harness_prompt.md
+runs/p23_codex_split_batch007_codexbase_split_low/harness_version.json
+runs/p23_codex_split_batch007_codexbase_split_low/isolation_manifest.json
+runs/p23_codex_split_batch007_codexbase_split_low/preflight_result.json
+
+exec
+/bin/zsh -lc "find .codex -maxdepth 3 -type f | sort | xargs -I{} sh -c 'echo \"--- {}\"; sed -n \"1,220p\" \"{}\"'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+--- .codex/agents/bet_recognition_agent.toml
+name = "bet_recognition_agent"
+description = "Read-only DexHoldem visual agent for counting current bet chips in both betting areas."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are bet_recognition_agent, a read-only DexHoldem visual evidence subagent.
+
+Use BET_RECOGNITION.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/BET_RECOGNITION.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Count only current bet chips in the two betting areas near the community cards.
+Keep robot/player current bet separate from opponent current bet. Do not merge
+them into a generic pot.
+
+Use denominations: red=5, blue=10, green=50, brown=100.
+
+Include robot/player current bet counts by denomination, opponent current bet
+counts by denomination, and which side or denomination counts are uncertain or
+not countable.
+
+Do not count inventory chips, report to_call, model a generic pot, edit files,
+write state, update caches, run commands, execute robot actions, or choose
+poker strategy.
+"""
+--- .codex/agents/blind_button_recognition_agent.toml
+name = "blind_button_recognition_agent"
+description = "Read-only DexHoldem visual agent for dealer, small blind, and big blind button assignment."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are blind_button_recognition_agent, a read-only DexHoldem visual evidence
+subagent.
+
+Use BLIND_BUTTON_RECOGNITION.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/BLIND_BUTTON_RECOGNITION.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Identify dealer, small blind, and big blind seats from physical buttons in the
+first state or refreshed hand. In two-player play, the dealer is also the small
+blind and the other player is the big blind.
+
+Use only robot, opponent, or unclear as seat names. Include which seat has the
+dealer button, which seat is small blind, which seat is big blind, and any
+uncertainty or visible button conflict.
+
+Do not emit state.py commands, edit files, write state, update caches, run
+commands, execute robot actions, use poker position names, or choose poker
+strategy.
+"""
+--- .codex/agents/chip_recognition_agent.toml
+name = "chip_recognition_agent"
+description = "Read-only DexHoldem visual agent for counting remaining inventory chips."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are chip_recognition_agent, a read-only DexHoldem visual evidence subagent.
+
+Use CHIP_RECOGNITION.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/CHIP_RECOGNITION.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Count only remaining inventory chips for robot/player and opponent. Do not
+count current bets. Chips are flat/unfolded, not stacked; count visible chip
+faces one by one.
+
+Use denominations: red=5, blue=10, green=50, brown=100.
+
+Include robot/player inventory counts by denomination, opponent inventory
+counts by denomination, and which chip groups or denomination counts are
+uncertain or not countable.
+
+Do not include bet chips, pot chips, buttons, cards, generic player arrays,
+edit files, write state, update caches, run commands, execute robot actions, or
+choose poker strategy.
+"""
+--- .codex/agents/community_cards_agent.toml
+name = "community_cards_agent"
+description = "Read-only DexHoldem visual agent for reading shared community cards."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are community_cards_agent, a read-only DexHoldem visual evidence subagent.
+
+Use COMMUNITY_CARDS.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/COMMUNITY_CARDS.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Read only face-up shared board cards in the community-card row. Use rank+suit
+notation when readable, such as Ah, Td, or 7c.
+
+Include how many community cards are visible, the left-to-right card read for
+each visible position, and which positions are unreadable or uncertain.
+
+Do not include hole cards, output a street field, invent hidden card values,
+edit files, write state, update caches, run commands, execute robot actions, or
+choose poker strategy.
+"""
+--- .codex/agents/held_card_recognition_agent.toml
+name = "held_card_recognition_agent"
+description = "Read-only DexHoldem visual agent for reading a robot-held hole card."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are held_card_recognition_agent, a read-only DexHoldem visual evidence
+subagent.
+
+Use HELD_CARD_RECOGNITION.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/HELD_CARD_RECOGNITION.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Read only a hole card visibly held by the robot hand. Use rank+suit notation
+when readable, such as Ah, Td, or 7c.
+
+Report whether the robot hand is holding a card, the card value if readable,
+which part is uncertain if not fully readable, and whether the card should be
+treated as unreadable.
+
+Do not guess face-down table cards, infer the other hole card, edit files,
+write state, update caches, run commands, execute robot actions, or choose poker
+strategy.
+"""
+--- .codex/agents/reasoning_agent.toml
+name = "reasoning_agent"
+description = "Read-only DexHoldem Texas Hold'em reasoning agent for choosing a supported poker action."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are reasoning_agent, a read-only DexHoldem Texas Hold'em strategy subagent.
+
+Use only the parsed table state block, hole-card cache, blind/dealer
+assignment, action history, supported action space, blind amounts, and
+constraints provided in the prompt. Do not inspect images, parse visual
+evidence, edit files, run commands, execute robot actions, update caches, or
+open any other state file or folder for extra context.
+
+Treat these as the only allowed inputs unless the main agent explicitly copies
+additional text into the prompt:
+- `table.scene_stable`
+- `table.is_my_turn`
+- `table.community_cards`
+- `table.my_chips`
+- `table.opponent_chips`
+- `table.my_current_bet`
+- `table.opponent_bet`
+- cached hole cards and blinds
+- supported action schema
+- action history
+
+Your job is to infer the current poker situation and recommend exactly one
+supported poker action for the main agent to validate and execute.
+
+Inputs normally include:
+- parsed table fields: scene_stable, is_my_turn, community_cards, my_chips,
+  opponent_chips, my_current_bet, and opponent_bet
+- cached robot hole cards
+- blind/dealer assignment
+- blind amounts: small blind = 5, big blind = 10
+- supported action JSON schema and physical chip constraints
+- action history when available
+
+Reason from the actual chip counts:
+- my committed bet is the sum of my_current_bet
+- opponent committed bet is the sum of opponent_bet
+- call amount is opponent committed bet minus my committed bet
+- a raise amount is the target total bet after the raise
+- never recommend betting chips that are not available in my_chips
+
+Return concise plain language with:
+1. current situation summary
+2. key hand/action rationale
+3. exactly one recommended supported action JSON
+4. any validation caveats the main agent should check
+
+Do not invent unsupported actions, do not guess unknown cards, and preserve
+uncertainty when the parsed state is incomplete.
+"""
+--- .codex/agents/robot_behavior_agent.toml
+name = "robot_behavior_agent"
+description = "Read-only DexHoldem visual agent for robot hand pose, action progress, safety, and recovery evidence."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are robot_behavior_agent, a read-only DexHoldem visual evidence subagent.
+
+Use ROBOT_BEHAVIOR.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/ROBOT_BEHAVIOR.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Inspect the robot hand and physical table state. Report where the hand is, what
+it appears to be doing, whether it holds a card or chips, whether it is near
+rest pose, whether the current action appears safe/still in progress/failed,
+whether a failure looks retryable, and any occlusion or human-help concern.
+
+When the hand is still moving or the atom is still running, say that directly.
+Do not also speculate that the atom failed or that recovery is needed.
+
+Do not edit files, write state, update caches, run commands, execute robot
+actions, or choose poker strategy.
+"""
+--- .codex/agents/scene_stability_agent.toml
+name = "scene_stability_agent"
+description = "Read-only DexHoldem visual agent for judging whether the scene is stable enough to continue."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are scene_stability_agent, a read-only DexHoldem visual evidence subagent.
+
+Use SCENE_STABILITY.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/SCENE_STABILITY.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Compare the current capture with the previous capture and any supplied
+pre-action settled image. Decide whether the latest scene is stable enough for
+the main agent to continue.
+
+Your answer must start with Stable or Unstable. Include which images were
+compared, the concrete visual reason, and any uncertainty that matters.
+
+If a robot atom is still running, say the scene is Unstable/still in progress.
+Do not declare recovery or failure from an unstable frame.
+
+Do not edit files, write state, update caches, run commands, execute robot
+actions, or choose poker strategy.
+"""
+--- .codex/agents/showdown_outcome_agent.toml
+name = "showdown_outcome_agent"
+description = "Read-only DexHoldem visual agent for showdown state and win/lose evidence."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are showdown_outcome_agent, a read-only DexHoldem visual evidence subagent.
+
+Use SHOWDOWN_OUTCOME.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/SHOWDOWN_OUTCOME.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Judge showdown visibility, revealed hole cards, folds, and whether win or lose
+is clear. Use supplied community-card reads and robot-hole-card cache summaries
+when they are provided.
+
+Include whether opponent hole cards are face-up, readable opponent card values,
+whether robot hole cards are face-up or must come from cache, the best hand
+comparison when enough information is available, the recommended loop-stage
+label if clear, and any missing card, unreadable card, possible tie, fold
+ambiguity, or other reason not to decide.
+
+Do not force unclear win/lose results, collect chips, edit files, write state,
+update caches, run commands, execute robot actions, or choose future poker
+strategy.
+"""
+--- .codex/agents/turn_detection_agent.toml
+name = "turn_detection_agent"
+description = "Read-only DexHoldem visual agent for determining whether it is the robot/player turn."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+You are turn_detection_agent, a read-only DexHoldem visual evidence subagent.
+
+Use TURN_DETECTION.md and TABLE_GEOMETRY.md when provided:
+- visual_guidelines/TURN_DETECTION.md
+- visual_guidelines/TABLE_GEOMETRY.md
+
+Judge turn ownership only from the small white physical turn button. Do not
+infer turn from dealer order, betting order, opponent posture, chip positions,
+or available poker actions.
+
+Return one of these plain-language judgments: it is our turn; it is not our
+turn; or the turn button is not safely identifiable. Include where the white
+turn button appears and any occlusion or uncertainty.
+
+Do not edit files, write state, update caches, run commands, execute robot
+actions, report poker actions, or choose poker strategy.
+"""
+
+codex
+I’ve confirmed the run directory and the available subagents. Next I’m reading the harness prompt and manifest so I can launch the correct visual specialists in parallel and merge their outputs into the exact target directory.
+exec
+/bin/zsh -lc "sed -n '1,240p' runs/p23_codex_split_batch007_codexbase_split_low/harness_prompt.md" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+# Split Visual-Agent Setup
+
+Use the visible split visual agents for image perception.
+Use the visible reasoning agent for Texas Hold'em poker-action reasoning when
+the router asks for `choose_poker_action`.
+
+The main agent must not inspect images or independently decide visual fields.
+Delegate each image-reading question to the appropriate scoped visual agent and
+merge only returned evidence.
+Run independent visual subagents in parallel whenever possible. If the runtime
+agent limit prevents full parallelism, run them in waves; do not serialize them
+unless a dependency or limit requires it.
+
+Write one raw evidence file per called subagent under
+`runs/<run_id>/visual_raw/<agent_name>.md`.
+
+Then write `runs/<run_id>/visual_summary.json` and
+`runs/<run_id>/eval_report.md`. Do not execute robot actions.
+
+exec
+/bin/zsh -lc "sed -n '1,240p' runs/p23_codex_split_batch007_codexbase_split_low/agent_manifest.json && printf '\\n---\\n' && sed -n '1,240p' runs/p23_codex_split_batch007_codexbase_split_low/preflight_result.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+{
+  "schema_version": 1,
+  "harness": "codex",
+  "visual_setting": "split",
+  "visual_variant": "codex",
+  "source_dir": "subagent/codex",
+  "problem_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23",
+  "run_id": "p23_codex_split_batch007_codexbase_split_low",
+  "run_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low",
+  "latest_state": "s22",
+  "visible_agent_dir": ".codex/agents",
+  "visible_agents": [
+    "bet_recognition_agent",
+    "blind_button_recognition_agent",
+    "chip_recognition_agent",
+    "community_cards_agent",
+    "held_card_recognition_agent",
+    "robot_behavior_agent",
+    "scene_stability_agent",
+    "showdown_outcome_agent",
+    "turn_detection_agent",
+    "reasoning_agent"
+  ],
+  "version": {
+    "preflight_script": {
+      "path": "perception_eval/preflight.py",
+      "sha256": "98832c38e0e7c7a849a6f54a5d395eba5e6d1044dc8abcd18523bad451d2fc67",
+      "size": 15892
+    },
+    "skill_root": "skills/dexholdem-v2",
+    "source_agents": [
+      {
+        "path": "subagent/codex/split/bet_recognition_agent.toml",
+        "sha256": "ea3e7f58f5fbf6e15e422ceb2dcbe9e98703dce44409e7ea1d3c437c1e74ed03",
+        "size": 998
+      },
+      {
+        "path": "subagent/codex/split/blind_button_recognition_agent.toml",
+        "sha256": "ad4e93be68d565cb2b733db4d993db4071ba6922779e0f3e111c4954baa876c9",
+        "size": 1013
+      },
+      {
+        "path": "subagent/codex/split/chip_recognition_agent.toml",
+        "sha256": "4102869ac953b64ce1ebe1c9d568d724c549b69b72d4eac6950296c5986d9564",
+        "size": 986
+      },
+      {
+        "path": "subagent/codex/split/community_cards_agent.toml",
+        "sha256": "63c61dbd15a4175054935b318dc2445c28a782f653157b7b9915751927f9a266",
+        "size": 852
+      },
+      {
+        "path": "subagent/codex/split/held_card_recognition_agent.toml",
+        "sha256": "a0dd4692bdc908a144585dda7380eab9f188b4bdff68b8ad2672550a437e124a",
+        "size": 880
+      },
+      {
+        "path": "subagent/codex/split/robot_behavior_agent.toml",
+        "sha256": "bc0c2dd3d9649eb6dc0d566e4e9fa7bebf36713098d9aeea3e10e4aa628ba4d3",
+        "size": 996
+      },
+      {
+        "path": "subagent/codex/split/scene_stability_agent.toml",
+        "sha256": "81a214876113df43951d51fb3c5c785c0f005bdf77b22e5f8b40c8eca87bf30e",
+        "size": 994
+      },
+      {
+        "path": "subagent/codex/split/showdown_outcome_agent.toml",
+        "sha256": "f2be4c7778eedd53889d86c626d696dcbb26d0ec2ddf9b1c9f4dd2255907e5de",
+        "size": 1102
+      },
+      {
+        "path": "subagent/codex/split/turn_detection_agent.toml",
+        "sha256": "5786e2465fc3362e89bb231a202f2daf1647efe20ea01b7d7f59b841f61aa44e",
+        "size": 932
+      },
+      {
+        "path": "subagent/codex/reasoning_agent.toml",
+        "sha256": "da779078a125f945ab46a77499f2f47d94e51c80b671334aa9e293e9096b5199",
+        "size": 2103
+      }
+    ],
+    "visual_source_agents": [
+      {
+        "path": "subagent/codex/split/bet_recognition_agent.toml",
+        "sha256": "ea3e7f58f5fbf6e15e422ceb2dcbe9e98703dce44409e7ea1d3c437c1e74ed03",
+        "size": 998
+      },
+      {
+        "path": "subagent/codex/split/blind_button_recognition_agent.toml",
+        "sha256": "ad4e93be68d565cb2b733db4d993db4071ba6922779e0f3e111c4954baa876c9",
+        "size": 1013
+      },
+      {
+        "path": "subagent/codex/split/chip_recognition_agent.toml",
+        "sha256": "4102869ac953b64ce1ebe1c9d568d724c549b69b72d4eac6950296c5986d9564",
+        "size": 986
+      },
+      {
+        "path": "subagent/codex/split/community_cards_agent.toml",
+        "sha256": "63c61dbd15a4175054935b318dc2445c28a782f653157b7b9915751927f9a266",
+        "size": 852
+      },
+      {
+        "path": "subagent/codex/split/held_card_recognition_agent.toml",
+        "sha256": "a0dd4692bdc908a144585dda7380eab9f188b4bdff68b8ad2672550a437e124a",
+        "size": 880
+      },
+      {
+        "path": "subagent/codex/split/robot_behavior_agent.toml",
+        "sha256": "bc0c2dd3d9649eb6dc0d566e4e9fa7bebf36713098d9aeea3e10e4aa628ba4d3",
+        "size": 996
+      },
+      {
+        "path": "subagent/codex/split/scene_stability_agent.toml",
+        "sha256": "81a214876113df43951d51fb3c5c785c0f005bdf77b22e5f8b40c8eca87bf30e",
+        "size": 994
+      },
+      {
+        "path": "subagent/codex/split/showdown_outcome_agent.toml",
+        "sha256": "f2be4c7778eedd53889d86c626d696dcbb26d0ec2ddf9b1c9f4dd2255907e5de",
+        "size": 1102
+      },
+      {
+        "path": "subagent/codex/split/turn_detection_agent.toml",
+        "sha256": "5786e2465fc3362e89bb231a202f2daf1647efe20ea01b7d7f59b841f61aa44e",
+        "size": 932
+      }
+    ],
+    "reasoning_source_agents": [
+      {
+        "path": "subagent/codex/reasoning_agent.toml",
+        "sha256": "da779078a125f945ab46a77499f2f47d94e51c80b671334aa9e293e9096b5199",
+        "size": 2103
+      }
+    ],
+    "runtime_scripts": [
+      {
+        "path": "skills/dexholdem-v2/scripts/action_translator.py",
+        "sha256": "0294514261dd22fe6e50ea3071e8a3baedc9702c3c521a21bc52546b4b5d55af",
+        "size": 15851
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/capture.py",
+        "sha256": "e40854323be40fab287edaeab399e3a8e358769534d1899733e59c14be45c36f",
+        "size": 10348
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/executor.py",
+        "sha256": "958c1373a77856cd7d56df391bcf876cd076383dbfed9d811b5ee3309c3a20cd",
+        "size": 18235
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/preflight.py",
+        "sha256": "8d21c6a46df717c54cf320da61b397a90900ecda565558f8959ce0d9562c2ef2",
+        "size": 15834
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/remote_exec.py",
+        "sha256": "e5a2c5c69563e77b8b307c37ea708a44de6781f3984b3e1515bfd7fdd54272a3",
+        "size": 3913
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/router.py",
+        "sha256": "439772d143cfd6caf3cc28fcb1c0f7733417f1a27cd370aeab5954d6336d7407",
+        "size": 34029
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/state.py",
+        "sha256": "bca7c339c04e2ed29dab4d3c3f91c355a7b2445af650d8cf5f5f60b6253f7530",
+        "size": 25035
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/text_to_sound.py",
+        "sha256": "90d7057d5018a34ebe8ba55713eeb23d58a0da9c0d02e1f394b395a7bfaf90a5",
+        "size": 8604
+      },
+      {
+        "path": "skills/dexholdem-v2/scripts/utils.py",
+        "sha256": "1c22207adee8db5db04b762187eeac7a13b57af94d4a5db7023d1a3bce250170",
+        "size": 7641
+      }
+    ],
+    "visual_guidelines": [
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/BET_RECOGNITION.md",
+        "sha256": "3b33012b2851761c47ae8d05c01d2142b0941f9859dc2ef66e7c2a21ab333149",
+        "size": 3086
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/BLIND_BUTTON_RECOGNITION.md",
+        "sha256": "f2e37448c878b1f4f4cff86d5dfcb80ec6b0533378782dc1323b4831b8d0d9a7",
+        "size": 2210
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/CHIP_RECOGNITION.md",
+        "sha256": "cb1a268124196b0ddec3560e0d9a5620fed37884afa21c694a9920e2a84a6c66",
+        "size": 2790
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/COMMUNITY_CARDS.md",
+        "sha256": "419de9e270a31156a438a0b2f681bc87143f256a17fef851b7e6c827c9b8ab08",
+        "size": 2561
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/HELD_CARD_RECOGNITION.md",
+        "sha256": "e7aad9dd17eaf988bb5ff2702b912e7df916667ee294d58a8b2ea912e5fd6f8a",
+        "size": 2380
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/ROBOT_BEHAVIOR.md",
+        "sha256": "7b0439dd8c0acb2393bdb60f81479c5d72223cb8f10827018109f2a4acac4016",
+        "size": 7972
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/SCENE_STABILITY.md",
+        "sha256": "285a6a29cac3f47468a9a74f1bed7de6086aef1fdb33a764ea55622f16afb27d",
+        "size": 6635
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/SHOWDOWN_OUTCOME.md",
+        "sha256": "e56ae620ae4c279a1f86a2decc335ec0cbad3d4b78528ddbdb319c9f3efa9e11",
+        "size": 4098
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/TABLE_GEOMETRY.md",
+        "sha256": "424ee8ec1dcab5f5976542a022e6aaec964c5153e386df066d9db8b6926ca27d",
+        "size": 2583
+      },
+      {
+        "path": "skills/dexholdem-v2/visual_guidelines/TURN_DETECTION.md",
+        "sha256": "ad41a660c3598d91810fa93c260c56920614ccec464deba9fee7fbac7b7b0954",
+        "size": 2291
+      }
+    ],
+    "skill_config": {
+      "path": "skills/dexholdem-v2/config.yaml",
+      "sha256": "117671d1f97ec1c06df40085fa14b2d627bee61bd850637eb73484dffa42094f",
+      "size": 978
+    },
+
+---
+{
+  "status": "ok",
+  "manifest": {
+    "schema_version": 1,
+    "harness": "codex",
+    "visual_setting": "split",
+    "visual_variant": "codex",
+    "source_dir": "subagent/codex",
+    "problem_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23",
+    "run_id": "p23_codex_split_batch007_codexbase_split_low",
+    "run_dir": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low",
+    "latest_state": "s22",
+    "visible_agent_dir": ".codex/agents",
+    "visible_agents": [
+      "bet_recognition_agent",
+      "blind_button_recognition_agent",
+      "chip_recognition_agent",
+      "community_cards_agent",
+      "held_card_recognition_agent",
+      "robot_behavior_agent",
+      "scene_stability_agent",
+      "showdown_outcome_agent",
+      "turn_detection_agent",
+      "reasoning_agent"
+    ],
+    "version": {
+      "preflight_script": {
+        "path": "perception_eval/preflight.py",
+        "sha256": "98832c38e0e7c7a849a6f54a5d395eba5e6d1044dc8abcd18523bad451d2fc67",
+        "size": 15892
+      },
+      "skill_root": "skills/dexholdem-v2",
+      "source_agents": [
+        {
+          "path": "subagent/codex/split/bet_recognition_agent.toml",
+          "sha256": "ea3e7f58f5fbf6e15e422ceb2dcbe9e98703dce44409e7ea1d3c437c1e74ed03",
+          "size": 998
+        },
+        {
+          "path": "subagent/codex/split/blind_button_recognition_agent.toml",
+          "sha256": "ad4e93be68d565cb2b733db4d993db4071ba6922779e0f3e111c4954baa876c9",
+          "size": 1013
+        },
+        {
+          "path": "subagent/codex/split/chip_recognition_agent.toml",
+          "sha256": "4102869ac953b64ce1ebe1c9d568d724c549b69b72d4eac6950296c5986d9564",
+          "size": 986
+        },
+        {
+          "path": "subagent/codex/split/community_cards_agent.toml",
+          "sha256": "63c61dbd15a4175054935b318dc2445c28a782f653157b7b9915751927f9a266",
+          "size": 852
+        },
+        {
+          "path": "subagent/codex/split/held_card_recognition_agent.toml",
+          "sha256": "a0dd4692bdc908a144585dda7380eab9f188b4bdff68b8ad2672550a437e124a",
+          "size": 880
+        },
+        {
+          "path": "subagent/codex/split/robot_behavior_agent.toml",
+          "sha256": "bc0c2dd3d9649eb6dc0d566e4e9fa7bebf36713098d9aeea3e10e4aa628ba4d3",
+          "size": 996
+        },
+        {
+          "path": "subagent/codex/split/scene_stability_agent.toml",
+          "sha256": "81a214876113df43951d51fb3c5c785c0f005bdf77b22e5f8b40c8eca87bf30e",
+          "size": 994
+        },
+        {
+          "path": "subagent/codex/split/showdown_outcome_agent.toml",
+          "sha256": "f2be4c7778eedd53889d86c626d696dcbb26d0ec2ddf9b1c9f4dd2255907e5de",
+          "size": 1102
+        },
+        {
+          "path": "subagent/codex/split/turn_detection_agent.toml",
+          "sha256": "5786e2465fc3362e89bb231a202f2daf1647efe20ea01b7d7f59b841f61aa44e",
+          "size": 932
+        },
+        {
+          "path": "subagent/codex/reasoning_agent.toml",
+          "sha256": "da779078a125f945ab46a77499f2f47d94e51c80b671334aa9e293e9096b5199",
+          "size": 2103
+        }
+      ],
+      "visual_source_agents": [
+        {
+          "path": "subagent/codex/split/bet_recognition_agent.toml",
+          "sha256": "ea3e7f58f5fbf6e15e422ceb2dcbe9e98703dce44409e7ea1d3c437c1e74ed03",
+          "size": 998
+        },
+        {
+          "path": "subagent/codex/split/blind_button_recognition_agent.toml",
+          "sha256": "ad4e93be68d565cb2b733db4d993db4071ba6922779e0f3e111c4954baa876c9",
+          "size": 1013
+        },
+        {
+          "path": "subagent/codex/split/chip_recognition_agent.toml",
+          "sha256": "4102869ac953b64ce1ebe1c9d568d724c549b69b72d4eac6950296c5986d9564",
+          "size": 986
+        },
+        {
+          "path": "subagent/codex/split/community_cards_agent.toml",
+          "sha256": "63c61dbd15a4175054935b318dc2445c28a782f653157b7b9915751927f9a266",
+          "size": 852
+        },
+        {
+          "path": "subagent/codex/split/held_card_recognition_agent.toml",
+          "sha256": "a0dd4692bdc908a144585dda7380eab9f188b4bdff68b8ad2672550a437e124a",
+          "size": 880
+        },
+        {
+          "path": "subagent/codex/split/robot_behavior_agent.toml",
+          "sha256": "bc0c2dd3d9649eb6dc0d566e4e9fa7bebf36713098d9aeea3e10e4aa628ba4d3",
+          "size": 996
+        },
+        {
+          "path": "subagent/codex/split/scene_stability_agent.toml",
+          "sha256": "81a214876113df43951d51fb3c5c785c0f005bdf77b22e5f8b40c8eca87bf30e",
+          "size": 994
+        },
+        {
+          "path": "subagent/codex/split/showdown_outcome_agent.toml",
+          "sha256": "f2be4c7778eedd53889d86c626d696dcbb26d0ec2ddf9b1c9f4dd2255907e5de",
+          "size": 1102
+        },
+        {
+          "path": "subagent/codex/split/turn_detection_agent.toml",
+          "sha256": "5786e2465fc3362e89bb231a202f2daf1647efe20ea01b7d7f59b841f61aa44e",
+          "size": 932
+        }
+      ],
+      "reasoning_source_agents": [
+        {
+          "path": "subagent/codex/reasoning_agent.toml",
+          "sha256": "da779078a125f945ab46a77499f2f47d94e51c80b671334aa9e293e9096b5199",
+          "size": 2103
+        }
+      ],
+      "runtime_scripts": [
+        {
+          "path": "skills/dexholdem-v2/scripts/action_translator.py",
+          "sha256": "0294514261dd22fe6e50ea3071e8a3baedc9702c3c521a21bc52546b4b5d55af",
+          "size": 15851
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/capture.py",
+          "sha256": "e40854323be40fab287edaeab399e3a8e358769534d1899733e59c14be45c36f",
+          "size": 10348
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/executor.py",
+          "sha256": "958c1373a77856cd7d56df391bcf876cd076383dbfed9d811b5ee3309c3a20cd",
+          "size": 18235
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/preflight.py",
+          "sha256": "8d21c6a46df717c54cf320da61b397a90900ecda565558f8959ce0d9562c2ef2",
+          "size": 15834
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/remote_exec.py",
+          "sha256": "e5a2c5c69563e77b8b307c37ea708a44de6781f3984b3e1515bfd7fdd54272a3",
+          "size": 3913
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/router.py",
+          "sha256": "439772d143cfd6caf3cc28fcb1c0f7733417f1a27cd370aeab5954d6336d7407",
+          "size": 34029
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/state.py",
+          "sha256": "bca7c339c04e2ed29dab4d3c3f91c355a7b2445af650d8cf5f5f60b6253f7530",
+          "size": 25035
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/text_to_sound.py",
+          "sha256": "90d7057d5018a34ebe8ba55713eeb23d58a0da9c0d02e1f394b395a7bfaf90a5",
+          "size": 8604
+        },
+        {
+          "path": "skills/dexholdem-v2/scripts/utils.py",
+          "sha256": "1c22207adee8db5db04b762187eeac7a13b57af94d4a5db7023d1a3bce250170",
+          "size": 7641
+        }
+      ],
+      "visual_guidelines": [
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/BET_RECOGNITION.md",
+          "sha256": "3b33012b2851761c47ae8d05c01d2142b0941f9859dc2ef66e7c2a21ab333149",
+          "size": 3086
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/BLIND_BUTTON_RECOGNITION.md",
+          "sha256": "f2e37448c878b1f4f4cff86d5dfcb80ec6b0533378782dc1323b4831b8d0d9a7",
+          "size": 2210
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/CHIP_RECOGNITION.md",
+          "sha256": "cb1a268124196b0ddec3560e0d9a5620fed37884afa21c694a9920e2a84a6c66",
+          "size": 2790
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/COMMUNITY_CARDS.md",
+          "sha256": "419de9e270a31156a438a0b2f681bc87143f256a17fef851b7e6c827c9b8ab08",
+          "size": 2561
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/HELD_CARD_RECOGNITION.md",
+          "sha256": "e7aad9dd17eaf988bb5ff2702b912e7df916667ee294d58a8b2ea912e5fd6f8a",
+          "size": 2380
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/ROBOT_BEHAVIOR.md",
+          "sha256": "7b0439dd8c0acb2393bdb60f81479c5d72223cb8f10827018109f2a4acac4016",
+          "size": 7972
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/SCENE_STABILITY.md",
+          "sha256": "285a6a29cac3f47468a9a74f1bed7de6086aef1fdb33a764ea55622f16afb27d",
+          "size": 6635
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/SHOWDOWN_OUTCOME.md",
+          "sha256": "e56ae620ae4c279a1f86a2decc335ec0cbad3d4b78528ddbdb319c9f3efa9e11",
+          "size": 4098
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/TABLE_GEOMETRY.md",
+          "sha256": "424ee8ec1dcab5f5976542a022e6aaec964c5153e386df066d9db8b6926ca27d",
+          "size": 2583
+        },
+        {
+          "path": "skills/dexholdem-v2/visual_guidelines/TURN_DETECTION.md",
+          "sha256": "ad41a660c3598d91810fa93c260c56920614ccec464deba9fee7fbac7b7b0954",
+          "size": 2291
+        }
+      ],
+      "skill_config": {
+        "path": "skills/dexholdem-v2/config.yaml",
+        "sha256": "117671d1f97ec1c06df40085fa14b2d627bee61bd850637eb73484dffa42094f",
+
+exec
+/bin/zsh -lc 'find visual_guidelines -maxdepth 1 -type f | sort' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+visual_guidelines/BET_RECOGNITION.md
+visual_guidelines/BLIND_BUTTON_RECOGNITION.md
+visual_guidelines/CHIP_RECOGNITION.md
+visual_guidelines/COMMUNITY_CARDS.md
+visual_guidelines/HELD_CARD_RECOGNITION.md
+visual_guidelines/ROBOT_BEHAVIOR.md
+visual_guidelines/SCENE_STABILITY.md
+visual_guidelines/SHOWDOWN_OUTCOME.md
+visual_guidelines/TABLE_GEOMETRY.md
+visual_guidelines/TURN_DETECTION.md
+
+exec
+/bin/zsh -lc "find s22 -maxdepth 3 -type f | sort | sed -n '1,200p'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+s22/00_capture.jpg
+
+codex
+I have the capture for `s22`, so I’m launching the visual specialists now. They’ll work off the same frame in parallel, and I’ll merge only their written evidence back into the run artifacts.
+2026-05-01T23:03:57.768503Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.771954Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.819288Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.823269Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.826449Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.829244Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.831940Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.835320Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+2026-05-01T23:03:57.838133Z ERROR codex_core::tools::router: error=Provide either message or items, but not both
+codex
+The first agent launch was malformed, so I’m retrying with the correct payload shape. I’m still keeping the visual work parallel and scoped to the single `s22` capture.
+2026-05-01T23:04:05.742973Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:04:05.744732Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:04:05.790125Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:04:05.792680Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:04:05.793892Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:04:05.795071Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:04:05.796219Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+2026-05-01T23:04:05.797361Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+collab: SpawnAgent
+collab: SpawnAgent
+2026-05-01T23:04:05.802746Z ERROR codex_core::tools::router: error=Full-history forked agents inherit the parent agent type, model, and reasoning effort; omit agent_type, model, and reasoning_effort, or spawn without a full-history fork.
+codex
+The full-history fork requirement conflicts with the explicit agent scoping here, so I’m switching to minimal item-based prompts. That keeps the subagents parallel without forcing an incompatible fork mode.
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+collab: SpawnAgent
+codex
+The visual agents are running. While they work, I’m reading the harness/state metadata needed for the final merge and, if necessary, the reasoning agent input.
+exec
+/bin/zsh -lc "sed -n '1,260p' runs/p23_codex_split_batch007_codexbase_split_low/codex_env.json && printf '\\n---\\n' && sed -n '1,260p' runs/p23_codex_split_batch007_codexbase_split_low/codex_command.json" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+{
+  "CODEX_HOME": "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/.codex_home"
+}
+
+---
+{
+  "cmd": [
+    "codex",
+    "exec",
+    "--skip-git-repo-check",
+    "--ephemeral",
+    "-C",
+    "/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23",
+    "Run the current DexHoldem perception step.\n\nUse the local setup, visible visual subagents, and visible reasoning subagent.\nDo not execute robot actions.\nDo not perform image perception in the main agent; merge subagent evidence only.\nIf the router asks for Texas Hold'em action reasoning, delegate that reasoning\nto the reasoning subagent and validate its recommendation before committing an\naction.\nRun independent visual subagents in parallel whenever possible. If the runtime\nagent limit prevents full parallelism, run them in waves; do not serialize them\nunless a dependency or limit requires it.\n\nUse exactly this output directory: runs/p23_codex_split_batch007_codexbase_split_low\nDo not append the isolated workspace suffix or any other suffix to the run id.\n\nWrite:\n- runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/\n- runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json\n- runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md\n"
+  ]
+}
+
+exec
+/bin/zsh -lc "find s21 s22 -maxdepth 2 -type f | sort | xargs -I{} sh -c 'echo \"--- {}\"; sed -n \"1,120p\" \"{}\"'" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+--- s21/00_capture.jpg
+���� JFIF      �� C 			
+
+
+
+
+
+	
+
+
+�� C
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+�� 8�" ��           	
+�� �   } !1AQa"q2���#B��R��$3br�	
+%&'()*456789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz���������������������������������������������������������������������������        	
+�� �  w !1AQaq"2�B����	#3R�br�
+$4�%�&'()*56789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz��������������������������������������������������������������������������   ? �'�u��t��|yk������-}3����>,Z�^0���_��o�hL�Ç�~��<�z��ZS���jp����?�� %7�Yӫ3@���57���� u6>��:ufe���)�� �(��ڀM���N�=�IK��J�� ?s�RQE ;�Y�c�j}*h�S_��Z}��S���@
+��?��Q@
+� q���/ަ�I���T���$_��P|�zuV�QE 7���z�:�� l����~�:�� ,��Q@
+���?�iSQ@����y~��(�}�u;�ߚ��Zp�� -)�PE��i@���?Oƥ��9{�� -h��v��"�RV�GK�j}7�Y�`;�>�IRPI��h��#@� -)�I@��?uK�j} QH�?��@
+����id��>ev�#�oJ�Ee$�� -d��>���F���p� �~�|7��x�O'A�^O�k�~���� ��-�K�zi.���R� ��T����Z�"��Q<��e_o��.&�����Xj�_� e˭��-��� ��*�?	��O��� @�����򫤌�_��h�T>gZ�.�09b���X����,��P�?����e�5,������rW�#�*��k(�t�� ү+��G�J�7�K��O��-i�I���>�y�=J8���חx���:�Ǔ�Y�'�5�}SF:����3<�$���Z�tY��� l�cG�hCٙ���e��_�Ҷ,�>ZUk?&������Vm�`,�����G�����!�U�?$��_�g%}\�?�?hC�/��,?<qs\���)rP���%�|��T5O�RU�!��}����yvKYZ��ž�ǣ>��Oh�z��x� c�E5lk�?u�ļ�� �5�s���O±�-a� ��V��/�� uX��ֆ�&�k�\y��Z���X��t�ȼ�܎*�r�	t*���m�a���wp�����o��/��S��� �\~���G�"9��+����V>���4�����.��C�r��������<���qT{3���7�h�dѦ���� l��H��84��e����_�4���`?����SE�~�\�K�(��Ur��/��DL����c� �u5������䖰��E]W�?�-�^]B�<��Vg�w� ���Ht�R����y����o|L����ݽ���]������Oڂ�mC��������+T�������z{�v���y�S�a����Im'����G�f��7��/���^��Z��,;����5R�����u�|��C��]���϶� �Q�:��"�� S_W[�_췏��%s?g�Ŷ��xr࿏�Y� �J� ��x���ϭʳ��wX��H�wP���֯�<9�x_Q}7Z��	���<��������P��u)U��:s��)���U�h2N���f*Z)s�"~����=jZ�����^�T���RS���Q�ڴ �Sd�N���s2�iN��O�F���( ��JmIN�
+�/��?�ΤN��G� ,�h�S���v�*4� [�S� �z�|� |}菽1:~5:u�(��6�O���Eڢ{�%:>�ڒ�[��iG���3K/��J��:)����E9:�� ��~"\� g�U�� �vV�p� �Ƴ���/�ڸ� �}.G������ӂ�c��	���]OZ��e��R?��%ak_�F���>���}�_٘ef��폩�1S(G��V���� HC� Mk�Y�K���1?�9�� �?w���:_�N���)�;�� �'�� ���t���ʟ�G?�9��'g�-n.���Ē�J�¿=�� �?����MEdQt�ijJ+C2:��( ��zu QM� �t �)�v���� mT����S���!�h�)#�P?�QY�Qj(�	W�QE2H���� ��O� ~��sGo�w�+��:\1�x���/�o������� �����e� W� ���?ſ.~�s�7��������[� �H����E��-��A���u�n����Xi����$�?�u���;Śׄ��H�W�v�ʹ#����ν�t� �0>� ���� ����?�}/T��t�mcK��{kȣ��H����5|+� �� ���'ǟ�:xW�׌ ����}��_/̷��]}��,i4SF�'��ׇR��S��_�R�#�'_Q��QG����_� %GRQ@Q@Qj )��񥢀:~5-6>�Gހ$N��6�� ,�$]�:�.� %GREڀ
+����� -)ԉ���~4 �S�W�O���Q���5fE% �**J (�� �Y�KA�RG�:~4�� 簠>��o��R'_1����d���v�O���hT~��A$�����Y� �� Eډ{�j%�A�����'�;��J*����´��B;^?�t�H��������Һ �q�*���j���U���A���*���
+hr���_'�z�$� Zh������ -|�܏'�y�{ŧ�������O��E_�q�?i�>�#� y<�^�Eڝ'�ӫ���(�� �:md����'�����Ե��%��i�ԉ���K�� =����QE ��iG���ӿ� 6�)��0��� �Ju GRQG����YQE	��� d��M%��=@��)�S�� 6��� k��)�T� ���Sh�?_«� �_�T��қRE9:�� X�4�$]�:��:mIj(:(��
+(��
+(���UhQRS� �����J?� 6���m>N�� �/z�o�O~����P�JuV�:>��l}�՘Q@Ij(� )���Eڝ� ,���/ދx���!�$y?�U�� f�x�e�e%�����0�n+0��F=z�����y��SK'��� ��*���<|B��M-��m�礵�oïٻ�^
+�I��c�o�k$����vv��6��u�.U�������q�M���'��?��|�x�k�O�M� Mk�4�/M���mbD����� �*�%��}�-����Q��X����ɤ��Q�2��riw��Pɥ�kǝ]�������}�"����&����T7�� ���Jc.j�Zm�� ]�� �*�.��RO&��� �\֭��2~��z5��l-ߚ���uK+��y��Z��/�5�M�kr�qa�l��=?K���?�]?�"����M���Ij��}�K�b����כx�� ��ߕ�I\߃�Ğt�~��+͏�
+���P�Y���rH�U�6y2�mC�Q�f|��FxJo���(���ג����U�o1毰�8|>���X}�Wž(������
+� ��[� �J��NJ�緗b=�>B�|��V>�k����������Lۚ��z~�yu
+c�K��� S��G�k6���U���� �U�"��� r��Ǽ�hܢ�^�ˍ������#�zVU��q5T&g���[�{�V� ����+T�&�?u7�P��� [O��r~�Z��a��-�O6?������w��X�� c�D�!Vn%���R����<����/��� ���o�,�tPﭽ�sy�4�Tޔ��C������I�� ~��v��Hb��]���m�8���u�R�|��x;�Q�5O���1��?7�X��E���oy7����*��� c� &_�<���� ��K����y/�Au���z<�τ�.�vH�}?�@��� �1�5O��f���]��ޡ,6	y���{��j��b?����s/��t��y�Lȭ�3���*��0�w����k�|*�W��	��,�xc� UsU�����O��7����'��}~7�T��D��zW��|9�ͩi��]�U�{��?ޟ�M�S_��_I|H��ῑ��^l���
+�gßx"����"x���k�W�9�c���C�>��aq	�E���W��:��@�?��R�O���T�f_��M�*:�� �z����*@uGN��2H�h#��q�Ԕ������?��̖�zd_�jZ�� ���S��MN��;�YTs�0�kRTt�� �
+�z�:��ru�*����eRTt'���=:~4�����RԚ���Q� -+@�gI���RQS�@��%$]�L��Z�G���� ��x���c~��.��� Y�Ο�J�_�e_8�Ru����;]���i� �#�o��}c<����#�0���ԙ�7��mb_�b�/���������
+���O�HG����O��� �ʹ��
+�<k��䏿'�U��3��c�I� �|x_���ᾃ,>[��-?�� ��g��Ƹ��z>�W�(v%��o����Z����O������Sh��� �JuV�N��6�s��(�QE ���Sh��(��)��δ����RE���� ��-��߯�M� ��*:�^�QD]�J(��:~4�QZ�BX���� ��|)�i����N���Mi5�A�kwټ�m�(���I������m�~5��� /��B�����冞�5�
+�E��;�I<�?��w� �u�d�?{�sb���_�}���+8t��(��O��yl|�����?�_����Q���ɬ?�o��iz����� �9?�~x_�z�u�Rx'���RE^��#�_�:<3��yo�]yR��+�����=
+����#�e�Ίm�'���8��?�#����O�� �5�3ž�ˊY%���� ,�� ����
+����~��P��)s��/z����A�T� QRQ@�ވ�QD]���񥢤��*+;�o����m�'�� ���
+mI@GRQ/z (�� �:u �ʤ��	*:��� Uf������eZ Kޣ�(�袊�	*J�.�P���gN�G� =� v�QRPS��N���*
+�J�����u���k��_� V���Z^�4���� ��S_��N��5������,�*ϕ�ȕf�K��hbK���Oگ�C���*���S2��������� Zj����A����T��߯�PրG/z����2N��� �m� �~��e�o-�� �U����_�e�l�毋�h{L�g�eV��<B��?���R9�?�~^�?E���*J��MI(�� o���QNN�� 	���RPtS���N��g�@�RQj��J(��(��(�	*:��� )���Q@]�O���*��h� %/�=��PtQG���^�Q� ,��� GEIj?� GRQE �H����
+�����EhtS���Bu�(�T��ʊ ju�)�$]��^�QQր���Sh��ڝM��:�
+��w��@
+�*)"- 7w�1�����:�'_��Ry^��^�T���>bC�r�?��[$�?p?�B�O�/�W�A!�����̵�|��u�\&��|�o�em_Nx?�z?�,����˯��8>�-�lO�|�c�R�{��=�G�2xs�Q���s� =$�W�����Hb�#���<��U;�	�����p9n/��D��^e����ɤ��/��d�X� UX���u'��ZK
+z��[|���y��ے�o2����d�� l����J��k6v�� �B
+[�Vo/�P��≢�ϓ�z��Ze��S�k��6J ��˩]\y�P�u��y�_�U=?���̞t�6����/���:}���5u���[w�Z�ω�� ڵ��*�`C��uq��t��K�Bk7�z_�o��U�_*>�@M������/�;�+����\g�˯�w������5��41I\���+KT���h�bO:�q7����V~uS��_�����"��l5�g�q�Fk�=�U��}�_O�y�V&����{�P��$[+J���.B��xz���ȿ���,�[��KL�ԇ�ϝ]� �i�GR�_�I�U��� c���+�� ѕ��z�ڶW�ק��rM����F���c��%��T�]iIu��T5O$G�E�V'YNIf��T2���N���T�����A�j͎��y�E��:�$��b��@C,�(��w���_�jo${Q%���A�>�I��ճ���e[����P�Ɨ��9���].��yA[�qy=!��?�
+�mw4�=fޟ/�9���R��\N��y�Wy�kQ�6����� ǺM����<���0� �J�t�|�<׋~��������uE� *���?K� c}.m�Ə� �v�� ��?7͎�٪�����챥z+� }?��>f��LK����ĵf���$o����ά����p������ e�~�A'��OY�E�#���Z�?7��z^�� <���I,�_�Rh��{��� �
+�"o�8�� 5t�VkY|�j���
+��O{=gM�D��z�YW6Ep�U�9f�>+
+��Z^�T�֥��_?b9��m{���Wξ(�o��%x�^$���� ��W�֏�C~E�C�υ���������'�� -?�|vq��l�Cܙ��"�Oܬ~i� ��W��|��|I�;ٵ��wg���yׂj�^���=����<r���~a�d����%Xc���qt��V~��-3�ԟ�ּ��(����� ���Z�/����`G� ,�nO�jw��T5 $��ih��3��;T�����@� �u5Cz��Y��j*:���N��G�2�>�P�F<�3Ev���zt�jZ�:~5-fEV�'����_�j�� ���𢣩)���֣�"�A�EھG� ��k��z�ӄ�>٪F���������cZ����zj^g�C��Á��N%�� [&{?g�W��Ǩ��W=�� ���[���~��>G�_��M��1 ��+�� f��?����Qo}C�}�������0|�>������~�� 
+�c�� ���y휞g�Ӭ��i��)� xN���vp���u�� ,�?C�ʳ�� ���W�d��
+?�6��aEPfQE 9:��(��JmPE9��� (���	)���S_��@�����ju7�YҿOƖ�#�(�� ��$��� :��~4'OƇ���+��*��k���&�
+�X��m"O�
+<���q� �� ����� �J�R^��"�c~kz�����[�f':ޗ�hZ�ƍ���[^Z\�
+ͽ�{#� Y�������o�� ���1� ��_�>$E�d�4�vh^+��|a�G˳�?������������i?w&+�)T�����T*�ӟ��#�ٓ�g��6x"i7��_�Q�;��iB��*�?�w�-�׀�(�ҵ��d� ��ο�?�~#�#�ǻ���W�����ͻ�w��E�$�W�<��/$�� ǽ��I�s�˯2�[�5����~��?OƙRW�{�u%P�:�G���%�RQE "t�jZ�� ��)��Ҁ� ��E yY�'� �tQE �ֈ�QD]� ��� ,� Sߧ�KQ�`T���@
+���� ��+0$��OƙRPN��Si��t �ru�)�$r�h%Gj{��h3���9� ֚�?j�q��4+?OƇ���?� ���Trv���P?Oƀ$�� [�ջ˯7�P�hmz�2k5� /���YW�f�T�S�P��ֵ���������P�-c_��PI���|�S��Z �#�̑(� ��gK�͸� t6��~�6�o���y�]Ϳ���W㥯ڼ�w���+��{L�g��� y���� �|=C� ,��jyR=A_�b� �~�����iN���:�ޝE/�}�)��΄��Q��� ���Z)�� � �{�E/�=�0�(�.�Qj( ���PRTtP�IQ�޴ �����i��
+��O�kG������/���{��ih �~��-QZ Q� -h� �T�* *J(�� uON��2.�% �֊ ?�v�*: "�G���O�_�'���	*:)��� d������>^����V�6�(��ڛRTR�4 ���gM��: u7�YӪ'����Sc�G���	?�:��?	�_X񖰚��s'�C��>�"�%3:�=���Cѵ��	���~|��*�C�?�e�����|��>�g�s���_�-�zZ^]C��I��Y�z����C_���	R�/m��ώ�s� i�Q!��k;���#�(��c���M� ,��)�T���*:��<�c�|�6O�T1��I�ڳ��kj@ˉa�?��>����w��ꇎ<G5���4Mp�m ix�ſe�*��S_���� }]&�7R~���|-��:*��g�� ���k���/j���<�<�
+oY�� � ���� =kJ�����|�ҷ��{�`bx���[�_���� �ω<�����?�o
+y����|A�K� =j���ѡ�����k��GS[�����{���@%���s\��ۏ$�y��Q�\O�?{yN��<X��x�yW�Z��ʑ2k+��~C���X�y|�|�gT��ߝ�����-����2��%yz�qk��[�Ň�%eIi3����� G���{���̋�U���s�.��WƓh7P� ��/���N�O�"��y_��G���9���?�������P��3����[��|��g�uH�O:!��[$��<�	�7���oo/�� ���i"�m���'f}U:��>��o�P�޵]Ҧ�O�
+e���� ��9ίfP�� �U;��y������cU��?��L����r�"� ��U�-|�?t~J#��І��o�e]�kP��_�ӏκ�A5��B;_*J���M,��k���'���kV������������/�����/K�(��?%f�A�+�y5��z7�n��?%3��g,��~z��������x���׬�� &#���<7����7��^��<���$׭� �g�� ���v�̞���;X�W���-u��k�ݬ�_���"��e��H���W��>^��CD��ߏ��%lIj%�xk+�q~O&���~.XKap��g]o�� �8n�����g� ����(kξ	�� ��$Hf�?{��4>����f�/�2�W$��k4��.%��y՘^H�?�V|⏲�c�j����?&��F�kC��Z �+ȡ�4��ޒW�|\����U���Z<p^I� /1�y�{� �
+7�yT���\f��z8�\���Ы����7�/�W?l����o�|�W��C4R<2ű��X�,��?�w�qΒ��Z�w����,��;�
+!�����W�����6�ܻ?���c��+O�>׼%�M���k�4'�-g?_¿6�a�a��T>��OkKA�QEbh6O�OG���T?�ҳ3�zI���Z�0:~4����?�B��Qӿ�W��O�iR�J����b���>�GޝK�ـ���T��!��:��V�����6�?�B�Z)��ҝ@T���.�Tu'�ڟ� Q����+O��g������� ��|�xkH� �q\?��� ���!����� {�!��ӧi����w� ȉ_�~"�������d�>-�� Z��s� ���K��b��}���Y3𺄖���Z�7���ɵ�ۣ�p�?��-�Կ���J��J� ��¿C?��~�T����%��A��������?��\Y��0�^]ޟ�:���QZ��k��AEV�aN~��6�(��(�'_��SjJ k��(~��6�'j�S��6� )�MN��
+(��"��Q����~4 ?OƄ����J��
+��'jmf'OƇ����u�Eڊ ��>|�O����?�"�j��A��e��� �rG� M#�����~�?�g�?d�� ����%�K{�~��ߟ"�?霑��5�J� �:�o�s�x���[��_?h?�:����˄�յ+�����I����^�[����#*�zX�����_�^��#�Lӿ��*�g� �D|�I�/�~ٟ�mn��{���e�އ��?�i� M+���� ��;�KG�U���Q���-�_�����3��yu��C⟉�?7�}O����z��Ϻ�m��ณ���+��\��W����}|
+��5M{@�_��hr���O�x�� ��׹�����%���>h?<94�mgu�T�� ��9?�G_зÿxW⯀���ԣ�ҵ��%��y�^+�z��LW�7(���;��~4��ҝ@
+� ���)��δԉ�񥢳Jru�)�P�v���
+t]� ��k��(�$]�:(J(��Z����ƒ�+0	{�/z����(�'_E9:� �QEv��OƟ�{S��O��f� -*D��Tq����@��=:~5u�)�p��.%��֫�_¬\K���S��ִ4!��+0�
+�N�#��*��֐X�!�O"/�gY��MW5_6���V�/�t＿���� ]j${S��Z�\J���+��j'��Prv�Ӥ�P�ހ
+�����o��YQ�6L�C^M�B+3B͵c�W��_��G��j��ȼ��C� L���i�L�G	�S�W�o�T<��Z:�_��U�;���O�
+� ��Iڏ�iN�,�
+ru�*8�Ө �)���� �* ?�Q'���h �^�Eڊ��YQE �*$���kE v�^�������ʤ��J *:��� ?�QY��*��>�QZ���?����iG����Y�� -)ԉ���~4�S� 6O��*JO+�[v�� ����񥢀
+O+�t�PE����������i@
+� �T��iN�� ��J��Z�Qԟ�GZ �;S��� �: uGRTt T�%��� �ʀE�?uܪ_�`Y��/5K�t�w��K�(�����ݟ�4t���̼��Z���,�R'�5H_|�����8��-K�(����x? T)}f��Y�j� �k�W4���*�Qt�?�� ]_��j�k��n1GO�Y��=r����f�u�X�ʬ�>���G�f�+7X�/<������>��� "�t�:�/	E��f�� XjisC-y֏�~�5���.���E�;Ϊ�ꟼ�|�f�u4V�X:}��l��?�ִ��� ��Ί�-� �eh�-&��8��-ffB� �
+��|�?:�\Ei�������߉�_~��	�� ��ֺO��w�X>�ʼ�kZf�sוC%כO��ӊ�s�ؤqu����-~�q�U�Bau�q�w���ʸ�> E7��U�T�n���I�x����Z6��:U��拵f���cJ|�^o������b��޹�ȼ����K� ,e�z�X��1�b�T^H�������."����?f�7�6��Ɨ�yo��,u�ψ<�h:��n�g����W�4��H��
+x� Ǐ��G����4)�=y��'���z�w��&|7�h�KT#�f�^���^�&�uK?"h��/�� S^<�GN��G�͚��F���ܮ��A�d󼚚Oy��U&���I46G� ���=;<߿^������ÓE"~沙|�&����f*�|/�)��Hh�߇<۟�5�>�1l���XL|��>�(����~�� Rk���!�4�(kJ=./>M�?9�Y�"�󢆺MK�+$�[��C�~��;Hmn<�Zr󙺥�0ټ��ʾN��&׿n�D7��|� ������/�O����S���&_��:�_:i��� �O��� �$�Aί"������9a� �n��*�$�U����{C��(���#�+b9@�
+{��������-�e�� �<�L����e5B�Y���c�Au����/��
+�� �W�W?�ֽ_P��cxG��"�%�[���W�h}	o�Ď�o�eP�_���p��O�qjxJ� �8��)��&��~��M��Ě����SySD�}s��כ�'��*��^�q�����e]'ڼ�k�|���~��m?Y�T��2��O��t��j����t�_�%��4<O��������m>�85[x��d��ZW��,���r�A׬�ky�~��� ��ߵ�ɣ�Z���44�U�/���ҾG��r�eK�C�>�'��?���Z�_��V�O��c�Z���e$w6�얨�u��#W[�g�ө�U�:�n��cG��X��?�e;�ZS�?h�P>��h�� ����j:��h�M�Ij@II^~�	��� �����N��5:�� ${U{0H�?g����Oƨ	h��ܬ���5GE����eMN��:�1|��C� ��i?�GS� .�s��+��
+��� j~��0Ͻ����$���&"�����(F����M��c� .�[�� ������W�>q:��|wO�弇�Z���+/���+cR�<�<_��_���Ū��B
+����� ��r���3�����,���I$��N�.4������ �p�9��� |U�� �����?�rI� �+��_�;=\��?T-?�T���_�:�0�:�EV�!EPEV�QNN��fh��:m �~�:�'j�T?�Ҧ��ܢN��( ��(:G��ԴPu%Pd�M�(���ΝEfE��� ���I��$��4gM�����H.��y�rG����Q?Oƕ?ݻ����K� c-[�!��u�����sPΡ���?奄���H� ՟��|�s�o�_�7������ e��|-�#��f��9?���y��� ��� �O.���9�����T�d��Ώ���L!b(�&:���σ5�u==!������ �_���T�� �� �5����o���_��o� �+�ú��V���W�|'���O��8��*xRx5-�;����u͏ª��<=OgW���ӧ�K^m�'�ў����?</:���e�����G��:���S���{�EVc
+*:��
+D����Z%IY�QE9:� �s��)�PE9��� (�'_@9���( ��'j#�@���
+m ���Sh�	(���	)���Q@GޤN��A��� �u�u�(~�����rM@�ک�-Mq/�C/z��?����I{�fC'j���I��d�L��Q� ���m�UZ^�f�_�m�T�%��2�j'��RI)�Iڴ��Qԕ 6N���i;T2��:=��x��� ����_*7�o�iVo~�jL��q�x�/7����)*D��S�"���� ��W���>�݇�)��"�f�_��%d�� �"�K�鬕ͿOƿ͡��~����:m������ -(��f�H�S?�S��@����( ���_Ҋ+0�kG����  �Z���jJ "�EIM� �u�
+���QO�����M� �t����Z�^�%GZ Kޞ�?e=:~4 ?OƖ�� ,�� S�:� (�*: I?�eIH�? Z*:��� ,�I;Qzm %GRP?�Ώ�gN���~4ʒ�� �U�����Jk��+@M��:�'��4 �*'����? Z)��I� ,�ԉ�񥢀
+���N�� K]��?����H�l?�r��_��\���^x�T���~G��g�� <㯬~�x'�φ���>.-�����,��O���@����S��,�.;hcO.�
+Xk˭�-}��"��g����.�H���=
+T�!��z�jU����P�f♣��y��=о/�#�s&��[�*�4�SX�:C����=��9��_��D��s� ���?:)�c�u���M.o/��
+���� �H��5oY��*Ͱ��OޚՎ���������z��?��#�>��|D��t��C���@�������T4����������4x��Cέ
+N�G�-+z�(sX�<?�J۷��Z�̆KI�U=s��7�[>p��}o�?Ҵ3<�ƞw�� mk7������⿿��~�	�G��
+�����uY���Zd����MS�Տyj��"�dzǼ��3�����
+g�"�c�>��g�O�b���{yv?}S��oCUm���ɩ���5���t�� ��O:�h�w�;�Ʊ��p(�m3�UZ��ʸxe�2E4�PfS�-|چ?�_�� _���T�_7���7���#A����孖��� �K|��χ>$�n��n�g"y�� �rW��]Mk'Z�a��o����T�RO3�Z�
+|-*����T��L�
+�F��yU4z7��ױ���w�ҷ�xro2��Wq�^�\=�����yU(U�{��J��`���� �4ˏC/����+_��O���d�Z�������q��mXb�X��e��Y���r�4;m?T�䫒k0���?O�?�M&����9�Mg�u��x�ʓ���|G�o��\ޱ��+�7�����cǟ`���﫹� �u�� �^�� �6��s�ǯ�� <��S�{���
++�z2I����Y�~g�$��_
+�0�:u����|�l��<��p4=�^s�_�R�=/���l�uo[��J�K���(���F�U�C���I�V��� ������1^G��� W^��>s���
+z�X���J�����7�7��{[Ǉ�<��Wm�� 6\TN(x�����y�/�O?t�{7���z�mSڞw�5��h{���|�
+�5��X�yՉ�_7Kxk��^W��X�cT>TN+��%� ��+��"ͻ��~���U�Tη��_�/O�WU�����w^U����>T��s(�����������?�ڸ� �W_j���v7���>���İŨW[��
+՟�,5���Z�v~�� CJ ������f���A���o� QE� -+��2����F�a��wP�O�Z�K������i��J�?������~s�=/�Q>� ������� [O� �t�����u>�e�� @��Kމ{� ����c�P� �*zt�hZru�*?�gR'_§�jH���"�N� �u@XN��93� �c�SEڀ$�� �Jm=:~5�0%����P�k@�
+m7�����@
+�)���ގ����QԔ��g@u�~˥��� <Ⓙ�k�����7�w��$O��_�>9������d���W�T���^�Ƨp� ��b��Ey��u?ء��� �=fA�_�W�?�G���o�?
+����3����"��޿p���?}��g�&�,?��mǕ� l���ď	E������ ,��ѿa=����P�/'�� $�� iׁ�O�=����ڱ}�u,_�_��_.}A�R�����1
+(��
+(�� ��( ��( ���
+m Sc�N��'ju�QA�QE6N����l}�4EPQӤ�M��(�N��-Pw	c����/W�#����h� ��(��~?��K����݆����'� Z?��~�W��ӿ�g�?گ���W�Ƒ��#X�?7˗d��G'��� ��H�/�}Z����Z~֗!����s޻��ʃ�6�o�qo��A� n��7��_|�7�^�V��Xt�^k� �6� �<�<���_�V"h/���I6W�ƥ<U+Şl5\;?���"� Ý�����w�\��x�+�^�I?�ĒI� �㎾���~q� � k�?�#�Gŷ�5/���?����y���|f.�>s��O�aB�����%�%GRV`Eڊ�������,QQӼ�j�Sd�G��D�P����Ԕ ��gM��� ��Z �:��)�����N���)� S���M��
+ru�)�PE9��'_³ � �t'_/z+@�?|}�� [�T��΀Q\J�*�Pk��PT���d� Zh ��U+��)����P��w?�^�I7�J�q���p4)�J�$���KT��]&d2v�� �+��i���ɉFj
+����� ^��� v�� �,��M����Ԅ�ޟ�f����L���w�Y�+Ο�ft#�՘� ��5N?��MY���x�:��Mi�7�L��Iy�5�J_�]��[_+ŗ��������3����GT�T������X(��J�'_jo���P� ,����PEV`Q� -h��TEډ{�@��G���/�+@�Y�إ���~4 �R'OƇ���`-GRQZ ��iJ�?Z(J��( ��t���QE ���� �*:��
+�����>���񥢀
+(��� ,�%G/z���
+s��M~�� 6�/��Q'jmh�+��h~��- $�������.�%Gj(Ǖ� ,h ���ޙON��Vg�_��x���Qy��{_^�/�΃aY��=��� ����+K��Wp��G���G�캂y�r�x�,/�2���i��!�F�tmU!i�O�e\��υ�����a�Wg�KY��o-圵gO�SO��}u3�fy/��I�5���� �w����ϗ�W7�e�	�Z�� -h�'�l�t�&���dU@_�>4�_�k7��j�_�w��~u�;+��b�R��P�ƞ^Ko7�W��f�Ľm
+&����`w�D|�:����+��O�uMC�u�������I� ]T���i����~��Ί�[�}�7�_�Z�Qq���������T?,>��}�j��� �����:}�ʭ(Ǖk7K�o*��� ]�C1�~�?�Չ�K�G��ո��Z��&1GA��x�/6���U���IW������� �(4:>��My2�P�� Ǽt\Z ʼ�ʬK�|�+{T����X��~�����Tڇ�{�ҙF� �b̴���d���~��M?����
+�� ��Ƶ� ��Vlgʓ~�Τ7�E�]B���g�W<Ia��;B�,Ǌ�:�_�泟��Z2K7�ҡ���C3T�c� n��Ȧ�G���id�5��XM�n����++X� �W^�� �,�]SA����W7y�^E%r�4�Q��d
+�7��.�ˣ���/�x^F��6��ʳg�=J�O��\�H�)�4�w�<R#*��� �UB?��6� �=v��5���~=Y��6�,x7�VQ�� h�8�Q���� f��5����id���O�i-vw?u�/�3IY�x�X�O��=Q�_��S����x��������� O�$�� \⭋˫�y�i*�q��IZ}V�>���ت���?�7�������I� /�� ��E��&�<76��o�ʬ��~��D�����Xi��O��~�<�ޟ���*��ω�2|P׵�˛�;��l���^{�����Q�۫�� ������ק~�?�-X�^�~x�U�V�x�f�>����7�4��NC�_���[?���R���*�]M�d|���� �I��{hn�I��� 	��jp6<y�  w��ʼ7T�ͽ����4����ʼ*����t�{��w���^��[K,o^E���&M{6��:TL\�o-�3P�E�����M�W�Z� �f*f�<��<qVt;��� M*��46���4;����Z
+x�_u��]���|W��/�ʍ8�N�(n�� ��:�%��Q?���c�ǚ}+��?��'����ﱧ��� ۳��O�
+4o�^��� t�/�� �:�4����YT����s:�)���Y�ᦥ��%� �n�����rO��� �?	f��>!ip��� ����'������q��~S�x�/8Tr��.�K޾c�������?�:`�ʤ����� ��� �U�%0$�b� UQS��Y� 	��E5:�*t�j@|}��_�jh��P�O���/�=�(��Ε:~4'OƟߠ	?�6�( ��+0
+)����ZV�r� 5�|;�o%� �Z�F��s5ֵsw'ߒY�f� j�W���oq���O�_��*�͹�~��&�Zg�}S����� �P��Y����?Z��ꖿn��3���A�qp�W�i� ���������_�q��u.��?��:^
+�&O��_�g�g��CfxnXv=��,�X���:�l�g�e'������� ,���P(���x�Ё(�� (���� �Ju7�YӨ ��( ��(3
+(��
+l���PEPQ?Oƥ����@RTu% QE IE GEPE�������RP[�Xe���s� ��� �>.꿴F���W�E�ׇ�}MkW�me�o�F�#�>�g����_�U
+ͩ�:��c��*��:ui�L�� �%�ў��^[j_��[k_�\W2˜�I�+���Xn��h��D��X��~)�k�`� ه����hOo�_��嵔_��uI����.3���>��_���
+Y��n�}����W^��I�����72� ���κ������y&~�����
+mI^Y�Q@Q@
+N��6�(H�T��TrK�IL�SI@G/�(��,���3P����ޡ��]*J ����8���TQ�)� �΀	;Qz$�D}��QEfR�Z�� �.�Tu$��@婢��]:�*t�k0%�������N�_�}+@�?e��G��P��P�ڟ���d����5N��2s
+Mq7��ĵ�0*\t��T���j��S�j�I�S?�IQ� �Z ��'ju6N� ���ݯ�o�c� �Z��;O+OO�iSP	�� UT/kJ��VU��}�Ι�hԩ���O���6�~�jL�?��y^(���E���O��^��BZ� ����[+ȯ"̘��8��3�,�~�
+--- s21/01_parsed_state.md
+# Parsed State
+
+```json
+{
+  "blind": "big_blind",
+  "loop_stage": "to_recover",
+  "robot": "simulate pausing of 3 frames, should recover cached action",
+  "table": {
+    "scene_stable": true,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+--- s21/02_action.md
+# Action
+
+## Action JSON
+
+```json
+{
+  "action": "recover_cached_action",
+  "reason": "The previous atom appears retryable from the cached action sequence."
+}
+```
+
+## Execution
+
+```json
+{
+  "stage": "pending",
+  "dry_run": true,
+  "can_retry": true,
+  "human_required": false,
+  "note": "The previous atom appears retryable from the cached action sequence."
+}
+```
+
+## Translation
+
+```json
+{
+  "prefix": "reset",
+  "commands": [],
+  "command_steps": [],
+  "sequence_steps": []
+}
+```
+
+## Commands
+
+```json
+[]
+```
+--- s22/00_capture.jpg
+���� JFIF      �� C 			
+
+
+
+
+
+	
+
+
+�� C
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+�� 8�" ��           	
+�� �   } !1AQa"q2���#B��R��$3br�	
+%&'()*456789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz���������������������������������������������������������������������������        	
+�� �  w !1AQaq"2�B����	#3R�br�
+$4�%�&'()*56789:CDEFGHIJSTUVWXYZcdefghijstuvwxyz��������������������������������������������������������������������������   ? �'�u��t��|yk������-}3����>,Z�^0���_��o�hL�Ç�~��<�z��ZS���jp����?�� %7�Yӫ3@���57���� u6>��:ufe���)�� �(��ڀM���N�=�IK��J�� ?s�RQE ;�Y�c�j}*h�S_��Z}��S���@
+��?��Q@
+� q���/ަ�I���T���$_��P|�zuV�QE 7���z�:�� l����~�:�� ,��Q@
+���?�iSQ@����y~��(�}�u;�ߚ��Zp�� -)�PE��i@���?Oƥ��9{�� -h��v��"�RV�GK�j}7�Y�`;�>�IRPI��h��#@� -)�I@��?uK�j} QH�?��@
+����id��>ev�#�oJ�Ee$�� -d��>���F���p� �~�|7��x�O'A�^O�k�~���� ��-�K�zi.���R� ��T����Z�"��Q<��e_o��.&�����Xj�_� e˭��-��� ��*�?	��O��� @�����򫤌�_��h�T>gZ�.�09b���X����,��P�?����e�5,������rW�#�*��k(�t�� ү+��G�J�7�K��O��-i�I���>�y�=J8���חx���:�Ǔ�Y�'�5�}SF:����3<�$���Z�tY��� l�cG�hCٙ���e��_�Ҷ,�>ZUk?&������Vm�`,�����G�����!�U�?$��_�g%}\�?�?hC�/��,?<qs\���)rP���%�|��T5O�RU�!��}����yvKYZ��ž�ǣ>��Oh�z��x� c�E5lk�?u�ļ�� �5�s���O±�-a� ��V��/�� uX��ֆ�&�k�\y��Z���X��t�ȼ�܎*�r�	t*���m�a���wp�����o��/��S��� �\~���G�"9��+����V>���4�����.��C�r��������<���qT{3���7�h�dѦ���� l��H��84��e����_�4���`?����SE�~�\�K�(��Ur��/��DL����c� �u5������䖰��E]W�?�-�^]B�<��Vg�w� ���Ht�R����y����o|L����ݽ���]������Oڂ�mC��������+T�������z{�v���y�S�a����Im'����G�f��7��/���^��Z��,;����5R�����u�|��C��]���϶� �Q�:��"�� S_W[�_췏��%s?g�Ŷ��xr࿏�Y� �J� ��x���ϭʳ��wX��H�wP���֯�<9�x_Q}7Z��	���<��������P��u)U��:s��)���U�h2N���f*Z)s�"~����=jZ�����^�T���RS���Q�ڴ �Sd�N���s2�iN��O�F���( ��JmIN�
+�/��?�ΤN��G� ,�h�S���v�*4� [�S� �z�|� |}菽1:~5:u�(��6�O���Eڢ{�%:>�ڒ�[��iG���3K/��J��:)����E9:�� ��~"\� g�U�� �vV�p� �Ƴ���/�ڸ� �}.G������ӂ�c��	���]OZ��e��R?��%ak_�F���>���}�_٘ef��폩�1S(G��V���� HC� Mk�Y�K���1?�9�� �?w���:_�N���)�;�� �'�� ���t���ʟ�G?�9��'g�-n.���Ē�J�¿=�� �?����MEdQt�ijJ+C2:��( ��zu QM� �t �)�v���� mT����S���!�h�)#�P?�QY�Qj(�	W�QE2H���� ��O� ~��sGo�w�+��:\1�x���/�o������� �����e� W� ���?ſ.~�s�7��������[� �H����E��-��A���u�n����Xi����$�?�u���;Śׄ��H�W�v�ʹ#����ν�t� �0>� ���� ����?�}/T��t�mcK��{kȣ��H����5|+� �� ���'ǟ�:xW�׌ ����}��_/̷��]}��,i4SF�'��ׇR��S��_�R�#�'_Q��QG����_� %GRQ@Q@Qj )��񥢀:~5-6>�Gހ$N��6�� ,�$]�:�.� %GREڀ
+����� -)ԉ���~4 �S�W�O���Q���5fE% �**J (�� �Y�KA�RG�:~4�� 簠>��o��R'_1����d���v�O���hT~��A$�����Y� �� Eډ{�j%�A�����'�;��J*����´��B;^?�t�H��������Һ �q�*���j���U���A���*���
+hr���_'�z�$� Zh������ -|�܏'�y�{ŧ�������O��E_�q�?i�>�#� y<�^�Eڝ'�ӫ���(�� �:md����'�����Ե��%��i�ԉ���K�� =����QE ��iG���ӿ� 6�)��0��� �Ju GRQG����YQE	��� d��M%��=@��)�S�� 6��� k��)�T� ���Sh�?_«� �_�T��қRE9:�� X�4�$]�:��:mIj(:(��
+(��
+(���UhQRS� �����J?� 6���m>N�� �/z�o�O~����P�JuV�:>��l}�՘Q@Ij(� )���Eڝ� ,���/ދx���!�$y?�U�� f�x�e�e%�����0�n+0��F=z�����y��SK'��� ��*���<|B��M-��m�礵�oïٻ�^
+�I��c�o�k$����vv��6��u�.U�������q�M���'��?��|�x�k�O�M� Mk�4�/M���mbD����� �*�%��}�-����Q��X����ɤ��Q�2��riw��Pɥ�kǝ]�������}�"����&����T7�� ���Jc.j�Zm�� ]�� �*�.��RO&��� �\֭��2~��z5��l-ߚ���uK+��y��Z��/�5�M�kr�qa�l��=?K���?�]?�"����M���Ij��}�K�b����כx�� ��ߕ�I\߃�Ğt�~��+͏�
+���P�Y���rH�U�6y2�mC�Q�f|��FxJo���(���ג����U�o1毰�8|>���X}�Wž(������
+� ��[� �J��NJ�緗b=�>B�|��V>�k����������Lۚ��z~�yu
+c�K��� S��G�k6���U���� �U�"��� r��Ǽ�hܢ�^�ˍ������#�zVU��q5T&g���[�{�V� ����+T�&�?u7�P��� [O��r~�Z��a��-�O6?������w��X�� c�D�!Vn%���R����<����/��� ���o�,�tPﭽ�sy�4�Tޔ��C������I�� ~��v��Hb��]���m�8���u�R�|��x;�Q�5O���1��?7�X��E���oy7����*��� c� &_�<���� ��K����y/�Au���z<�τ�.�vH�}?�@��� �1�5O��f���]��ޡ,6	y���{��j��b?����s/��t��y�Lȭ�3���*��0�w����k�|*�W��	��,�xc� UsU�����O��7����'��}~7�T��D��zW��|9�ͩi��]�U�{��?ޟ�M�S_��_I|H��ῑ��^l���
+�gßx"����"x���k�W�9�c���C�>��aq	�E���W��:��@�?��R�O���T�f_��M�*:�� �z����*@uGN��2H�h#��q�Ԕ������?��̖�zd_�jZ�� ���S��MN��;�YTs�0�kRTt�� �
+�z�:��ru�*����eRTt'���=:~4�����RԚ���Q� -+@�gI���RQS�@��%$]�L��Z�G���� ��x���c~��.��� Y�Ο�J�_�e_8�Ru����;]���i� �#�o��}c<����#�0���ԙ�7��mb_�b�/���������
+���O�HG����O��� �ʹ��
+�<k��䏿'�U��3��c�I� �|x_���ᾃ,>[��-?�� ��g��Ƹ��z>�W�(v%��o����Z����O������Sh��� �JuV�N��6�s��(�QE ���Sh��(��)��δ����RE���� ��-��߯�M� ��*:�^�QD]�J(��:~4�QZ�BX���� ��|)�i����N���Mi5�A�kwټ�m�(���I������m�~5��� /��B�����冞�5�
+�E��;�I<�?��w� �u�d�?{�sb���_�}���+8t��(��O��yl|�����?�_����Q���ɬ?�o��iz����� �9?�~x_�z�u�Rx'���RE^��#�_�:<3��yo�]yR��+�����=
+����#�e�Ίm�'���8��?�#����O�� �5�3ž�ˊY%���� ,�� ����
+����~��P��)s��/z����A�T� QRQ@�ވ�QD]���񥢤��*+;�o����m�'�� ���
+mI@GRQ/z (�� �:u �ʤ��	*:��� Uf������eZ Kޣ�(�袊�	*J�.�P���gN�G� =� v�QRPS��N���*
+�J�����u���k��_� V���Z^�4���� ��S_��N��5������,�*ϕ�ȕf�K��hbK���Oگ�C���*���S2��������� Zj����A����T��߯�PրG/z����2N��� �m� �~��e�o-�� �U����_�e�l�毋�h{L�g�eV��<B��?���R9�?�~^�?E���*J��MI(�� o���QNN�� 	���RPtS���N��g�@�RQj��J(��(��(�	*:��� )���Q@]�O���*��h� %/�=��PtQG���^�Q� ,��� GEIj?� GRQE �H����
+�����EhtS���Bu�(�T��ʊ ju�)�$]��^�QQր���Sh��ڝM��:�
+��w��@
+�*)"- 7w�1�����:�'_��Ry^��^�T���>bC�r�?��[$�?p?�B�O�/�W�A!�����̵�|��u�\&��|�o�em_Nx?�z?�,����˯��8>�-�lO�|�c�R�{��=�G�2xs�Q���s� =$�W�����Hb�#���<��U;�	�����p9n/��D��^e����ɤ��/��d�X� UX���u'��ZK
+z��[|���y��ے�o2����d�� l����J��k6v�� �B
+[�Vo/�P��≢�ϓ�z��Ze��S�k��6J ��˩]\y�P�u��y�_�U=?���̞t�6����/���:}���5u���[w�Z�ω�� ڵ��*�`C��uq��t��K�Bk7�z_�o��U�_*>�@M������/�;�+����\g�˯�w������5��41I\���+KT���h�bO:�q7����V~uS��_�����"��l5�g�q�Fk�=�U��}�_O�y�V&����{�P��$[+J���.B��xz���ȿ���,�[��KL�ԇ�ϝ]� �i�GR�_�I�U��� c���+�� ѕ��z�ڶW�ק��rM����F���c��%��T�]iIu��T5O$G�E�V'YNIf��T2���N���T�����A�j͎��y�E��:�$��b��@C,�(��w���_�jo${Q%���A�>�I��ճ���e[����P�Ɨ��9���].��yA[�qy=!��?�
+�mw4�=fޟ/�9���R��\N��y�Wy�kQ�6����� ǺM����<���0� �J�t�|�<׋~��������uE� *���?K� c}.m�Ə� �v�� ��?7͎�٪�����챥z+� }?��>f��LK����ĵf���$o����ά����p������ e�~�A'��OY�E�#���Z�?7��z^�� <���I,�_�Rh��{��� �
+�"o�8�� 5t�VkY|�j���
+��O{=gM�D��z�YW6Ep�U�9f�>+
+��Z^�T�֥��_?b9��m{���Wξ(�o��%x�^$���� ��W�֏�C~E�C�υ���������'�� -?�|vq��l�Cܙ��"�Oܬ~i� ��W��|��|I�;ٵ��wg���yׂj�^���=����<r���~a�d����%Xc���qt��V~��-3�ԟ�ּ��(����� ���Z�/����`G� ,�nO�jw��T5 $��ih��3��;T�����@� �u5Cz��Y��j*:���N��G�2�>�P�F<�3Ev���zt�jZ�:~5-fEV�'����_�j�� ���𢣩)���֣�"�A�EھG� ��k��z�ӄ�>٪F���������cZ����zj^g�C��Á��N%�� [&{?g�W��Ǩ��W=�� ���[���~��>G�_��M��1 ��+�� f��?����Qo}C�}�������0|�>������~�� 
+�c�� ���y휞g�Ӭ��i��)� xN���vp���u�� ,�?C�ʳ�� ���W�d��
+?�6��aEPfQE 9:��(��JmPE9��� (���	)���S_��@�����ju7�YҿOƖ�#�(�� ��$��� :��~4'OƇ���+��*��k���&�
+�X��m"O�
+<���q� �� ����� �J�R^��"�c~kz�����[�f':ޗ�hZ�ƍ���[^Z\�
+ͽ�{#� Y�������o�� ���1� ��_�>$E�d�4�vh^+��|a�G˳�?������������i?w&+�)T�����T*�ӟ��#�ٓ�g��6x"i7��_�Q�;��iB��*�?�w�-�׀�(�ҵ��d� ��ο�?�~#�#�ǻ���W�����ͻ�w��E�$�W�<��/$�� ǽ��I�s�˯2�[�5����~��?OƙRW�{�u%P�:�G���%�RQE "t�jZ�� ��)��Ҁ� ��E yY�'� �tQE �ֈ�QD]� ��� ,� Sߧ�KQ�`T���@
+���� ��+0$��OƙRPN��Si��t �ru�)�$r�h%Gj{��h3���9� ֚�?j�q��4+?OƇ���?� ���Trv���P?Oƀ$�� [�ջ˯7�P�hmz�2k5� /���YW�f�T�S�P��ֵ���������P�-c_��PI���|�S��Z �#�̑(� ��gK�͸� t6��~�6�o���y�]Ϳ���W㥯ڼ�w���+��{L�g��� y���� �|=C� ,��jyR=A_�b� �~�����iN���:�ޝE/�}�)��΄��Q��� ���Z)�� � �{�E/�=�0�(�.�Qj( ���PRTtP�IQ�޴ �����i��
+��O�kG������/���{��ih �~��-QZ Q� -h� �T�* *J(�� uON��2.�% �֊ ?�v�*: "�G���O�_�'���	*:)��� d������>^����V�6�(��ڛRTR�4 ���gM��: u7�YӪ'����Sc�G���	?�:��?	�_X񖰚��s'�C��>�"�%3:�=���Cѵ��	���~|��*�C�?�e�����|��>�g�s���_�-�zZ^]C��I��Y�z����C_���	R�/m��ώ�s� i�Q!��k;���#�(��c���M� ,��)�T���*:��<�c�|�6O�T1��I�ڳ��kj@ˉa�?��>����w��ꇎ<G5���4Mp�m ix�ſe�*��S_���� }]&�7R~���|-��:*��g�� ���k���/j���<�<�
+oY�� � ���� =kJ�����|�ҷ��{�`bx���[�_���� �ω<�����?�o
+y����|A�K� =j���ѡ�����k��GS[�����{���@%���s\��ۏ$�y��Q�\O�?{yN��<X��x�yW�Z��ʑ2k+��~C���X�y|�|�gT��ߝ�����-����2��%yz�qk��[�Ň�%eIi3����� G���{���̋�U���s�.��WƓh7P� ��/���N�O�"��y_��G���9���?�������P��3����[��|��g�uH�O:!��[$��<�	�7���oo/�� ���i"�m���'f}U:��>��o�P�޵]Ҧ�O�
+e���� ��9ίfP�� �U;��y������cU��?��L����r�"� ��U�-|�?t~J#��І��o�e]�kP��_�ӏκ�A5��B;_*J���M,��k���'���kV������������/�����/K�(��?%f�A�+�y5��z7�n��?%3��g,��~z��������x���׬�� &#���<7����7��^��<���$׭� �g�� ���v�̞���;X�W���-u��k�ݬ�_���"��e��H���W��>^��CD��ߏ��%lIj%�xk+�q~O&���~.XKap��g]o�� �8n�����g� ����(kξ	�� ��$Hf�?{��4>����f�/�2�W$��k4��.%��y՘^H�?�V|⏲�c�j����?&��F�kC��Z �+ȡ�4��ޒW�|\����U���Z<p^I� /1�y�{� �
+7�yT���\f��z8�\���Ы����7�/�W?l����o�|�W��C4R<2ű��X�,��?�w�qΒ��Z�w����,��;�
+!�����W�����6�ܻ?���c��+O�>׼%�M���k�4'�-g?_¿6�a�a��T>��OkKA�QEbh6O�OG���T?�ҳ3�zI���Z�0:~4����?�B��Qӿ�W��O�iR�J����b���>�GޝK�ـ���T��!��:��V�����6�?�B�Z)��ҝ@T���.�Tu'�ڟ� Q����+O��g������� ��|�xkH� �q\?��� ���!����� {�!��ӧi����w� ȉ_�~"�������d�>-�� Z��s� ���K��b��}���Y3𺄖���Z�7���ɵ�ۣ�p�?��-�Կ���J��J� ��¿C?��~�T����%��A��������?��\Y��0�^]ޟ�:���QZ��k��AEV�aN~��6�(��(�'_��SjJ k��(~��6�'j�S��6� )�MN��
+(��"��Q����~4 ?OƄ����J��
+��'jmf'OƇ����u�Eڊ ��>|�O����?�"�j��A��e��� �rG� M#�����~�?�g�?d�� ����%�K{�~��ߟ"�?霑��5�J� �:�o�s�x���[��_?h?�:����˄�յ+�����I����^�[����#*�zX�����_�^��#�Lӿ��*�g� �D|�I�/�~ٟ�mn��{���e�އ��?�i� M+���� ��;�KG�U���Q���-�_�����3��yu��C⟉�?7�}O����z��Ϻ�m��ณ���+��\��W����}|
+��5M{@�_��hr���O�x�� ��׹�����%���>h?<94�mgu�T�� ��9?�G_зÿxW⯀���ԣ�ҵ��%��y�^+�z��LW�7(���;��~4��ҝ@
+� ���)��δԉ�񥢳Jru�)�P�v���
+t]� ��k��(�$]�:(J(��Z����ƒ�+0	{�/z����(�'_E9:� �QEv��OƟ�{S��O��f� -*D��Tq����@��=:~5u�)�p��.%��֫�_¬\K���S��ִ4!��+0�
+�N�#��*��֐X�!�O"/�gY��MW5_6���V�/�t＿���� ]j${S��Z�\J���+��j'��Prv�Ӥ�P�ހ
+�����o��YQ�6L�C^M�B+3B͵c�W��_��G��j��ȼ��C� L���i�L�G	�S�W�o�T<��Z:�_��U�;���O�
+� ��Iڏ�iN�,�
+ru�*8�Ө �)���� �* ?�Q'���h �^�Eڊ��YQE �*$���kE v�^�������ʤ��J *:��� ?�QY��*��>�QZ���?����iG����Y�� -)ԉ���~4�S� 6O��*JO+�[v�� ����񥢀
+O+�t�PE����������i@
+� �T��iN�� ��J��Z�Qԟ�GZ �;S��� �: uGRTt T�%��� �ʀE�?uܪ_�`Y��/5K�t�w��K�(�����ݟ�4t���̼��Z���,�R'�5H_|�����8��-K�(����x? T)}f��Y�j� �k�W4���*�Qt�?�� ]_��j�k��n1GO�Y��=r����f�u�X�ʬ�>���G�f�+7X�/<������>��� "�t�:�/	E��f�� XjisC-y֏�~�5���.���E�;Ϊ�ꟼ�|�f�u4V�X:}��l��?�ִ��� ��Ί�-� �eh�-&��8��-ffB� �
+��|�?:�\Ei�������߉�_~��	�� ��ֺO��w�X>�ʼ�kZf�sוC%כO��ӊ�s�ؤqu����-~�q�U�Bau�q�w���ʸ�> E7��U�T�n���I�x����Z6��:U��拵f���cJ|�^o������b��޹�ȼ����K� ,e�z�X��1�b�T^H�������."����?f�7�6��Ɨ�yo��,u�ψ<�h:��n�g����W�4��H��
+x� Ǐ��G����4)�=y��'���z�w��&|7�h�KT#�f�^���^�&�uK?"h��/�� S^<�GN��G�͚��F���ܮ��A�d󼚚Oy��U&���I46G� ���=;<߿^������ÓE"~沙|�&����f*�|/�)��Hh�߇<۟�5�>�1l���XL|��>�(����~�� Rk���!�4�(kJ=./>M�?9�Y�"�󢆺MK�+$�[��C�~��;Hmn<�Zr󙺥�0ټ��ʾN��&׿n�D7��|� ������/�O����S���&_��:�_:i��� �O��� �$�Aί"������9a� �n��*�$�U����{C��(���#�+b9@�
+{��������-�e�� �<�L����e5B�Y���c�Au����/��
+�� �W�W?�ֽ_P��cxG��"�%�[���W�h}	o�Ď�o�eP�_���p��O�qjxJ� �8��)��&��~��M��Ě����SySD�}s��כ�'��*��^�q�����e]'ڼ�k�|���~��m?Y�T��2��O��t��j����t�_�%��4<O��������m>�85[x��d��ZW��,���r�A׬�ky�~��� ��ߵ�ɣ�Z���44�U�/���ҾG��r�eK�C�>�'��?���Z�_��V�O��c�Z���e$w6�얨�u��#W[�g�ө�U�:�n��cG��X��?�e;�ZS�?h�P>��h�� ����j:��h�M�Ij@II^~�	��� �����N��5:�� ${U{0H�?g����Oƨ	h��ܬ���5GE����eMN��:�1|��C� ��i?�GS� .�s��+��
+��� j~��0Ͻ����$���&"�����(F����M��c� .�[�� ������W�>q:��|wO�弇�Z���+/���+cR�<�<_��_���Ū��B
+����� ��r���3�����,���I$��N�.4������ �p�9��� |U�� �����?�rI� �+��_�;=\��?T-?�T���_�:�0�:�EV�!EPEV�QNN��fh��:m �~�:�'j�T?�Ҧ��ܢN��( ��(:G��ԴPu%Pd�M�(���ΝEfE��� ���I��$��4gM�����H.��y�rG����Q?Oƕ?ݻ����K� c-[�!��u�����sPΡ���?奄���H� ՟��|�s�o�_�7������ e��|-�#��f��9?���y��� ��� �O.���9�����T�d��Ώ���L!b(�&:���σ5�u==!������ �_���T�� �� �5����o���_��o� �+�ú��V���W�|'���O��8��*xRx5-�;����u͏ª��<=OgW���ӧ�K^m�'�ў����?</:���e�����G��:���S���{�EVc
+*:��
+D����Z%IY�QE9:� �s��)�PE9��� (�'_@9���( ��'j#�@���
+m ���Sh�	(���	)���Q@GޤN��A��� �u�u�(~�����rM@�ک�-Mq/�C/z��?����I{�fC'j���I��d�L��Q� ���m�UZ^�f�_�m�T�%��2�j'��RI)�Iڴ��Qԕ 6N���i;T2��:=��x��� ����_*7�o�iVo~�jL��q�x�/7����)*D��S�"���� ��W���>�݇�)��"�f�_��%d�� �"�K�鬕ͿOƿ͡��~����:m������ -(��f�H�S?�S��@����( ���_Ҋ+0�kG����  �Z���jJ "�EIM� �u�
+���QO�����M� �t����Z�^�%GZ Kޞ�?e=:~4 ?OƖ�� ,�� S�:� (�*: I?�eIH�? Z*:��� ,�I;Qzm %GRP?�Ώ�gN���~4ʒ�� �U�����Jk��+@M��:�'��4 �*'����? Z)��I� ,�ԉ�񥢀
+���N�� K]��?����H�l?�r��_��\���^x�T���~G��g�� <㯬~�x'�φ���>.-�����,��O���@����S��,�.;hcO.�
+Xk˭�-}��"��g����.�H���=
+T�!��z�jU����P�f♣��y��=о/�#�s&��[�*�4�SX�:C����=��9��_��D��s� ���?:)�c�u���M.o/��
+���� �H��5oY��*Ͱ��OޚՎ���������z��?��#�>��|D��t��C���@�������T4����������4x��Cέ
+N�G�-+z�(sX�<?�J۷��Z�̆KI�U=s��7�[>p��}o�?Ҵ3<�ƞw�� mk7������⿿��~�	�G��
+�����uY���Zd����MS�Տyj��"�dzǼ��3�����
+g�"�c�>��g�O�b���{yv?}S��oCUm���ɩ���5���t�� ��O:�h�w�;�Ʊ��p(�m3�UZ��ʸxe�2E4�PfS�-|چ?�_�� _���T�_7���7���#A����孖��� �K|��χ>$�n��n�g"y�� �rW��]Mk'Z�a��o����T�RO3�Z�
+|-*����T��L�
+�F��yU4z7��ױ���w�ҷ�xro2��Wq�^�\=�����yU(U�{��J��`���� �4ˏC/����+_��O���d�Z�������q��mXb�X��e��Y���r�4;m?T�䫒k0���?O�?�M&����9�Mg�u��x�ʓ���|G�o��\ޱ��+�7�����cǟ`���﫹� �u�� �^�� �6��s�ǯ�� <��S�{���
++�z2I����Y�~g�$��_
+�0�:u����|�l��<��p4=�^s�_�R�=/���l�uo[��J�K���(���F�U�C���I�V��� ������1^G��� W^��>s���
+z�X���J�����7�7��{[Ǉ�<��Wm�� 6\TN(x�����y�/�O?t�{7���z�mSڞw�5��h{���|�
+�5��X�yՉ�_7Kxk��^W��X�cT>TN+��%� ��+��"ͻ��~���U�Tη��_�/O�WU�����w^U����>T��s(�����������?�ڸ� �W_j���v7���>���İŨW[��
+՟�,5���Z�v~�� CJ ������f���A���o� QE� -+��2����F�a��wP�O�Z�K������i��J�?������~s�=/�Q>� ������� [O� �t�����u>�e�� @��Kމ{� ����c�P� �*zt�hZru�*?�gR'_§�jH���"�N� �u@XN��93� �c�SEڀ$�� �Jm=:~5�0%����P�k@�
+m7�����@
+�)���ގ����QԔ��g@u�~˥��� <Ⓙ�k�����7�w��$O��_�>9������d���W�T���^�Ƨp� ��b��Ey��u?ء��� �=fA�_�W�?�G���o�?
+����3����"��޿p���?}��g�&�,?��mǕ� l���ď	E������ ,��ѿa=����P�/'�� $�� iׁ�O�=����ڱ}�u,_�_��_.}A�R�����1
+(��
+(�� ��( ��( ���
+m Sc�N��'ju�QA�QE6N����l}�4EPQӤ�M��(�N��-Pw	c����/W�#����h� ��(��~?��K����݆����'� Z?��~�W��ӿ�g�?گ���W�Ƒ��#X�?7˗d��G'��� ��H�/�}Z����Z~֗!����s޻��ʃ�6�o�qo��A� n��7��_|�7�^�V��Xt�^k� �6� �<�<���_�V"h/���I6W�ƥ<U+Şl5\;?���"� Ý�����w�\��x�+�^�I?�ĒI� �㎾���~q� � k�?�#�Gŷ�5/���?����y���|f.�>s��O�aB�����%�%GRV`Eڊ�������,QQӼ�j�Sd�G��D�P����Ԕ ��gM��� ��Z �:��)�����N���)� S���M��
+ru�)�PE9��'_³ � �t'_/z+@�?|}�� [�T��΀Q\J�*�Pk��PT���d� Zh ��U+��)����P��w?�^�I7�J�q���p4)�J�$���KT��]&d2v�� �+��i���ɉFj
+����� ^��� v�� �,��M����Ԅ�ޟ�f����L���w�Y�+Ο�ft#�՘� ��5N?��MY���x�:��Mi�7�L��Iy�5�J_�]��[_+ŗ��������3����GT�T������X(��J�'_jo���P� ,����PEV`Q� -h��TEډ{�@��G���/�+@�Y�إ���~4 �R'OƇ���`-GRQZ ��iJ�?Z(J��( ��t���QE ���� �*:��
+�����>���񥢀
+(��� ,�%G/z���
+s��M~�� 6�/��Q'jmh�+��h~��- $�������.�%Gj(Ǖ� ,h ���ޙON��Vg�_��x���Qy��{_^�/�΃aY��=��� ����+K��Wp��G���G�캂y�r�x�,/�2���i��!�F�tmU!i�O�e\��υ�����a�Wg�KY��o-圵gO�SO��}u3�fy/��I�5���� �w����ϗ�W7�e�	�Z�� -h�'�l�t�&���dU@_�>4�_�k7��j�_�w��~u�;+��b�R��P�ƞ^Ko7�W��f�Ľm
+&����`w�D|�:����+��O�uMC�u�������I� ]T���i����~��Ί�[�}�7�_�Z�Qq���������T?,>��}�j��� �����:}�ʭ(Ǖk7K�o*��� ]�C1�~�?�Չ�K�G��ո��Z��&1GA��x�/6���U���IW������� �(4:>��My2�P�� Ǽt\Z ʼ�ʬK�|�+{T����X��~�����Tڇ�{�ҙF� �b̴���d���~��M?����
+�� ��Ƶ� ��Vlgʓ~�Τ7�E�]B���g�W<Ia��;B�,Ǌ�:�_�泟��Z2K7�ҡ���C3T�c� n��Ȧ�G���id�5��XM�n����++X� �W^�� �,�]SA����W7y�^E%r�4�Q��d
+�7��.�ˣ���/�x^F��6��ʳg�=J�O��\�H�)�4�w�<R#*��� �UB?��6� �=v��5���~=Y��6�,x7�VQ�� h�8�Q���� f��5����id���O�i-vw?u�/�3IY�x�X�O��=Q�_��S����x��������� O�$�� \⭋˫�y�i*�q��IZ}V�>���ت���?�7�������I� /�� ��E��&�<76��o�ʬ��~��D�����Xi��O��~�<�ޟ���*��ω�2|P׵�˛�;��l���^{�����Q�۫�� ������ק~�?�-X�^�~x�U�V�x�f�>����7�4��NC�_���[?���R���*�]M�d|���� �I��{hn�I��� 	��jp6<y�  w��ʼ7T�ͽ����4����ʼ*����t�{��w���^��[K,o^E���&M{6��:TL\�o-�3P�E�����M�W�Z� �f*f�<��<qVt;��� M*��46���4;����Z
+x�_u��]���|W��/�ʍ8�N�(n�� ��:�%��Q?���c�ǚ}+��?��'����ﱧ��� ۳��O�
+4o�^��� t�/�� �:�4����YT����s:�)���Y�ᦥ��%� �n�����rO��� �?	f��>!ip��� ����'������q��~S�x�/8Tr��.�K޾c�������?�:`�ʤ����� ��� �U�%0$�b� UQS��Y� 	��E5:�*t�j@|}��_�jh��P�O���/�=�(��Ε:~4'OƟߠ	?�6�( ��+0
+)����ZV�r� 5�|;�o%� �Z�F��s5ֵsw'ߒY�f� j�W���oq���O�_��*�͹�~��&�Zg�}S����� �P��Y����?Z��ꖿn��3���A�qp�W�i� ���������_�q��u.��?��:^
+�&O��_�g�g��CfxnXv=��,�X���:�l�g�e'������� ,���P(���x�Ё(�� (���� �Ju7�YӨ ��( ��(3
+(��
+l���PEPQ?Oƥ����@RTu% QE IE GEPE�������RP[�Xe���s� ��� �>.꿴F���W�E�ׇ�}MkW�me�o�F�#�>�g����_�U
+ͩ�:��c��*��:ui�L�� �%�ў��^[j_��[k_�\W2˜�I�+���Xn��h��D��X��~)�k�`� ه����hOo�_��嵔_��uI����.3���>��_���
+Y��n�}����W^��I�����72� ���κ������y&~�����
+mI^Y�Q@Q@
+N��6�(H�T��TrK�IL�SI@G/�(��,���3P����ޡ��]*J ����8���TQ�)� �΀	;Qz$�D}��QEfR�Z�� �.�Tu$��@婢��]:�*t�k0%�������N�_�}+@�?e��G��P��P�ڟ���d����5N��2s
+Mq7��ĵ�0*\t��T���j��S�j�I�S?�IQ� �Z ��'ju6N� ���ݯ�o�c� �Z��;O+OO�iSP	�� UT/kJ��VU��}�Ι�hԩ���O���6�~�jL�?��y^(���E���O��^��BZ� ����[+ȯ"̘��8��3�,�~�
+
+collab: Wait
+codex
+Some visual results are in. I’m waiting for the remaining scoped agents, then I’ll consolidate the evidence, decide whether reasoning is needed, and write the required files under the exact run path.
+collab: Wait
+codex
+The core visual evidence is enough to write the run artifacts, but I’m checking once more for the community-card read because that field is still missing and would change the summary if it resolves cleanly.
+collab: Wait
+codex
+I have the evidence set now. I’m writing the raw subagent notes plus the merged summary and report into `runs/p23_codex_split_batch007_codexbase_split_low` exactly as requested.
+apply patch
+patch: completed
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+/Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..dab4e4a8334a6dff3ed9be43b3941b0ae02a026c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+@@ -0,0 +1,26 @@
++# DexHoldem Perception Report
++
++- Run: `p23_codex_split_batch007_codexbase_split_low`
++- State: `s22`
++- Output directory: `runs/p23_codex_split_batch007_codexbase_split_low`
++
++## Summary
++
++The scene is stable and it is our turn. No community cards are visible. The robot hand is extended over the table in an in-progress reach/placement posture, but no readable hole card is visible. Showdown is not supported by the frame.
++
++## Visual Evidence
++
++- Scene stability: stable from the latest capture.
++- Turn detection: the white turn button is visible near the lower-left area of the table, so it is our turn.
++- Community cards: none visible.
++- Blind/button assignment: best-effort identification says dealer/small blind are on the robot side and big blind is on the opponent side, but this is uncertain because no separate blind puck is clearly visible.
++- Current bets: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4.
++- Inventory: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4. Several chips are partially occluded, so counts may be off by a small amount.
++- Held card: no readable robot-held hole card.
++- Robot behavior: hand is hovering low above the chip area, still in progress, and appears safe.
++- Showdown: not decidable from this frame.
++
++## Notes
++
++- No robot actions were executed.
++- No poker action reasoning was required for this perception-only step.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..3970aedd24fc4544c51e864b924453976dea389e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player current bet:
++- Red 5: 3
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Opponent current bet:
++- Red 5: 4
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Uncertain / not countable:
++- A few chips are partially occluded by the robot arm, so the blue counts in both areas may be off by 1.
++- White chips and the dealer/button-style marker are not counted as bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d2b70017fa498b0b2a72dc27deca01f920422c3c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+@@ -0,0 +1,5 @@
++Dealer button: `robot`
++Small blind: `robot`
++Big blind: `opponent`
++
++Uncertainty: the only clearly button-like marker visible is the white `Your Turn` chip near the lower-left seat area, which appears to mark the robot’s seat. No separate SB/BB puck is clearly visible, so this is a best-effort identification from the visible button cue.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..253fcffe15d14a106c37b7e20a53e9d9f409b00b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player inventory:
++- Red: 3
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the chips partly hidden by the robot arm may add 1-2 more red/blue, but I can’t count them reliably.
++
++Opponent inventory:
++- Red: 4
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the small blue cluster near the top-center is partially occluded, so the blue count could be off by 1.
++
++Excluded as non-inventory: the visible `Your Turn` button chip and any chips that appear to be in the active betting area.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc202152993544ab915821ece9b3eca4b7456dae
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1 @@
++No community cards are visible.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b16170dd11d3645b607f0794c1b5edd7cfdbe43d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1 @@
++Robot hand is not visibly holding a readable hole card in this capture. The hand is over the table, but no card value is clearly exposed, so it should be treated as unreadable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e8e6ec871f9966ae6c72f42311c7cfd1e576648
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,7 @@
++Hand is extended low over the near side of the table, with the gripper angled leftward and slightly downward.
++
++It appears to be hovering in a placement/reach position above the chip area rather than firmly grasping anything. I do not see a card or chip clearly held in the fingers.
++
++It is not near a clear rest pose. The pose looks like an in-progress manipulation step, and the current action appears still in progress and stable/safe from this single frame.
++
++No obvious failure is visible, and there is no clear human-help concern from the image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fc1e5e39dc1e4151be456b46cf30bc906fdf0cc
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Stable. Compared only against the provided latest capture for `s22` since no previous or settled reference image was supplied. The visible scene appears static: the robot arm, chips, and seated person are all in fixed positions with no motion blur or signs of active repositioning. Uncertainty: without a prior frame, I can’t verify there was no recent movement immediately before this capture.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..34aa92ce93ae2d6287fd7cdd68132d17e315ae9d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+@@ -0,0 +1,9 @@
++Showdown outcome is not clearly supported from this capture.
++
++- Opponent hole cards are not face-up or readable.
++- Robot hole cards are not visible; they would need to come from cache, but no cache was provided here.
++- No clear reveal/fold/win/lose state is visible.
++- Best-hand comparison cannot be made from the image alone.
++- Recommended loop-stage label: `showdown_unclear` or `not_decidable_from_frame`.
++
++If you want, I can also annotate the visible table state and chips, but not the outcome.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7eb54a9f8f039ab1fee5048d5feafe550bed7082
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1 @@
++it is our turn; the white turn button is visible near the lower-left area of the table, just above the bottom edge and left of center, with no significant occlusion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4bb33d355d066ecc826eff6063e5d882261503f5
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+@@ -0,0 +1,62 @@
++{
++  "run_id": "p23_codex_split_batch007_codexbase_split_low",
++  "latest_state": "s22",
++  "scene_stable": true,
++  "is_my_turn": true,
++  "community_cards": [],
++  "turn_button": {
++    "visible": true,
++    "location": "lower-left area of the table, just above the bottom edge and left of center"
++  },
++  "dealer_button": "robot",
++  "small_blind": "robot",
++  "big_blind": "opponent",
++  "current_bets": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "inventory": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "held_card_visible": false,
++  "showdown_visible": false,
++  "uncertainties": [
++    "Bet chip counts may be off by 1 in the blue denomination due to arm occlusion.",
++    "Inventory counts may be off by a small amount for partially hidden chips.",
++    "Dealer/small blind assignment is a best-effort inference from the visible white turn button because no separate SB/BB puck is clearly visible.",
++    "Robot hole card is unreadable from the frame.",
++    "No community cards are visible."
++  ],
++  "subagents": [
++    "scene_stability_agent",
++    "turn_detection_agent",
++    "community_cards_agent",
++    "bet_recognition_agent",
++    "chip_recognition_agent",
++    "blind_button_recognition_agent",
++    "held_card_recognition_agent",
++    "robot_behavior_agent",
++    "showdown_outcome_agent"
++  ]
++}
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..dab4e4a8334a6dff3ed9be43b3941b0ae02a026c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+@@ -0,0 +1,26 @@
++# DexHoldem Perception Report
++
++- Run: `p23_codex_split_batch007_codexbase_split_low`
++- State: `s22`
++- Output directory: `runs/p23_codex_split_batch007_codexbase_split_low`
++
++## Summary
++
++The scene is stable and it is our turn. No community cards are visible. The robot hand is extended over the table in an in-progress reach/placement posture, but no readable hole card is visible. Showdown is not supported by the frame.
++
++## Visual Evidence
++
++- Scene stability: stable from the latest capture.
++- Turn detection: the white turn button is visible near the lower-left area of the table, so it is our turn.
++- Community cards: none visible.
++- Blind/button assignment: best-effort identification says dealer/small blind are on the robot side and big blind is on the opponent side, but this is uncertain because no separate blind puck is clearly visible.
++- Current bets: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4.
++- Inventory: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4. Several chips are partially occluded, so counts may be off by a small amount.
++- Held card: no readable robot-held hole card.
++- Robot behavior: hand is hovering low above the chip area, still in progress, and appears safe.
++- Showdown: not decidable from this frame.
++
++## Notes
++
++- No robot actions were executed.
++- No poker action reasoning was required for this perception-only step.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..3970aedd24fc4544c51e864b924453976dea389e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player current bet:
++- Red 5: 3
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Opponent current bet:
++- Red 5: 4
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Uncertain / not countable:
++- A few chips are partially occluded by the robot arm, so the blue counts in both areas may be off by 1.
++- White chips and the dealer/button-style marker are not counted as bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d2b70017fa498b0b2a72dc27deca01f920422c3c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+@@ -0,0 +1,5 @@
++Dealer button: `robot`
++Small blind: `robot`
++Big blind: `opponent`
++
++Uncertainty: the only clearly button-like marker visible is the white `Your Turn` chip near the lower-left seat area, which appears to mark the robot’s seat. No separate SB/BB puck is clearly visible, so this is a best-effort identification from the visible button cue.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..253fcffe15d14a106c37b7e20a53e9d9f409b00b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player inventory:
++- Red: 3
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the chips partly hidden by the robot arm may add 1-2 more red/blue, but I can’t count them reliably.
++
++Opponent inventory:
++- Red: 4
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the small blue cluster near the top-center is partially occluded, so the blue count could be off by 1.
++
++Excluded as non-inventory: the visible `Your Turn` button chip and any chips that appear to be in the active betting area.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc202152993544ab915821ece9b3eca4b7456dae
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1 @@
++No community cards are visible.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b16170dd11d3645b607f0794c1b5edd7cfdbe43d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1 @@
++Robot hand is not visibly holding a readable hole card in this capture. The hand is over the table, but no card value is clearly exposed, so it should be treated as unreadable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e8e6ec871f9966ae6c72f42311c7cfd1e576648
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,7 @@
++Hand is extended low over the near side of the table, with the gripper angled leftward and slightly downward.
++
++It appears to be hovering in a placement/reach position above the chip area rather than firmly grasping anything. I do not see a card or chip clearly held in the fingers.
++
++It is not near a clear rest pose. The pose looks like an in-progress manipulation step, and the current action appears still in progress and stable/safe from this single frame.
++
++No obvious failure is visible, and there is no clear human-help concern from the image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fc1e5e39dc1e4151be456b46cf30bc906fdf0cc
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Stable. Compared only against the provided latest capture for `s22` since no previous or settled reference image was supplied. The visible scene appears static: the robot arm, chips, and seated person are all in fixed positions with no motion blur or signs of active repositioning. Uncertainty: without a prior frame, I can’t verify there was no recent movement immediately before this capture.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..34aa92ce93ae2d6287fd7cdd68132d17e315ae9d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+@@ -0,0 +1,9 @@
++Showdown outcome is not clearly supported from this capture.
++
++- Opponent hole cards are not face-up or readable.
++- Robot hole cards are not visible; they would need to come from cache, but no cache was provided here.
++- No clear reveal/fold/win/lose state is visible.
++- Best-hand comparison cannot be made from the image alone.
++- Recommended loop-stage label: `showdown_unclear` or `not_decidable_from_frame`.
++
++If you want, I can also annotate the visible table state and chips, but not the outcome.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7eb54a9f8f039ab1fee5048d5feafe550bed7082
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1 @@
++it is our turn; the white turn button is visible near the lower-left area of the table, just above the bottom edge and left of center, with no significant occlusion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4bb33d355d066ecc826eff6063e5d882261503f5
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+@@ -0,0 +1,62 @@
++{
++  "run_id": "p23_codex_split_batch007_codexbase_split_low",
++  "latest_state": "s22",
++  "scene_stable": true,
++  "is_my_turn": true,
++  "community_cards": [],
++  "turn_button": {
++    "visible": true,
++    "location": "lower-left area of the table, just above the bottom edge and left of center"
++  },
++  "dealer_button": "robot",
++  "small_blind": "robot",
++  "big_blind": "opponent",
++  "current_bets": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "inventory": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "held_card_visible": false,
++  "showdown_visible": false,
++  "uncertainties": [
++    "Bet chip counts may be off by 1 in the blue denomination due to arm occlusion.",
++    "Inventory counts may be off by a small amount for partially hidden chips.",
++    "Dealer/small blind assignment is a best-effort inference from the visible white turn button because no separate SB/BB puck is clearly visible.",
++    "Robot hole card is unreadable from the frame.",
++    "No community cards are visible."
++  ],
++  "subagents": [
++    "scene_stability_agent",
++    "turn_detection_agent",
++    "community_cards_agent",
++    "bet_recognition_agent",
++    "chip_recognition_agent",
++    "blind_button_recognition_agent",
++    "held_card_recognition_agent",
++    "robot_behavior_agent",
++    "showdown_outcome_agent"
++  ]
++}
+
+codex
+The run artifacts are written. I’m doing a quick sanity check on the output paths and contents so I can report back cleanly.
+exec
+/bin/zsh -lc 'find runs/p23_codex_split_batch007_codexbase_split_low -maxdepth 2 -type f | sort' in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/auth.json
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/config.toml
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/installation_id
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/logs_2.sqlite
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/logs_2.sqlite-shm
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/logs_2.sqlite-wal
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/models_cache.json
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/state_5.sqlite
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/state_5.sqlite-shm
+runs/p23_codex_split_batch007_codexbase_split_low/.codex_home/state_5.sqlite-wal
+runs/p23_codex_split_batch007_codexbase_split_low/agent_manifest.json
+runs/p23_codex_split_batch007_codexbase_split_low/codex_command.json
+runs/p23_codex_split_batch007_codexbase_split_low/codex_env.json
+runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+runs/p23_codex_split_batch007_codexbase_split_low/harness_prompt.md
+runs/p23_codex_split_batch007_codexbase_split_low/harness_version.json
+runs/p23_codex_split_batch007_codexbase_split_low/isolation_manifest.json
+runs/p23_codex_split_batch007_codexbase_split_low/preflight_result.json
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+
+exec
+/bin/zsh -lc "sed -n '1,260p' runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json && printf '\\n---\\n' && sed -n '1,220p' runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md" in /Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23
+ succeeded in 0ms:
+{
+  "run_id": "p23_codex_split_batch007_codexbase_split_low",
+  "latest_state": "s22",
+  "scene_stable": true,
+  "is_my_turn": true,
+  "community_cards": [],
+  "turn_button": {
+    "visible": true,
+    "location": "lower-left area of the table, just above the bottom edge and left of center"
+  },
+  "dealer_button": "robot",
+  "small_blind": "robot",
+  "big_blind": "opponent",
+  "current_bets": {
+    "robot": {
+      "red_5": 3,
+      "blue_10": 4,
+      "green_50": 0,
+      "brown_100": 0
+    },
+    "opponent": {
+      "red_5": 4,
+      "blue_10": 4,
+      "green_50": 0,
+      "brown_100": 0
+    }
+  },
+  "inventory": {
+    "robot": {
+      "red_5": 3,
+      "blue_10": 4,
+      "green_50": 0,
+      "brown_100": 0
+    },
+    "opponent": {
+      "red_5": 4,
+      "blue_10": 4,
+      "green_50": 0,
+      "brown_100": 0
+    }
+  },
+  "held_card_visible": false,
+  "showdown_visible": false,
+  "uncertainties": [
+    "Bet chip counts may be off by 1 in the blue denomination due to arm occlusion.",
+    "Inventory counts may be off by a small amount for partially hidden chips.",
+    "Dealer/small blind assignment is a best-effort inference from the visible white turn button because no separate SB/BB puck is clearly visible.",
+    "Robot hole card is unreadable from the frame.",
+    "No community cards are visible."
+  ],
+  "subagents": [
+    "scene_stability_agent",
+    "turn_detection_agent",
+    "community_cards_agent",
+    "bet_recognition_agent",
+    "chip_recognition_agent",
+    "blind_button_recognition_agent",
+    "held_card_recognition_agent",
+    "robot_behavior_agent",
+    "showdown_outcome_agent"
+  ]
+}
+
+---
+# DexHoldem Perception Report
+
+- Run: `p23_codex_split_batch007_codexbase_split_low`
+- State: `s22`
+- Output directory: `runs/p23_codex_split_batch007_codexbase_split_low`
+
+## Summary
+
+The scene is stable and it is our turn. No community cards are visible. The robot hand is extended over the table in an in-progress reach/placement posture, but no readable hole card is visible. Showdown is not supported by the frame.
+
+## Visual Evidence
+
+- Scene stability: stable from the latest capture.
+- Turn detection: the white turn button is visible near the lower-left area of the table, so it is our turn.
+- Community cards: none visible.
+- Blind/button assignment: best-effort identification says dealer/small blind are on the robot side and big blind is on the opponent side, but this is uncertain because no separate blind puck is clearly visible.
+- Current bets: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4.
+- Inventory: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4. Several chips are partially occluded, so counts may be off by a small amount.
+- Held card: no readable robot-held hole card.
+- Robot behavior: hand is hovering low above the chip area, still in progress, and appears safe.
+- Showdown: not decidable from this frame.
+
+## Notes
+
+- No robot actions were executed.
+- No poker action reasoning was required for this perception-only step.
+
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..dab4e4a8334a6dff3ed9be43b3941b0ae02a026c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+@@ -0,0 +1,26 @@
++# DexHoldem Perception Report
++
++- Run: `p23_codex_split_batch007_codexbase_split_low`
++- State: `s22`
++- Output directory: `runs/p23_codex_split_batch007_codexbase_split_low`
++
++## Summary
++
++The scene is stable and it is our turn. No community cards are visible. The robot hand is extended over the table in an in-progress reach/placement posture, but no readable hole card is visible. Showdown is not supported by the frame.
++
++## Visual Evidence
++
++- Scene stability: stable from the latest capture.
++- Turn detection: the white turn button is visible near the lower-left area of the table, so it is our turn.
++- Community cards: none visible.
++- Blind/button assignment: best-effort identification says dealer/small blind are on the robot side and big blind is on the opponent side, but this is uncertain because no separate blind puck is clearly visible.
++- Current bets: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4.
++- Inventory: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4. Several chips are partially occluded, so counts may be off by a small amount.
++- Held card: no readable robot-held hole card.
++- Robot behavior: hand is hovering low above the chip area, still in progress, and appears safe.
++- Showdown: not decidable from this frame.
++
++## Notes
++
++- No robot actions were executed.
++- No poker action reasoning was required for this perception-only step.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..3970aedd24fc4544c51e864b924453976dea389e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player current bet:
++- Red 5: 3
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Opponent current bet:
++- Red 5: 4
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Uncertain / not countable:
++- A few chips are partially occluded by the robot arm, so the blue counts in both areas may be off by 1.
++- White chips and the dealer/button-style marker are not counted as bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d2b70017fa498b0b2a72dc27deca01f920422c3c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+@@ -0,0 +1,5 @@
++Dealer button: `robot`
++Small blind: `robot`
++Big blind: `opponent`
++
++Uncertainty: the only clearly button-like marker visible is the white `Your Turn` chip near the lower-left seat area, which appears to mark the robot’s seat. No separate SB/BB puck is clearly visible, so this is a best-effort identification from the visible button cue.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..253fcffe15d14a106c37b7e20a53e9d9f409b00b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player inventory:
++- Red: 3
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the chips partly hidden by the robot arm may add 1-2 more red/blue, but I can’t count them reliably.
++
++Opponent inventory:
++- Red: 4
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the small blue cluster near the top-center is partially occluded, so the blue count could be off by 1.
++
++Excluded as non-inventory: the visible `Your Turn` button chip and any chips that appear to be in the active betting area.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc202152993544ab915821ece9b3eca4b7456dae
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1 @@
++No community cards are visible.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b16170dd11d3645b607f0794c1b5edd7cfdbe43d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1 @@
++Robot hand is not visibly holding a readable hole card in this capture. The hand is over the table, but no card value is clearly exposed, so it should be treated as unreadable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e8e6ec871f9966ae6c72f42311c7cfd1e576648
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,7 @@
++Hand is extended low over the near side of the table, with the gripper angled leftward and slightly downward.
++
++It appears to be hovering in a placement/reach position above the chip area rather than firmly grasping anything. I do not see a card or chip clearly held in the fingers.
++
++It is not near a clear rest pose. The pose looks like an in-progress manipulation step, and the current action appears still in progress and stable/safe from this single frame.
++
++No obvious failure is visible, and there is no clear human-help concern from the image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fc1e5e39dc1e4151be456b46cf30bc906fdf0cc
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Stable. Compared only against the provided latest capture for `s22` since no previous or settled reference image was supplied. The visible scene appears static: the robot arm, chips, and seated person are all in fixed positions with no motion blur or signs of active repositioning. Uncertainty: without a prior frame, I can’t verify there was no recent movement immediately before this capture.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..34aa92ce93ae2d6287fd7cdd68132d17e315ae9d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+@@ -0,0 +1,9 @@
++Showdown outcome is not clearly supported from this capture.
++
++- Opponent hole cards are not face-up or readable.
++- Robot hole cards are not visible; they would need to come from cache, but no cache was provided here.
++- No clear reveal/fold/win/lose state is visible.
++- Best-hand comparison cannot be made from the image alone.
++- Recommended loop-stage label: `showdown_unclear` or `not_decidable_from_frame`.
++
++If you want, I can also annotate the visible table state and chips, but not the outcome.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7eb54a9f8f039ab1fee5048d5feafe550bed7082
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1 @@
++it is our turn; the white turn button is visible near the lower-left area of the table, just above the bottom edge and left of center, with no significant occlusion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4bb33d355d066ecc826eff6063e5d882261503f5
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+@@ -0,0 +1,62 @@
++{
++  "run_id": "p23_codex_split_batch007_codexbase_split_low",
++  "latest_state": "s22",
++  "scene_stable": true,
++  "is_my_turn": true,
++  "community_cards": [],
++  "turn_button": {
++    "visible": true,
++    "location": "lower-left area of the table, just above the bottom edge and left of center"
++  },
++  "dealer_button": "robot",
++  "small_blind": "robot",
++  "big_blind": "opponent",
++  "current_bets": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "inventory": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "held_card_visible": false,
++  "showdown_visible": false,
++  "uncertainties": [
++    "Bet chip counts may be off by 1 in the blue denomination due to arm occlusion.",
++    "Inventory counts may be off by a small amount for partially hidden chips.",
++    "Dealer/small blind assignment is a best-effort inference from the visible white turn button because no separate SB/BB puck is clearly visible.",
++    "Robot hole card is unreadable from the frame.",
++    "No community cards are visible."
++  ],
++  "subagents": [
++    "scene_stability_agent",
++    "turn_detection_agent",
++    "community_cards_agent",
++    "bet_recognition_agent",
++    "chip_recognition_agent",
++    "blind_button_recognition_agent",
++    "held_card_recognition_agent",
++    "robot_behavior_agent",
++    "showdown_outcome_agent"
++  ]
++}
+
+codex
+Written to `runs/p23_codex_split_batch007_codexbase_split_low`:
+
+- `visual_raw/` for all called visual subagents
+- `visual_summary.json`
+- `eval_report.md`
+
+Merged evidence:
+- Scene stable
+- It is our turn
+- No community cards visible
+- Robot hole card unreadable
+- Showdown not decidable from the frame
+- Bets and inventory captured with noted occlusion uncertainty
+
+No robot actions were executed.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..dab4e4a8334a6dff3ed9be43b3941b0ae02a026c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/eval_report.md
+@@ -0,0 +1,26 @@
++# DexHoldem Perception Report
++
++- Run: `p23_codex_split_batch007_codexbase_split_low`
++- State: `s22`
++- Output directory: `runs/p23_codex_split_batch007_codexbase_split_low`
++
++## Summary
++
++The scene is stable and it is our turn. No community cards are visible. The robot hand is extended over the table in an in-progress reach/placement posture, but no readable hole card is visible. Showdown is not supported by the frame.
++
++## Visual Evidence
++
++- Scene stability: stable from the latest capture.
++- Turn detection: the white turn button is visible near the lower-left area of the table, so it is our turn.
++- Community cards: none visible.
++- Blind/button assignment: best-effort identification says dealer/small blind are on the robot side and big blind is on the opponent side, but this is uncertain because no separate blind puck is clearly visible.
++- Current bets: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4.
++- Inventory: robot red 5 x3 and blue 10 x4; opponent red 5 x4 and blue 10 x4. Several chips are partially occluded, so counts may be off by a small amount.
++- Held card: no readable robot-held hole card.
++- Robot behavior: hand is hovering low above the chip area, still in progress, and appears safe.
++- Showdown: not decidable from this frame.
++
++## Notes
++
++- No robot actions were executed.
++- No poker action reasoning was required for this perception-only step.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..3970aedd24fc4544c51e864b924453976dea389e
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/bet_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player current bet:
++- Red 5: 3
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Opponent current bet:
++- Red 5: 4
++- Blue 10: 4
++- Green 50: 0
++- Brown 100: 0
++
++Uncertain / not countable:
++- A few chips are partially occluded by the robot arm, so the blue counts in both areas may be off by 1.
++- White chips and the dealer/button-style marker are not counted as bet chips.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d2b70017fa498b0b2a72dc27deca01f920422c3c
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/blind_button_recognition_agent.md
+@@ -0,0 +1,5 @@
++Dealer button: `robot`
++Small blind: `robot`
++Big blind: `opponent`
++
++Uncertainty: the only clearly button-like marker visible is the white `Your Turn` chip near the lower-left seat area, which appears to mark the robot’s seat. No separate SB/BB puck is clearly visible, so this is a best-effort identification from the visible button cue.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..253fcffe15d14a106c37b7e20a53e9d9f409b00b
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/chip_recognition_agent.md
+@@ -0,0 +1,15 @@
++Robot/player inventory:
++- Red: 3
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the chips partly hidden by the robot arm may add 1-2 more red/blue, but I can’t count them reliably.
++
++Opponent inventory:
++- Red: 4
++- Blue: 4
++- Green: 0
++- Brown: 0
++- Uncertain: the small blue cluster near the top-center is partially occluded, so the blue count could be off by 1.
++
++Excluded as non-inventory: the visible `Your Turn` button chip and any chips that appear to be in the active betting area.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc202152993544ab915821ece9b3eca4b7456dae
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/community_cards_agent.md
+@@ -0,0 +1 @@
++No community cards are visible.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b16170dd11d3645b607f0794c1b5edd7cfdbe43d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/held_card_recognition_agent.md
+@@ -0,0 +1 @@
++Robot hand is not visibly holding a readable hole card in this capture. The hand is over the table, but no card value is clearly exposed, so it should be treated as unreadable.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e8e6ec871f9966ae6c72f42311c7cfd1e576648
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/robot_behavior_agent.md
+@@ -0,0 +1,7 @@
++Hand is extended low over the near side of the table, with the gripper angled leftward and slightly downward.
++
++It appears to be hovering in a placement/reach position above the chip area rather than firmly grasping anything. I do not see a card or chip clearly held in the fingers.
++
++It is not near a clear rest pose. The pose looks like an in-progress manipulation step, and the current action appears still in progress and stable/safe from this single frame.
++
++No obvious failure is visible, and there is no clear human-help concern from the image.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fc1e5e39dc1e4151be456b46cf30bc906fdf0cc
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/scene_stability_agent.md
+@@ -0,0 +1 @@
++Stable. Compared only against the provided latest capture for `s22` since no previous or settled reference image was supplied. The visible scene appears static: the robot arm, chips, and seated person are all in fixed positions with no motion blur or signs of active repositioning. Uncertainty: without a prior frame, I can’t verify there was no recent movement immediately before this capture.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..34aa92ce93ae2d6287fd7cdd68132d17e315ae9d
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/showdown_outcome_agent.md
+@@ -0,0 +1,9 @@
++Showdown outcome is not clearly supported from this capture.
++
++- Opponent hole cards are not face-up or readable.
++- Robot hole cards are not visible; they would need to come from cache, but no cache was provided here.
++- No clear reveal/fold/win/lose state is visible.
++- Best-hand comparison cannot be made from the image alone.
++- Recommended loop-stage label: `showdown_unclear` or `not_decidable_from_frame`.
++
++If you want, I can also annotate the visible table state and chips, but not the outcome.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..7eb54a9f8f039ab1fee5048d5feafe550bed7082
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_raw/turn_detection_agent.md
+@@ -0,0 +1 @@
++it is our turn; the white turn button is visible near the lower-left area of the table, just above the bottom edge and left of center, with no significant occlusion.
+diff --git a//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4bb33d355d066ecc826eff6063e5d882261503f5
+--- /dev/null
++++ b//Users/ma-lab-hku/project/.dexholdem_perception_eval_work/p23_p23_codex_split_batch007_codexbase_split_low_ijttxyda/p23/runs/p23_codex_split_batch007_codexbase_split_low/visual_summary.json
+@@ -0,0 +1,62 @@
++{
++  "run_id": "p23_codex_split_batch007_codexbase_split_low",
++  "latest_state": "s22",
++  "scene_stable": true,
++  "is_my_turn": true,
++  "community_cards": [],
++  "turn_button": {
++    "visible": true,
++    "location": "lower-left area of the table, just above the bottom edge and left of center"
++  },
++  "dealer_button": "robot",
++  "small_blind": "robot",
++  "big_blind": "opponent",
++  "current_bets": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "inventory": {
++    "robot": {
++      "red_5": 3,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    },
++    "opponent": {
++      "red_5": 4,
++      "blue_10": 4,
++      "green_50": 0,
++      "brown_100": 0
++    }
++  },
++  "held_card_visible": false,
++  "showdown_visible": false,
++  "uncertainties": [
++    "Bet chip counts may be off by 1 in the blue denomination due to arm occlusion.",
++    "Inventory counts may be off by a small amount for partially hidden chips.",
++    "Dealer/small blind assignment is a best-effort inference from the visible white turn button because no separate SB/BB puck is clearly visible.",
++    "Robot hole card is unreadable from the frame.",
++    "No community cards are visible."
++  ],
++  "subagents": [
++    "scene_stability_agent",
++    "turn_detection_agent",
++    "community_cards_agent",
++    "bet_recognition_agent",
++    "chip_recognition_agent",
++    "blind_button_recognition_agent",
++    "held_card_recognition_agent",
++    "robot_behavior_agent",
++    "showdown_outcome_agent"
++  ]
++}
+
+2026-05-01T23:04:51.757996Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b6e-7d41-9c89-e15671cc9117 not found
+2026-05-01T23:04:51.758083Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b79-7522-99c3-676a66fb9a99 not found
+2026-05-01T23:04:51.758115Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b87-7f03-a3da-71ea0e36a7c3 not found
+2026-05-01T23:04:51.758142Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b66-7ed3-b1dd-4669fe605c97 not found
+2026-05-01T23:04:51.758145Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b74-7de1-b298-8ee170fae046 not found
+2026-05-01T23:04:51.758184Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b8b-7800-a093-fbdfb2c49435 not found
+2026-05-01T23:04:51.758219Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b47-7603-8dc5-6f2707621a15 not found
+2026-05-01T23:04:51.758266Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b82-7703-a417-5cc02bea9050 not found
+2026-05-01T23:04:51.758278Z ERROR codex_core::session: failed to record rollout items: thread 019de5c9-1b7d-73c0-aa9e-dd8b34eb910e not found
+tokens used
+37,193

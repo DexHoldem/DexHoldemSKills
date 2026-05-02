@@ -1,0 +1,1 @@
+Stable. Compared latest capture only: Image #1 shows cards, chips, buttons, player posture, and robot/camera hardware all visually settled with no obvious motion blur or active manipulation. Uncertainty: the right side of the table is partially occluded by the robot/camera assembly, but the scene itself appears stable enough to continue.

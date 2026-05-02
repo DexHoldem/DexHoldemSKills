@@ -1,0 +1,1 @@
+Dealer button is at the `opponent` seat in the top/opponent seat band; a blue small blind button is also visible there. The `opponent` is the small blind, and the `robot` is the big blind because the yellow big blind button is visible in the bottom/robot seat band. No button conflict is visible.

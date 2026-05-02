@@ -1,0 +1,1 @@
+Stable. Compared the attached capture only: the robot arm, chips, table layout, and person in the background all look stationary with no visible motion blur or change cues. Uncertainty is moderate because I only have a single frame here, so I can’t verify whether anything was still moving just before or after this capture.

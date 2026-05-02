@@ -1,0 +1,1 @@
+No readable robot-held hole card is visible. The robot hand is present, but it does not appear to be holding a face-visible card. The table hole cards are face-down and should not be guessed, so the held card should be treated as unreadable.

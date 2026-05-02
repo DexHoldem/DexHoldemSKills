@@ -1,0 +1,1 @@
+Opponent current bet: about 3 red chips and 3 blue chips, with a couple of extra chips on the right that are hard to count confidently. Player current bet: about 4 red chips and 4 blue chips, with the yellow big blind marker not counted as a bet. Some chips are partially blocked, so the exact counts may be off by 1 in either area.

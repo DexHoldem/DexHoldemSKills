@@ -1,0 +1,1 @@
+Dealer/small blind is at the opponent seat. The robot is the big blind. Uncertainty: the white dealer button is partially hard to read, but the visible yellow `BIG BLIND` marker is clear and the dealer/small blind assignment is the top/opponent side.

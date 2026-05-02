@@ -8,6 +8,16 @@ Label problems one by one, following the user's instruction for the current
 problem before moving to the next. Do not batch-label multiple problems unless
 the user explicitly asks for that.
 
+For each problem, the agent labels first and the user verifies afterward. Work
+state by state, one at a time: inspect the state image, write the proposed
+label, report the exact files changed, and wait for the user's verification or
+correction before treating that problem as finalized.
+
+The agent must read the state images when labeling. Do not label from filenames,
+folder structure, or cached JSON alone. Use the `bench/bench_raw/` source image
+for each state, plus any corresponding state capture symlink/copy, before
+writing or revising the ground truth.
+
 ## Directory Contract
 
 Benchmark data is organized as:
@@ -55,6 +65,10 @@ such as cached state, hole-card, or action-sequence data. Treat those files as
 context for interpreting the states. Do not edit or regenerate cached preflight
 JSON while labeling unless the user explicitly asks for it.
 
+Do not keep or create `.jpg.meta.json` files for benchmark state images. Store
+state image source metadata only in the outside problem record
+`bench/problems/pN.json`.
+
 The label for `pN/` must be placed in the outside problem record,
 `bench/problems/pN.json`, not inside `bench/problems/pN/`.
 
@@ -72,21 +86,74 @@ The label for `pN/` must be placed in the outside problem record,
 9. After finishing a problem, stop and report the completed label path unless
    the user has already instructed you to continue with the next problem.
 
-## Default Label File Shape
+## Multi-State Problems
 
-If the user does not provide a specific output schema, use this structure:
+For a problem with more than one state, earlier states are completed history.
+If the current/latest state is `sT/`, then `s0/` through `s(T-1)/` should be
+treated as already finished states. They should have all necessary state
+information and supporting JSON/cache context needed to interpret the current
+problem, including parsed-state labels in `bench/problems/pN.json` and any
+preflight-generated cache files that apply to the sequence.
+
+Do not relabel or reinterpret finished earlier states unless the user asks for
+a correction. Use them as context for the latest state and for checking action
+or table continuity.
+
+Prepared finished states should mirror the DexHoldem v2 runtime contract:
+
+- `sK/00_capture.jpg` exists and is the exact image used for that state.
+- The outside problem record, `bench/problems/pN.json`, cites the raw source
+  path from `bench/bench_raw/` for every state. Do not create redundant
+  per-state capture metadata files unless the user explicitly asks for them.
+- `sK/01_parsed_state.md` exists for finished historical states. It should
+  contain one compact JSON block with `loop_stage`, `robot`, and `table`.
+- `bench/problems/pN.json` contains the same parsed-state ground truth for
+  `sK` under `ground_truth.states[].label`, plus any extra label keys requested
+  by the user, such as `blind`.
+- `sK/02_action.md` exists for finished historical states. It should contain
+  the committed action JSON, execution JSON, translation JSON, and commands JSON
+  in the DexHoldem v2 action-file style.
+- The problem root contains valid `hole_card_cache.json` and
+  `action_sequence.json` reflecting the durable cache context needed for the
+  latest state. These caches are authoritative for viewed hole cards,
+  blind/dealer assignment, pending or completed robot sequence steps, retry
+  counters, and human-required/down state context.
+- `s_current` points to the latest state directory, not to a finished
+  historical state, unless the problem has only one state.
+
+Only the latest state may be incomplete. A latest state may have just
+`00_capture.jpg` plus source metadata while awaiting labeling, parsing, or
+action selection. Once a next state exists, the previous state is no longer
+latest and must be treated as finished with the files above.
+
+These requirements come from the DexHoldem v2 runtime docs and helpers in
+`skills/dexholdem-v2/`: `SKILL.md`, `STATE_CACHE.md`, `scripts/router.py`,
+`scripts/state.py`, `scripts/executor.py`, and the `example_states/exp_demo/`
+timeline. In that workflow, `router.py` expects the current state image,
+`01_parsed_state.md`, `hole_card_cache.json`, and `action_sequence.json` before
+it can route. Once `02_action.md` exists, the state is complete and the next
+state can be created. `executor.py` writes action files with action,
+execution, translation, and commands JSON blocks, while `state.py` keeps
+durable cache fields synchronized across the sequence.
+
+## Problem Record And Label Format
+
+Use the same problem-record shape for every `bench/problems/pN.json`. The
+current `p1` record is the canonical example; apply this format to all new
+problems and replace `p1`, `1.jpg`, and label values as needed:
 
 ```json
 {
+  "schema_version": 1,
   "problem_id": "p1",
   "problem_dir": "bench/problems/p1",
-  "label_version": 1,
+  "description": "Benchmark problem p1. The initial state image is sourced from bench/bench_raw/1.jpg.",
   "states": [
     {
       "state_id": "s0",
-      "sources": ["bench/bench_raw/0.jpg"],
-      "uncertain_fields": [],
-      "notes": ""
+      "role": "initial",
+      "capture": "bench/problems/p1/s0/00_capture.jpg",
+      "source": "bench/bench_raw/1.jpg"
     }
   ],
   "ground_truth": {
@@ -113,10 +180,6 @@ If the user does not provide a specific output schema, use this structure:
     "problem_label": {},
     "uncertain_fields": [],
     "notes": ""
-  },
-  "qa": {
-    "checked": false,
-    "issues": []
   }
 }
 ```
@@ -128,6 +191,9 @@ by the DexHoldem router. Additional user-requested label keys, such as
 `blind`, should be added alongside those parsed-state fields in the same
 `label` object. Keep any overall problem answer inside
 `ground_truth.problem_label`.
+
+For unlabeled new problems, create the same outer structure and leave the
+state's `label` as `{}` until the user provides or confirms the ground truth.
 
 ## Evidence Rules
 

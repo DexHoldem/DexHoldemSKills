@@ -1,0 +1,3 @@
+The dexterous hand enters from the right and is extended over the center-right community-card/betting area. The fingers are open and angled downward, and it does not appear to be holding a card or chips.
+
+It is not near rest pose. The current action looks still in progress rather than failed: the hand is mid-table and appears to be reaching or hovering, with no clear settled post-action state. I do not see obvious disturbed chips, dropped cards, or a moved non-target object. The robot body/hand occludes part of the right-side board and lower-right robot-side area, so those zones are partially ambiguous.

@@ -1,0 +1,1 @@
+Four community cards are visible in the `community-card row` at the center-lower table. Left to right, they look like `Ts`, `8h`, `7d`, `6s`. The first three are fairly clear; the fourth (`6s`) is partially occluded by the robot/camera body, so that read is slightly uncertain.

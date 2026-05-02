@@ -1,0 +1,5 @@
+- Stage looks like **river / board complete**: five community cards are face up, likely `K♥, 3♠, 3♣, 5♥, T♣` from this capture.
+- **Opponent hole cards** are **not face-up** and no readable opponent values are visible.
+- **Robot hole cards** are **face-down** at the bottom and are **not readable here**; would need cache to identify them.
+- **Win/lose evidence**: **cannot decide** from this frame alone. No clear mucked cards, pot-award, or fold confirmation is visible.
+- **Best-hand comparison**: unavailable without both hole-card pairs; board alone is insufficient.

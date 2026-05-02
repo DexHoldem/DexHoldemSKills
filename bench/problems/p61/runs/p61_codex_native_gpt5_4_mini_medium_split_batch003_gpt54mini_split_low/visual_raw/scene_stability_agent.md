@@ -1,0 +1,1 @@
+Unstable — only the current capture is available, so there is no prior frame to confirm settling. The player’s hand is still hovering above the felt and the robotic arm is in an active position over the table, which suggests the scene may still be in motion. Uncertainty is moderate because a single still image cannot confirm whether anything is actively moving.

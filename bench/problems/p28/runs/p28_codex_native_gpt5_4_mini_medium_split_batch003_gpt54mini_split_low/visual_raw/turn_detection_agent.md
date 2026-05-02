@@ -1,0 +1,1 @@
+It is our turn. The small white turn button is visible near the lower-left area of the table, just left of the red chip stack in the seat 6 area. It is not meaningfully occluded, so confidence is high.

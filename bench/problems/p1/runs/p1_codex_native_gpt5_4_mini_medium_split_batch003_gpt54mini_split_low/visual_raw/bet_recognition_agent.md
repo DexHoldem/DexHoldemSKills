@@ -1,0 +1,1 @@
+Player side has about 12 current bet chips: 4 red, 4 blue, 1 green, and 3 brown. Opponent side has about 16 current bet chips: 4 red, 4 blue, 2 green, and 6 brown. I did not count the white “Your Turn” marker or the yellow blind button. The brown-chip counts are the least certain because a few chips are partly hidden.

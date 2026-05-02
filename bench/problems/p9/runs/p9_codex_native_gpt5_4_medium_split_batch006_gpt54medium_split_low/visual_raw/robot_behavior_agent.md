@@ -1,0 +1,3 @@
+The robot hand is extended in from the right over the bottom/robot-side betting area, close to the robot hole-card zone and near the yellow big blind button. It appears paused low over the felt rather than near its rest pose.
+
+I do not see a card or chips in the gripper, and there is no obvious motion blur in the hand or arm, so no ongoing motion is clearly visible from this frame. The pose looks physically safe at the moment: I do not see a dropped card, scattered chips, or a non-target object being visibly dragged. Part of the lower-right robot hole-card area is occluded by the hand/camera body, so that zone is not fully visible, but there is no clear sign of a physical failure or a human-help condition in this image.

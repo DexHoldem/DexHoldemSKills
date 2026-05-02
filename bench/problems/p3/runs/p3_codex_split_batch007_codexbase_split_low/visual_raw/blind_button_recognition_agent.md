@@ -1,0 +1,1 @@
+Dealer button: seat 6, likely the white “Your Turn” button. Small blind: seat 6. Big blind: seat 5, clearly marked by the yellow “BIG BLIND” button. Uncertainty: the dealer/small blind assignment is inferred from the visible white button, so there is some uncertainty.

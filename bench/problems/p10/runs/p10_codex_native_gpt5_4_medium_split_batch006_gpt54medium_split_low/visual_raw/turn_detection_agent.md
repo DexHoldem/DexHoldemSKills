@@ -1,0 +1,1 @@
+Player turn, high confidence. Visible cue: the small white turn button labeled `Your Turn` is clearly visible on the near-left player area at the bottom-left of the table, with no meaningful occlusion.

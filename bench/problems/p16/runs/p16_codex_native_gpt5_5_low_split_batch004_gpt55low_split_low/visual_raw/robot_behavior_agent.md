@@ -1,0 +1,3 @@
+The dexterous hand enters from the right side and is extended over the lower-right robot/player area, beside the robot inventory/current bet chips. It is gripping a face-up `5♦` card and holding it upright toward the camera, so it is not near idle/rest pose.
+
+The action appears still in progress: the hand is away from rest and actively holding/positioning the card, likely during a card-view/pick action. I do not see chips being held or pushed. The nearby lower-right chip groups are partly occluded by the hand and card, but they do not look scattered or mixed. No clear dropped card, pinned object, or moved non-target object is visible. Because the hand is still holding the card, this should be treated as in-progress rather than failed or retryable.

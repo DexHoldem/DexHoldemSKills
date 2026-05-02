@@ -1,0 +1,1 @@
+Four community cards are visible in the board row from left to right: T♠, Q♥, 7♦, and a fourth card that is mostly occluded by the robot arm and unreadable. The first three reads are clear; the rightmost board card is uncertain.

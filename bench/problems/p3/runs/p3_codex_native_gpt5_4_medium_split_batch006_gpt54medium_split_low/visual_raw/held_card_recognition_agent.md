@@ -1,0 +1,1 @@
+No readable held card is visible. The robot hand is not holding or displaying a face-up hole card in this image, so there is no card value to read and nothing should be inferred from the face-down table cards.

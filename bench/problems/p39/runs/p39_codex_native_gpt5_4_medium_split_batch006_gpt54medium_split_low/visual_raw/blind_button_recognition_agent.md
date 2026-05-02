@@ -1,0 +1,1 @@
+Dealer button is at the `opponent` seat, so the `opponent` is the small blind. The `robot` is the big blind. The visible yellow `BIG BLIND` button on the bottom/robot side is consistent with this assignment.

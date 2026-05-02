@@ -1,0 +1,3 @@
+- Dealer button: `opponent` - white round button near the upper center of the table appears to be the dealer button, though the text is partially obscured.
+- Small blind: `opponent` - no separate small-blind button is visible; if this is heads-up, the dealer seat is also the small blind.
+- Big blind: `robot` - yellow round button labeled `BIG BLIND` near the lower center-right by the camera arm.

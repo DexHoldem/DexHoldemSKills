@@ -1,0 +1,1 @@
+It is our turn. The small white physical turn button is visible near the lower-left player area, just above the large “6” marking, and it reads “Your Turn.” It is not occluded and is safely identifiable.

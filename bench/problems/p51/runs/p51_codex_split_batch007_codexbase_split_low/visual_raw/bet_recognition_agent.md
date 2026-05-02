@@ -1,0 +1,3 @@
+My current bet area, on the lower robot side of the community cards: about three blue 10-chips are visible. I do not clearly see any red 5-chips, green 50-chips, or brown 100-chips there. The count is uncertain because the area is partly occluded by the robot arm and nearby chips that may belong to inventory.
+
+Opponent bet area, on the upper side of the community cards: about two red 5-chips and about four blue 10-chips are visible. I do not clearly see any green 50-chips or brown 100-chips there. This count is also uncertain because some chips are partially blocked and the area is visually crowded.

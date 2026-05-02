@@ -1,0 +1,7 @@
+- Hand location: right side of the table, hovering above the felt near the near-right betting area.
+- Apparent state: open gripper, not gripping anything.
+- Holding cards/chips: no, it does not appear to hold cards or chips.
+- Motion: in this single capture it looks stationary or paused, not clearly moving.
+- Rest pose: not near a full rest pose; it is extended over the table rather than tucked back.
+- Status: looks safe and still in progress/idle, not failed.
+- Blocked/occluded: partially occluded by the robot body/camera housing from the right, but the hand itself is still visible enough; no human-help issue is obvious.

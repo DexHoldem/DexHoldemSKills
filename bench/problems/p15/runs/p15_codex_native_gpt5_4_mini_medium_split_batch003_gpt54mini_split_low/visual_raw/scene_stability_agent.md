@@ -1,0 +1,1 @@
+Stable. Compared only the latest capture, since no prior frame was provided. The scene appears static: the person, chips, table layout, and robot arm show no visible motion blur or positional change, and there is no sign of an active robot action. Uncertainty: without a prior capture, this is a single-frame stability inference rather than a true frame-to-frame comparison.

@@ -1,0 +1,1 @@
+Stable. Compared Image #1 only; no previous/pre-action image was supplied. The table, chips, cards, player, and robot arm appear sharp with no visible motion blur or displaced objects. Uncertainty: stability is judged from a single frame, so recent motion cannot be ruled out.

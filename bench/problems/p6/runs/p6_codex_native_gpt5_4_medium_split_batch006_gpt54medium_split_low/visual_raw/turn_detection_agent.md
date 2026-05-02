@@ -1,0 +1,1 @@
+It is our turn. The white physical turn button labeled "Your Turn" is visible in the bottom/robot-side seat area, near the lower-left rail by seat 6. It is not meaningfully occluded, so turn ownership is safely identifiable.

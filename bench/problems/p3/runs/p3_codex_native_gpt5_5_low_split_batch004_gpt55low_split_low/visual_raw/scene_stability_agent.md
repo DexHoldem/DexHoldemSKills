@@ -1,0 +1,1 @@
+Stable. Compared only the supplied current capture, since no previous or pre-action settled image was provided. The robot arm and table objects appear visually still: no motion blur, displaced chips/cards, or active manipulation is visible. Uncertainty: without a prior frame, I can only judge stability from this single image, not confirm that nothing changed between captures.

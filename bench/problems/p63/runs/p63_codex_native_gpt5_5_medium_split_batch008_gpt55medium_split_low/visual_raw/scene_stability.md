@@ -1,0 +1,1 @@
+Stable. Compared the current capture `/s0/00_capture.jpg` with no previous or pre-action image provided. The table objects appear settled: cards and chips are sharp and stationary, no hand or robot motion is visible, and there is no obvious blur from an ongoing action. Uncertainty: without a previous frame, I can only judge stability from this single image.

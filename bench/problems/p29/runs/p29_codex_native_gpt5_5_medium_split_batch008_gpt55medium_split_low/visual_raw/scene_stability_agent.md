@@ -1,0 +1,1 @@
+Unstable. Compared s25/00_capture.jpg with s24/00_capture.jpg: the robot arm has moved substantially upward/right between frames, and the person’s head/posture also changed. Because the latest frame differs significantly from the previous capture, the scene is not visually settled enough to continue.

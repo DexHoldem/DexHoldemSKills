@@ -1,0 +1,1 @@
+it is our turn. The white physical turn button is visible near the lower-left area of the table, just above the bottom edge and left of center, with "Your Turn" readable. No meaningful occlusion of the button.

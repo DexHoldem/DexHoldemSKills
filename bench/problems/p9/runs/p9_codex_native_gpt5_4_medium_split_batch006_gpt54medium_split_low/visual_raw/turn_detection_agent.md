@@ -1,0 +1,1 @@
+it is our turn; the small white turn button is clearly visible in the lower-left area of the table, resting near the near-side seat marked `6`. It is not meaningfully occluded, so the turn indicator is safely identifiable.

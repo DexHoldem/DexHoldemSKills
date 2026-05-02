@@ -1,0 +1,9 @@
+- Scene stable: yes, it looks like a still, stable capture with no obvious motion blur.
+- My turn: cannot determine from this image alone; there is no clear action highlight or turn marker visible.
+- Community cards visible: 5 community cards are on the board. They appear to be `J♥`, `A♣`, `K?`, `4♣`, `K?`, but the suits on the middle/right cards are partially unclear from the angle and occlusion.
+- My chips visible: yes. A stack cluster is visible near the bottom player area, including blue/red/white chips; exact counts are not reliably readable.
+- Opponent chips visible: yes. Several chip stacks are visible in the top player area, including stacks near the top center and top right; exact counts are not reliably readable.
+- Current bets visible: there are chips placed in front of both player areas and near the board, but I cannot distinguish a precise current bet amount from the image.
+- Held cards visible: yes. My hole cards appear to be `Q♥` and `10♠`.
+- Dealer/blind/button indicators visible: yes. A white `DEALER` button is visible near the bottom center, and a yellow `BIG BLIND` marker is visible near the top center. A blue `SMALL BLIND` marker also appears visible near the bottom center.
+- Uncertainty / occlusion: the right side of the table is heavily occluded by the robot arm/camera rig, so some chips and any card details on that side are partially blocked. The exact community-card suits/ranks on the less clear cards and exact chip counts cannot be determined confidently.

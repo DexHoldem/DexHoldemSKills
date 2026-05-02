@@ -1,0 +1,3 @@
+Robot hand is extended over the right side of the table, above the betting/card area near chip stacks. The fingers are partially flexed/open in a reach or hover pose, with no visible card or chips held.
+
+It is not near rest pose. The hand appears to be in an active motion or paused mid-action rather than finished. Current state looks safe: it is above the felt, not colliding with cards, chips, or the human. No clear failure is visible, and there is no immediate need for human help. Human arms are folded and outside the robot’s working path. The robot body/hand partially occludes the right edge of the table, but not enough to indicate a safety concern.

@@ -1,0 +1,1 @@
+No visible robot-held hole card. Evidence: the robot gripper is visible near the right side of the table, but no card face or corner is clearly being held, so the held card should be treated as unreadable.

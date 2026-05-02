@@ -1,0 +1,1 @@
+Five community cards are visible from left to right. The first is Jh, the second is Ac, the third is Ks, the fourth looks like 4c, and the fifth looks like Kd. The fourth and fifth cards are slightly uncertain due to angle and partial occlusion.
