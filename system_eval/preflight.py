@@ -244,6 +244,46 @@ def capture_initial(exp_dir: Path, source: str | None = None) -> dict:
     return detail
 
 
+AGENTS_MD_TEMPLATE = """# Available Subagents
+
+This experiment has split visual subagents installed for image perception tasks.
+
+## Codex Agents (.codex/agents/)
+
+{codex_agents}
+
+## Claude Agents (.claude/agents/)
+
+{claude_agents}
+
+## Usage
+
+When running visual perception, delegate image-reading questions to the appropriate
+scoped visual agent. Each agent handles a specific aspect of the poker table scene:
+
+- **chip_recognition_agent** - Count remaining inventory chips (not bets)
+- **bet_recognition_agent** - Count current bet chips in betting areas
+- **community_cards_agent** - Identify community cards on the board
+- **turn_detection_agent** - Determine whose turn it is
+- **blind_button_recognition_agent** - Identify dealer button and blind positions
+- **scene_stability_agent** - Check if the scene is stable for action
+- **robot_behavior_agent** - Describe robot/dexterous hand state
+- **held_card_recognition_agent** - Read cards held by the robot (when visible)
+- **showdown_outcome_agent** - Determine winner at showdown (when applicable)
+
+Run independent visual subagents in parallel when possible.
+"""
+
+
+def generate_agents_md(codex_files: list[Path], claude_files: list[Path]) -> str:
+    codex_list = "\n".join(f"- `{f.stem}` ({f.name})" for f in codex_files)
+    claude_list = "\n".join(f"- `{f.stem}` ({f.name})" for f in claude_files)
+    return AGENTS_MD_TEMPLATE.format(
+        codex_agents=codex_list or "(none)",
+        claude_agents=claude_list or "(none)",
+    )
+
+
 def model_checks(codex_files: list[Path], claude_files: list[Path]) -> list[dict]:
     checks = []
     for path in codex_files:
@@ -314,6 +354,12 @@ def create_experiment(args: argparse.Namespace) -> dict:
     codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
     claude_installed = install_agent_files(claude_files, exp_dir / ".claude" / "agents")
 
+    agents_md = generate_agents_md(codex_files, claude_files)
+    (exp_dir / "AGENTS.md").write_text(agents_md)
+
+    visible_codex = [f.stem for f in codex_files]
+    visible_claude = [f.stem for f in claude_files]
+
     if not args.no_current:
         replace_symlink(exp_dir.parent / "current", exp_dir)
 
@@ -326,7 +372,13 @@ def create_experiment(args: argparse.Namespace) -> dict:
             "capture": capture_result,
             "codex_agents": codex_installed,
             "claude_agents": claude_installed,
-        }
+        },
+        "visible_agents": {
+            "codex": visible_codex,
+            "claude": visible_claude,
+            "codex_dir": ".codex/agents",
+            "claude_dir": ".claude/agents",
+        },
     })
     (exp_dir / "system_eval_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
 
