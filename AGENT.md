@@ -14,9 +14,8 @@ label, report the exact files changed, and wait for the user's verification or
 correction before treating that problem as finalized.
 
 The agent must read the state images when labeling. Do not label from filenames,
-folder structure, or cached JSON alone. Use the `bench/bench_raw/` source image
-for each state, plus any corresponding state capture symlink/copy, before
-writing or revising the ground truth.
+folder structure, or cached JSON alone. Use the state capture image
+(`sN/00_capture.jpg`) before writing or revising the ground truth.
 
 ## Directory Contract
 
@@ -24,14 +23,11 @@ Benchmark data is organized as:
 
 ```text
 bench/
-  bench_raw/
-    0.jpg
-    1.jpg
-    ...
   problems/
     p1.json
     p1/
       s0/
+        00_capture.jpg
       s1/
       ...
       *.json
@@ -45,9 +41,8 @@ bench/
 ```
 
 Each `bench/problems/pN/` directory is one benchmark problem. Each state inside
-that problem is a directory named `s0/`, `s1/`, and so on. State evidence must
-come from `bench/bench_raw/`, either by direct path reference, symlink, copied
-image, or metadata in the state/problem files.
+that problem is a directory named `s0/`, `s1/`, and so on. State images are
+stored directly in `sN/00_capture.jpg`.
 
 Problem-level information and ground truth for `pN/` must be stored outside the
 problem folder in:
@@ -77,8 +72,8 @@ The label for `pN/` must be placed in the outside problem record,
 1. Read the user's labeling instruction for the current problem.
 2. Open only one problem folder, for example `bench/problems/p1/`.
 3. Enumerate states in numeric order: `s0/`, `s1/`, `s2/`, ...
-4. For each state, identify the raw source files from `bench/bench_raw/`.
-5. Inspect the corresponding state evidence and relevant cached `.json` files.
+4. For each state, open the capture image `sN/00_capture.jpg`.
+5. Inspect the image and relevant cached `.json` files.
 6. Record labels exactly according to the user's requested schema or criteria.
 7. If a required field is not visible or not supported by the caches, mark it
    as uncertain instead of guessing.
@@ -102,9 +97,6 @@ or table continuity.
 Prepared finished states should mirror the DexHoldem v2 runtime contract:
 
 - `sK/00_capture.jpg` exists and is the exact image used for that state.
-- The outside problem record, `bench/problems/pN.json`, cites the raw source
-  path from `bench/bench_raw/` for every state. Do not create redundant
-  per-state capture metadata files unless the user explicitly asks for them.
 - `sK/01_parsed_state.md` exists for finished historical states. It should
   contain one compact JSON block with `loop_stage`, `robot`, and `table`.
 - `bench/problems/pN.json` contains the same parsed-state ground truth for
@@ -147,13 +139,12 @@ problems and replace `p1`, `1.jpg`, and label values as needed:
   "schema_version": 1,
   "problem_id": "p1",
   "problem_dir": "bench/problems/p1",
-  "description": "Benchmark problem p1. The initial state image is sourced from bench/bench_raw/1.jpg.",
+  "description": "Benchmark problem p1.",
   "states": [
     {
       "state_id": "s0",
       "role": "initial",
-      "capture": "bench/problems/p1/s0/00_capture.jpg",
-      "source": "bench/bench_raw/1.jpg"
+      "capture": "bench/problems/p1/s0/00_capture.jpg"
     }
   ],
   "ground_truth": {
@@ -197,9 +188,8 @@ state's `label` as `{}` until the user provides or confirms the ground truth.
 
 ## Evidence Rules
 
-- Prefer direct visual evidence from the state's raw source images.
+- Prefer direct visual evidence from the state capture images.
 - Use preflight `.json` caches only as supporting context or durable state.
-- Preserve the raw files in `bench/bench_raw/`; do not rename or modify them.
 - Preserve the state folders under `bench/problems/pN/`; do not move labels
   into them. Store labels in `bench/problems/pN.json`.
 - Keep notes concise and factual. Record ambiguity in `uncertain_fields`.
@@ -212,7 +202,6 @@ state's `label` as `{}` until the user provides or confirms the ground truth.
 Before reporting completion for a problem:
 
 - Confirm every `sN/` state in the problem has an entry in the label file.
-- Confirm every state entry cites its raw `bench/bench_raw/` source path.
 - Confirm the final label file is `bench/problems/pN.json`, outside the problem
   directory.
 - Confirm the JSON is valid.
