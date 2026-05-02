@@ -37,6 +37,13 @@ The vision model or vision agent may inspect older states when the last two
 frames are ambiguous, but the final decision should answer whether the latest
 frame is safe for the main agent's next decision.
 
+**Important:** Scene stability only cares about the **dexterous hand's stability**,
+not the human opponent's general motion. Ignore the opponent's body movement,
+hand gestures, or posture changes unless they are actively blocking or moving
+objects on the table. The opponent may fidget, adjust their position, or move
+their hands near their chips—none of this affects scene stability unless they
+are physically interfering with the table layout.
+
 For robot actions, compare enough frames to avoid judging too early. The current
 frame, previous frame, and last clearly settled pre-action frame are often all
 needed. If the current atom is a card-pick/view-card step and the hand is still
@@ -59,8 +66,12 @@ Call the scene stable only when:
 
 Small visual differences are allowed. Lighting changes, tiny camera noise, or a
 slightly different human posture do not make the scene unstable by themselves.
-Humans move quickly, so do not over-focus on small human motion outside the
-active table area.
+
+**Human opponent motion is not a stability concern.** The opponent may move their
+hands, adjust their posture, gesture, or shift position at any time. These normal
+human movements do not affect scene stability. Only flag human interference when
+an arm/hand is physically blocking the robot's workspace or actively moving
+cards/chips on the table.
 
 ## Unstable
 
