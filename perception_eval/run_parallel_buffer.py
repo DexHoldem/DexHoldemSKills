@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUN_CODEX = ROOT / "perception_eval" / "run_codex_benchmark.py"
 RUN_CLAUDE = ROOT / "perception_eval" / "run_claude_benchmark.py"
+RUN_GEMINI = ROOT / "perception_eval" / "run_gemini_benchmark.py"
 DEFAULT_BATCH_ROOT = ROOT / "perception_eval" / "batch_runs"
 
 
@@ -26,6 +27,8 @@ def requires_openrouter(visual_variant: str | None) -> bool:
 def runner_for_harness(harness: str) -> Path:
     if harness == "claude":
         return RUN_CLAUDE
+    if harness == "gemini":
+        return RUN_GEMINI
     return RUN_CODEX
 
 
@@ -35,6 +38,8 @@ def infer_harness(visual_variant: str | None, explicit_harness: str | None) -> s
     if visual_variant:
         if visual_variant.startswith("claude"):
             return "claude"
+        if visual_variant.startswith("gemini"):
+            return "gemini"
         return "codex"
     raise ValueError("cannot infer harness without visual_variant or explicit harness")
 
@@ -113,7 +118,7 @@ def build_command(args: argparse.Namespace, problem: Path, run_id: str, harness:
     if not is_native:
         cmd.extend(["--visual-setting", args.visual_setting])
         cmd.extend(["--visual-variant", args.visual_variant])
-    if harness != "claude":
+    if harness == "codex":
         cmd.extend(["--service-tier", args.service_tier])
     if args.no_isolated_workspace:
         cmd.append("--no-isolated-workspace")
@@ -160,7 +165,7 @@ def provider_limit_message(record: dict) -> str | None:
     if not run_dir:
         return None
 
-    for name in ("claude_stdout.txt", "claude_stderr.txt", "codex_stdout.txt", "codex_stderr.txt"):
+    for name in ("claude_stdout.txt", "claude_stderr.txt", "codex_stdout.txt", "codex_stderr.txt", "gemini_stdout.txt", "gemini_stderr.txt"):
         path = Path(run_dir) / name
         if not path.exists():
             continue
@@ -173,7 +178,7 @@ def provider_limit_message(record: dict) -> str | None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--skill", choices=("v2", "v2-native"), default="v2", help="Skill: v2 (subagents) or v2-native (no subagents)")
-    parser.add_argument("--harness", choices=("codex", "claude"), help="Harness type. Required for v2-native, inferred from visual-variant for v2.")
+    parser.add_argument("--harness", choices=("codex", "claude", "gemini"), help="Harness type. Required for v2-native, inferred from visual-variant for v2.")
     parser.add_argument("--visual-variant", help="Variant under subagent/ (v2 only)")
     parser.add_argument("--visual-setting", choices=("split", "general"), default="split", help="Visual setting (v2 only)")
     parser.add_argument("--problems-root", default=str(ROOT / "bench" / "problems"))
@@ -258,7 +263,7 @@ def main() -> None:
         "concurrency": args.concurrency,
         "model": args.model,
         "reasoning_effort": args.reasoning_effort,
-        "service_tier": None if harness == "claude" else args.service_tier,
+        "service_tier": args.service_tier if harness == "codex" else None,
         "problem_count": len(problems),
         "queued_count": len(queued),
         "skipped_count": len(skipped),

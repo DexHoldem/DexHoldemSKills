@@ -16,6 +16,7 @@ SOURCE_ROOT = ROOT / "subagent"
 SKILLS_ROOT = ROOT / "skills"
 CODEX_AGENT_DIR = ".codex/agents"
 CLAUDE_AGENT_DIR = ".claude/agents"
+GEMINI_AGENT_DIR = ".gemini/agents"
 
 SUPPORTED_SKILLS = ("v2", "v2-native")
 
@@ -97,6 +98,8 @@ def infer_harness(variant: str) -> str | None:
         return "codex"
     if variant.startswith("claude"):
         return "claude"
+    if variant.startswith("gemini"):
+        return "gemini"
     return None
 
 
@@ -180,6 +183,7 @@ def clean_problem(problem_dir: Path, *, remove_runs: bool, dry_run: bool) -> dic
 
     removed.extend(clean_nested_agent_dir(problem_dir, CODEX_AGENT_DIR, ".codex", dry_run=dry_run))
     removed.extend(clean_nested_agent_dir(problem_dir, CLAUDE_AGENT_DIR, ".claude", dry_run=dry_run))
+    removed.extend(clean_nested_agent_dir(problem_dir, GEMINI_AGENT_DIR, ".gemini", dry_run=dry_run))
 
     runs_dir = problem_dir / "runs"
     if remove_runs:
@@ -218,7 +222,12 @@ def list_variants() -> dict:
 
 def agent_source_files(source_dir: Path, harness: str, setting: str) -> list[Path]:
     if setting == "general":
-        filename = "visual_agent.toml" if harness == "codex" else "visual-agent.md"
+        if harness == "codex":
+            filename = "visual_agent.toml"
+        elif harness == "gemini":
+            filename = "visual-agent.md"  # Gemini uses same format as Claude
+        else:
+            filename = "visual-agent.md"
         path = source_dir / filename
         return [path] if path.exists() else []
 
@@ -280,6 +289,8 @@ def install_agents(problem_dir: Path, source_files: list[Path], harness: str) ->
         target = problem_dir / CODEX_AGENT_DIR
     elif harness == "claude":
         target = problem_dir / CLAUDE_AGENT_DIR
+    elif harness == "gemini":
+        target = problem_dir / GEMINI_AGENT_DIR
     else:
         raise RuntimeError(f"unsupported harness: {harness}")
 
@@ -438,7 +449,7 @@ def main() -> None:
     parser.add_argument("--cleanup", action="store_true", help="Clean active install artifacts from --problem-dir")
     parser.add_argument("--problem-dir", help="Problem folder, e.g. bench/problems/p3")
     parser.add_argument("--skill", choices=SUPPORTED_SKILLS, default="v2", help="Skill to use: v2 (subagents) or v2-native (no subagents)")
-    parser.add_argument("--harness", choices=("codex", "claude"), help="Harness type; inferred from variant by default for v2, required for v2-native")
+    parser.add_argument("--harness", choices=("codex", "claude", "gemini"), help="Harness type; inferred from variant by default for v2, required for v2-native")
     parser.add_argument("--visual-setting", choices=("general", "split"), default="split", help="Visual agent setting (v2 only)")
     parser.add_argument("--visual-variant", help="Variant name under subagent/ (v2 only), e.g. codex_native_gpt5_4_mini_medium")
     parser.add_argument("--run-id", help="Run folder name under problem_dir/runs/")
