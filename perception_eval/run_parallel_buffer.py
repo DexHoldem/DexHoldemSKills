@@ -19,14 +19,24 @@ RUN_CLAUDE = ROOT / "perception_eval" / "run_claude_benchmark.py"
 DEFAULT_BATCH_ROOT = ROOT / "perception_eval" / "batch_runs"
 
 
-def requires_openrouter(visual_variant: str) -> bool:
-    return visual_variant.startswith(("codex_openrouter_", "claude_openrouter_"))
+def requires_openrouter(visual_variant: str | None) -> bool:
+    return visual_variant is not None and visual_variant.startswith(("codex_openrouter_", "claude_openrouter_"))
 
 
-def runner_for_variant(visual_variant: str) -> Path:
-    if visual_variant.startswith("claude"):
+def runner_for_harness(harness: str) -> Path:
+    if harness == "claude":
         return RUN_CLAUDE
     return RUN_CODEX
+
+
+def infer_harness(visual_variant: str | None, explicit_harness: str | None) -> str:
+    if explicit_harness:
+        return explicit_harness
+    if visual_variant:
+        if visual_variant.startswith("claude"):
+            return "claude"
+        return "codex"
+    raise ValueError("cannot infer harness without visual_variant or explicit harness")
 
 
 def sanitize(value: str) -> str:
@@ -82,16 +92,15 @@ def load_existing_ok(problem: Path, run_id: str) -> bool:
         return False
 
 
-def build_command(args: argparse.Namespace, problem: Path, run_id: str) -> list[str]:
+def build_command(args: argparse.Namespace, problem: Path, run_id: str, harness: str) -> list[str]:
+    is_native = args.skill == "v2-native"
     cmd = [
         sys.executable,
-        str(runner_for_variant(args.visual_variant)),
+        str(runner_for_harness(harness)),
         "--problem-dir",
         str(problem),
-        "--visual-setting",
-        args.visual_setting,
-        "--visual-variant",
-        args.visual_variant,
+        "--skill",
+        args.skill,
         "--run-id",
         run_id,
         "--model",
@@ -101,7 +110,10 @@ def build_command(args: argparse.Namespace, problem: Path, run_id: str) -> list[
         "--agent-max-threads",
         str(args.agent_max_threads),
     ]
-    if not args.visual_variant.startswith("claude"):
+    if not is_native:
+        cmd.extend(["--visual-setting", args.visual_setting])
+        cmd.extend(["--visual-variant", args.visual_variant])
+    if harness != "claude":
         cmd.extend(["--service-tier", args.service_tier])
     if args.no_isolated_workspace:
         cmd.append("--no-isolated-workspace")
@@ -160,8 +172,10 @@ def provider_limit_message(record: dict) -> str | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--visual-variant", required=True)
-    parser.add_argument("--visual-setting", choices=("split", "general"), default="split")
+    parser.add_argument("--skill", choices=("v2", "v2-native"), default="v2", help="Skill: v2 (subagents) or v2-native (no subagents)")
+    parser.add_argument("--harness", choices=("codex", "claude"), help="Harness type. Required for v2-native, inferred from visual-variant for v2.")
+    parser.add_argument("--visual-variant", help="Variant under subagent/ (v2 only)")
+    parser.add_argument("--visual-setting", choices=("split", "general"), default="split", help="Visual setting (v2 only)")
     parser.add_argument("--problems-root", default=str(ROOT / "bench" / "problems"))
     parser.add_argument("--problem-start", type=int, default=1)
     parser.add_argument("--problem-end", type=int, default=36)
@@ -192,6 +206,12 @@ def main() -> None:
 
     if args.concurrency < 1:
         raise SystemExit("--concurrency must be at least 1")
+    is_native = args.skill == "v2-native"
+    if not is_native and not args.visual_variant:
+        raise SystemExit("--visual-variant is required for v2 skill")
+    if is_native and not args.harness:
+        raise SystemExit("--harness is required for v2-native skill")
+    harness = infer_harness(args.visual_variant, args.harness)
     if requires_openrouter(args.visual_variant) and not os.environ.get("OPENROUTER_API_KEY"):
         raise SystemExit(
             f"{args.visual_variant} requires OPENROUTER_API_KEY. "
@@ -203,8 +223,12 @@ def main() -> None:
         raise SystemExit("no problems selected")
 
     run_prefix = sanitize(args.run_prefix or time.strftime("%Y%m%d_%H%M%S"))
-    variant_slug = sanitize(args.visual_variant)
-    setting_slug = sanitize(args.visual_setting)
+    if is_native:
+        variant_slug = f"{harness}_native"
+        setting_slug = "native"
+    else:
+        variant_slug = sanitize(args.visual_variant)
+        setting_slug = sanitize(args.visual_setting)
     batch_id = sanitize(f"{run_prefix}_{variant_slug}_{setting_slug}")
     batch_dir = Path(args.batch_root).resolve() / batch_id
     batch_dir.mkdir(parents=True, exist_ok=True)
@@ -222,17 +246,19 @@ def main() -> None:
             "problem": problem,
             "problem_name": problem.name,
             "run_id": run_id,
-            "cmd": build_command(args, problem, run_id),
+            "cmd": build_command(args, problem, run_id, harness),
         })
 
     manifest = {
         "batch_id": batch_id,
+        "skill": args.skill,
+        "harness": harness,
         "visual_variant": args.visual_variant,
-        "visual_setting": args.visual_setting,
+        "visual_setting": args.visual_setting if not is_native else "native",
         "concurrency": args.concurrency,
         "model": args.model,
         "reasoning_effort": args.reasoning_effort,
-        "service_tier": None if args.visual_variant.startswith("claude") else args.service_tier,
+        "service_tier": None if harness == "claude" else args.service_tier,
         "problem_count": len(problems),
         "queued_count": len(queued),
         "skipped_count": len(skipped),

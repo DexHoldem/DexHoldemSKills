@@ -199,7 +199,7 @@ def render_run_config(args: argparse.Namespace, problem_dir: Path, run_dir: Path
         "[shell_environment_policy]",
         'inherit = "none"',
     ]
-    if args.visual_variant.startswith("codex_openrouter_"):
+    if args.visual_variant and args.visual_variant.startswith("codex_openrouter_"):
         lines.extend([
             "",
             "[model_providers.openrouter]",
@@ -332,8 +332,9 @@ def wrapper_version(args: argparse.Namespace, codex_home: Path | None = None) ->
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--problem-dir", required=True, help="Problem folder, e.g. bench/problems/p3")
-    parser.add_argument("--visual-setting", choices=("general", "split"), default="split")
-    parser.add_argument("--visual-variant", required=True, help="Variant under subagent/, e.g. codex_native_gpt5_4_mini_medium")
+    parser.add_argument("--skill", choices=("v2", "v2-native"), default="v2", help="Skill: v2 (subagents) or v2-native (no subagents)")
+    parser.add_argument("--visual-setting", choices=("general", "split"), default="split", help="Visual setting (v2 only)")
+    parser.add_argument("--visual-variant", help="Variant under subagent/ (v2 only), e.g. codex_native_gpt5_4_mini_medium")
     parser.add_argument("--run-id", required=True, help="Run folder name under problem_dir/runs/")
     parser.add_argument("--model", default="gpt-5.5")
     parser.add_argument("--reasoning-effort", default="medium")
@@ -385,9 +386,12 @@ def main() -> None:
     args = parser.parse_args()
 
     source_problem_dir = Path(args.problem_dir).resolve()
+    is_native = args.skill == "v2-native"
     if args.agent_max_threads < 1:
         raise SystemExit("--agent-max-threads must be at least 1")
-    if requires_openrouter(args.visual_variant) and not os.environ.get("OPENROUTER_API_KEY"):
+    if not is_native and not args.visual_variant:
+        raise SystemExit("--visual-variant is required for v2 skill")
+    if not is_native and requires_openrouter(args.visual_variant) and not os.environ.get("OPENROUTER_API_KEY"):
         raise SystemExit(
             f"{args.visual_variant} requires OPENROUTER_API_KEY. "
             "Set it before launching this run, or use a native Codex visual variant."
@@ -409,13 +413,18 @@ def main() -> None:
         str(PREFLIGHT),
         "--problem-dir",
         str(planned_problem_dir),
-        "--visual-setting",
-        args.visual_setting,
-        "--visual-variant",
-        args.visual_variant,
+        "--skill",
+        args.skill,
+        "--harness",
+        "codex",
         "--run-id",
         args.run_id,
     ]
+    if is_native:
+        pass  # No visual-setting or visual-variant for native
+    else:
+        preflight_cmd.extend(["--visual-setting", args.visual_setting])
+        preflight_cmd.extend(["--visual-variant", args.visual_variant])
     if args.no_clean_before:
         preflight_cmd.append("--no-clean")
 

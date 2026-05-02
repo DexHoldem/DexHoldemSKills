@@ -13,9 +13,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "subagent"
-SKILL_ROOT = ROOT / "skills" / "dexholdem-v2"
+SKILLS_ROOT = ROOT / "skills"
 CODEX_AGENT_DIR = ".codex/agents"
 CLAUDE_AGENT_DIR = ".claude/agents"
+
+SUPPORTED_SKILLS = ("v2", "v2-native")
 
 ACTIVE_FILES = (
     "action_translator.py",
@@ -69,6 +71,21 @@ unless a dependency or limit requires it.
 
 Write one raw evidence file per called subagent under
 `runs/<run_id>/visual_raw/<agent_name>.md`.
+
+Then write `runs/<run_id>/visual_summary.json` and
+`runs/<run_id>/eval_report.md`. Do not execute robot actions.
+"""
+
+
+NATIVE_PROMPT = """# Native Perception Setup
+
+Perform visual perception directly without delegating to subagents.
+
+Read the capture image and extract all visual fields following the guidelines
+in `visual_guidelines/`. Do not run helper scripts, call a reasoning agent,
+or choose a poker action.
+
+Write your raw perception evidence to `runs/<run_id>/visual_raw/native.md`.
 
 Then write `runs/<run_id>/visual_summary.json` and
 `runs/<run_id>/eval_report.md`. Do not execute robot actions.
@@ -242,9 +259,18 @@ def default_run_id(problem_dir: Path, harness: str, setting: str, variant: str) 
     return f"{problem_dir.name}_{harness}_{setting}_{variant}_{stamp}"
 
 
-def copy_visual_context(problem_dir: Path) -> list[str]:
+def skill_root(skill: str) -> Path:
+    if skill == "v2":
+        return SKILLS_ROOT / "dexholdem-v2"
+    elif skill == "v2-native":
+        return SKILLS_ROOT / "dexholdem-v2-native"
+    raise ValueError(f"unsupported skill: {skill}")
+
+
+def copy_visual_context(problem_dir: Path, skill: str) -> list[str]:
     copied = []
-    copytree_clean(SKILL_ROOT / "visual_guidelines", problem_dir / "visual_guidelines")
+    src = skill_root(skill) / "visual_guidelines"
+    copytree_clean(src, problem_dir / "visual_guidelines")
     copied.append("visual_guidelines/")
     return copied
 
@@ -293,25 +319,40 @@ def install(args: argparse.Namespace) -> dict:
     if not problem_dir.is_dir():
         raise SystemExit(f"problem dir is not a directory: {problem_dir}")
 
-    variant = args.visual_variant
-    source_dir = SOURCE_ROOT / variant
-    if not source_dir.exists():
-        raise SystemExit(f"visual variant does not exist: {source_dir}")
+    skill = args.skill
+    is_native = skill == "v2-native"
+    sk_root = skill_root(skill)
 
-    inferred = infer_harness(variant)
-    harness = args.harness or inferred
-    if harness is None:
-        raise SystemExit(f"could not infer harness from variant name: {variant}")
-    if inferred and args.harness and args.harness != inferred:
-        raise SystemExit(f"harness {args.harness!r} does not match variant {variant!r}, inferred {inferred!r}")
+    if is_native:
+        # Native mode: no subagents, harness does perception directly
+        if not args.harness:
+            raise SystemExit("--harness is required for v2-native skill")
+        harness = args.harness
+        variant = None
+        source_files = []
+        visual_source_files = []
+    else:
+        # v2 mode: use subagents
+        variant = args.visual_variant
+        if not variant:
+            raise SystemExit("--visual-variant is required for v2 skill")
+        source_dir = SOURCE_ROOT / variant
+        if not source_dir.exists():
+            raise SystemExit(f"visual variant does not exist: {source_dir}")
 
-    visual_source_files = agent_source_files(source_dir, harness, args.visual_setting)
-    if not visual_source_files:
-        raise SystemExit(
-            f"variant {variant!r} does not provide {args.visual_setting!r} agents for harness {harness!r}"
-        )
-    reasoning_files: list[Path] = []
-    source_files = unique_paths(visual_source_files)
+        inferred = infer_harness(variant)
+        harness = args.harness or inferred
+        if harness is None:
+            raise SystemExit(f"could not infer harness from variant name: {variant}")
+        if inferred and args.harness and args.harness != inferred:
+            raise SystemExit(f"harness {args.harness!r} does not match variant {variant!r}, inferred {inferred!r}")
+
+        visual_source_files = agent_source_files(source_dir, harness, args.visual_setting)
+        if not visual_source_files:
+            raise SystemExit(
+                f"variant {variant!r} does not provide {args.visual_setting!r} agents for harness {harness!r}"
+            )
+        source_files = unique_paths(visual_source_files)
 
     if args.clean_first:
         clean_result = clean_problem(problem_dir, remove_runs=False, dry_run=args.dry_run)
@@ -319,15 +360,19 @@ def install(args: argparse.Namespace) -> dict:
         clean_result = {"removed": [], "preserved": []}
 
     state = latest_state(problem_dir)
-    run_id = args.run_id or default_run_id(problem_dir, harness, args.visual_setting, variant)
+    if is_native:
+        run_id = args.run_id or f"{problem_dir.name}_{harness}_native_{time.strftime('%Y%m%d_%H%M%S')}"
+    else:
+        run_id = args.run_id or default_run_id(problem_dir, harness, args.visual_setting, variant)
     run_dir = problem_dir / "runs" / run_id
 
     manifest = {
         "schema_version": 1,
+        "skill": skill,
         "harness": harness,
-        "visual_setting": args.visual_setting,
+        "visual_setting": "native" if is_native else args.visual_setting,
         "visual_variant": variant,
-        "source_dir": str(source_dir.relative_to(ROOT)),
+        "source_dir": None if is_native else str((SOURCE_ROOT / variant).relative_to(ROOT)),
         "problem_dir": str(problem_dir),
         "run_id": run_id,
         "run_dir": str(run_dir),
@@ -335,15 +380,28 @@ def install(args: argparse.Namespace) -> dict:
     }
 
     if args.dry_run:
-        visible_agent_dir = CODEX_AGENT_DIR if harness == "codex" else CLAUDE_AGENT_DIR
-        visible_agents = [path.stem for path in source_files]
+        if is_native:
+            visible_agent_dir = None
+            visible_agents = []
+        else:
+            visible_agent_dir = CODEX_AGENT_DIR if harness == "codex" else CLAUDE_AGENT_DIR
+            visible_agents = [path.stem for path in source_files]
         copied_runtime = []
     else:
-        visible_agent_dir, visible_agents = install_agents(problem_dir, source_files, harness)
-        copied_runtime = copy_visual_context(problem_dir)
+        if is_native:
+            visible_agent_dir = None
+            visible_agents = []
+        else:
+            visible_agent_dir, visible_agents = install_agents(problem_dir, source_files, harness)
+        copied_runtime = copy_visual_context(problem_dir, skill)
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / "visual_raw").mkdir(exist_ok=True)
-        prompt = GENERAL_PROMPT if args.visual_setting == "general" else SPLIT_PROMPT
+        if is_native:
+            prompt = NATIVE_PROMPT
+        elif args.visual_setting == "general":
+            prompt = GENERAL_PROMPT
+        else:
+            prompt = SPLIT_PROMPT
         (run_dir / "harness_prompt.md").write_text(prompt)
 
     manifest.update({
@@ -351,11 +409,10 @@ def install(args: argparse.Namespace) -> dict:
         "visible_agents": visible_agents,
         "version": {
             "preflight_script": file_record(Path(__file__).resolve(), ROOT),
-            "skill_root": str(SKILL_ROOT.relative_to(ROOT)),
+            "skill_root": str(sk_root.relative_to(ROOT)),
             "source_agents": [file_record(path, ROOT) for path in source_files],
             "visual_source_agents": [file_record(path, ROOT) for path in visual_source_files],
-            "reasoning_source_agents": [file_record(path, ROOT) for path in reasoning_files],
-            "visual_guidelines": tree_records(SKILL_ROOT / "visual_guidelines", ROOT),
+            "visual_guidelines": tree_records(sk_root / "visual_guidelines", ROOT),
         },
     })
 
@@ -380,9 +437,10 @@ def main() -> None:
     parser.add_argument("--list", action="store_true", help="List available source variants and exit")
     parser.add_argument("--cleanup", action="store_true", help="Clean active install artifacts from --problem-dir")
     parser.add_argument("--problem-dir", help="Problem folder, e.g. bench/problems/p3")
-    parser.add_argument("--harness", choices=("codex", "claude"), help="Harness type; inferred from variant by default")
-    parser.add_argument("--visual-setting", choices=("general", "split"), default="split")
-    parser.add_argument("--visual-variant", help="Variant name under subagent/, e.g. codex_native_gpt5_4_mini_medium")
+    parser.add_argument("--skill", choices=SUPPORTED_SKILLS, default="v2", help="Skill to use: v2 (subagents) or v2-native (no subagents)")
+    parser.add_argument("--harness", choices=("codex", "claude"), help="Harness type; inferred from variant by default for v2, required for v2-native")
+    parser.add_argument("--visual-setting", choices=("general", "split"), default="split", help="Visual agent setting (v2 only)")
+    parser.add_argument("--visual-variant", help="Variant name under subagent/ (v2 only), e.g. codex_native_gpt5_4_mini_medium")
     parser.add_argument("--run-id", help="Run folder name under problem_dir/runs/")
     parser.add_argument("--dry-run", action="store_true", help="Preview the operation without writing")
     parser.add_argument("--strict", action="store_true", help="Fail when expected state/cache files are missing")
@@ -407,9 +465,6 @@ def main() -> None:
         })
         print(json.dumps(result, indent=2))
         return
-
-    if not args.visual_variant:
-        raise SystemExit("--visual-variant is required for install")
 
     print(json.dumps(install(args), indent=2))
 
