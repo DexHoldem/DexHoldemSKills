@@ -8,6 +8,12 @@ export interface WatchEvent {
   expId: string;
 }
 
+const EXP_ROOT_FILES = new Set([
+  'action_sequence.json',
+  'human_help_request.json',
+  'hole_card_cache.json',
+]);
+
 export class ExperimentWatcher extends EventEmitter {
   private watcher: chokidar.FSWatcher | null = null;
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
@@ -21,35 +27,47 @@ export class ExperimentWatcher extends EventEmitter {
     const patterns = expDirs.flatMap((dir) => [
       path.join(dir, '*/action_sequence.json'),
       path.join(dir, '*/human_help_request.json'),
+      path.join(dir, '*/hole_card_cache.json'),
       path.join(dir, '*/s*/00_capture.jpg'),
       path.join(dir, '*/s*/01_parsed_state.md'),
       path.join(dir, '*/s*/02_action.md'),
       path.join(dir, 'action_sequence.json'),
       path.join(dir, 'human_help_request.json'),
+      path.join(dir, 'hole_card_cache.json'),
       path.join(dir, 's*/00_capture.jpg'),
       path.join(dir, 's*/01_parsed_state.md'),
       path.join(dir, 's*/02_action.md'),
     ]);
 
+    console.log('Watching patterns:', patterns.slice(0, 6).join(', '), '...');
+
     this.watcher = chokidar.watch(patterns, {
       persistent: true,
       ignoreInitial: true,
+      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
       awaitWriteFinish: {
-        stabilityThreshold: 100,
-        pollInterval: 50,
+        stabilityThreshold: 200,
+        pollInterval: 100,
       },
     });
 
     this.watcher.on('add', (filePath) => this.handleEvent('add', filePath));
     this.watcher.on('change', (filePath) => this.handleEvent('change', filePath));
     this.watcher.on('unlink', (filePath) => this.handleEvent('unlink', filePath));
+    this.watcher.on('error', (error) => console.error('Watcher error:', error));
+    this.watcher.on('ready', () => console.log('Watcher ready'));
   }
 
   private handleEvent(type: 'add' | 'change' | 'unlink', filePath: string): void {
     const expId = this.extractExpId(filePath);
-    if (!expId) return;
+    if (!expId) {
+      console.log(`[watcher] Could not extract expId from: ${filePath}`);
+      return;
+    }
 
-    const key = `${expId}:${type}`;
+    console.log(`[watcher] ${type}: ${path.basename(filePath)} in ${expId}`);
+
+    const key = expId;
     const existing = this.debounceTimers.get(key);
     if (existing) {
       clearTimeout(existing);
@@ -70,7 +88,7 @@ export class ExperimentWatcher extends EventEmitter {
       if (parts[i].startsWith('s') && /^s\d+$/.test(parts[i])) {
         return parts[i - 1] || null;
       }
-      if (parts[i] === 'action_sequence.json') {
+      if (EXP_ROOT_FILES.has(parts[i])) {
         return parts[i - 1] || null;
       }
     }

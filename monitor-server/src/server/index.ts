@@ -44,8 +44,15 @@ function main(): void {
 
   watcher.on('change', (event) => {
     const expId = event.expId;
+    console.log(`[server] Change event for ${expId}, clients: ${clients.size}`);
+
     const subs = clients.get(expId);
-    if (!subs || subs.size === 0) return;
+    if (!subs || subs.size === 0) {
+      console.log(`[server] No subscribers for ${expId}`);
+      return;
+    }
+
+    console.log(`[server] ${subs.size} subscriber(s) for ${expId}`);
 
     let expPath: string | null = null;
     for (const dir of expDirs) {
@@ -59,11 +66,18 @@ function main(): void {
       } catch {}
     }
 
-    if (!expPath) return;
+    if (!expPath) {
+      console.log(`[server] Could not find experiment path for ${expId}`);
+      return;
+    }
 
     const state = getExperimentState(expPath);
-    if (!state) return;
+    if (!state) {
+      console.log(`[server] Could not get state for ${expPath}`);
+      return;
+    }
 
+    console.log(`[server] Sending state update to ${subs.size} client(s)`);
     const message = JSON.stringify({ type: 'state', data: state });
     for (const client of subs) {
       if (client.readyState === WebSocket.OPEN) {
@@ -78,6 +92,8 @@ function main(): void {
     const url = new URL(req.url || '/', `http://localhost:${port}`);
     const expId = url.pathname.replace(/^\/ws\//, '').replace(/\/$/, '');
 
+    console.log(`[ws] Connection request for expId: "${expId}" (url: ${req.url})`);
+
     if (!expId) {
       ws.close(1002, 'Missing experiment ID');
       return;
@@ -87,11 +103,13 @@ function main(): void {
       clients.set(expId, new Set());
     }
     clients.get(expId)!.add(ws);
+    console.log(`[ws] Client connected to ${expId}, total clients: ${clients.get(expId)!.size}`);
 
     ws.on('close', () => {
       const subs = clients.get(expId);
       if (subs) {
         subs.delete(ws);
+        console.log(`[ws] Client disconnected from ${expId}, remaining: ${subs.size}`);
         if (subs.size === 0) {
           clients.delete(expId);
         }
