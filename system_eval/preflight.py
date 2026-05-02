@@ -244,34 +244,101 @@ def capture_initial(exp_dir: Path, source: str | None = None) -> dict:
     return detail
 
 
-AGENTS_MD_TEMPLATE = """# Available Subagents
+AGENTS_MD_TEMPLATE = """# DexHoldem System Evaluation
 
-This experiment has split visual subagents installed for image perception tasks.
+This experiment workspace is configured for real system-level DexHoldem runs.
 
-## Codex Agents (.codex/agents/)
+## Skill Overview
+
+The DexHoldem skill (`dexholdem-v2`) runs a physical two-player Texas Hold'em
+setup with a dexterous robot hand. The main agent owns:
+- Perception orchestration (via visual subagents)
+- State maintenance and interpretation
+- Poker reasoning and action decisions
+- Recovery decisions when errors occur
+
+Python helpers handle deterministic work: image capture, state-file updates,
+action translation, and robot command dispatch.
+
+### Key Files
+
+- `SKILL.md` - Full skill documentation (in `.agent/skills/dexholdem-v2/`)
+- `visual_guidelines/` - Visual parsing reference documents
+- `config.yaml` - Robot and camera configuration
+- `state.py` - State management CLI
+- `router.py` - Next-move routing logic
+- `executor.py` - Robot action execution
+- `capture.py` - Camera capture utility
+
+### State Contract
+
+```
+experiments/current/
+  s0/                      # First state folder
+    00_capture.jpg         # Screenshot
+    01_parsed_state.md     # Parsed visual state (agent writes)
+    02_action.md           # Committed action (agent writes)
+  s1/, s2/, ...            # Subsequent states
+  s_current -> s<N>        # Symlink to current state
+  hole_card_cache.json     # Cached hole cards (persists across states)
+  action_sequence.json     # Current action sequence and safety counters
+```
+
+### Core Workflow
+
+1. **Capture** - `python3 capture.py` takes a screenshot to `s<N>/00_capture.jpg`
+2. **Parse** - Visual subagents analyze the image, main agent writes `01_parsed_state.md`
+3. **Route** - `python3 router.py` determines next action based on state
+4. **Execute** - `python3 executor.py --action '<json>'` runs robot commands
+5. **Advance** - `python3 state.py begin-next` creates the next state folder
+
+### Common Commands
+
+```bash
+python3 state.py current                    # Show current state info
+python3 state.py begin-next                 # Advance to next state
+python3 capture.py --output s<N>/00_capture.jpg  # Capture image
+python3 router.py                           # Get routing decision
+python3 executor.py --action '{{...}}'       # Execute action
+python3 state.py require-human --reason "..." # Request human help
+python3 state.py ack-human-help             # Clear human help request
+```
+
+---
+
+## Available Visual Subagents
+
+Split visual subagents are installed for image perception tasks.
+
+### Codex Agents (.codex/agents/)
 
 {codex_agents}
 
-## Claude Agents (.claude/agents/)
+### Claude Agents (.claude/agents/)
 
 {claude_agents}
 
-## Usage
+### Subagent Responsibilities
 
-When running visual perception, delegate image-reading questions to the appropriate
-scoped visual agent. Each agent handles a specific aspect of the poker table scene:
+| Agent | Purpose |
+|-------|---------|
+| `chip_recognition_agent` | Count remaining inventory chips (not bets) |
+| `bet_recognition_agent` | Count current bet chips in betting areas |
+| `community_cards_agent` | Identify community cards on the board |
+| `turn_detection_agent` | Determine whose turn it is |
+| `blind_button_recognition_agent` | Identify dealer button and blind positions |
+| `scene_stability_agent` | Check if the scene is stable for action |
+| `robot_behavior_agent` | Describe robot/dexterous hand state |
+| `held_card_recognition_agent` | Read cards held by the robot (when visible) |
+| `showdown_outcome_agent` | Determine winner at showdown (when applicable) |
 
-- **chip_recognition_agent** - Count remaining inventory chips (not bets)
-- **bet_recognition_agent** - Count current bet chips in betting areas
-- **community_cards_agent** - Identify community cards on the board
-- **turn_detection_agent** - Determine whose turn it is
-- **blind_button_recognition_agent** - Identify dealer button and blind positions
-- **scene_stability_agent** - Check if the scene is stable for action
-- **robot_behavior_agent** - Describe robot/dexterous hand state
-- **held_card_recognition_agent** - Read cards held by the robot (when visible)
-- **showdown_outcome_agent** - Determine winner at showdown (when applicable)
+### Usage Guidelines
 
-Run independent visual subagents in parallel when possible.
+- Delegate image-reading questions to the appropriate scoped visual agent
+- Run independent visual subagents **in parallel** when possible
+- Visual subagents are **read-only** - they return evidence, never write state
+- The main agent merges subagent outputs and writes `01_parsed_state.md`
+- Refer to `visual_guidelines/` for detailed parsing rules
 """
 
 
