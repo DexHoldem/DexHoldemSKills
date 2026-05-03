@@ -5,8 +5,7 @@ Run a full DexHoldem system-level experiment from scratch.
 ## Prerequisites
 
 - Git
-- Python 3.10+ (any env manager: conda, venv, pyenv, etc.)
-- `uv` (for dependency sync inside the skill)
+- `uv` (usually pre-installed; handles Python and dependency management)
 - An agent CLI: **Claude Code** (`claude`) or **Codex** (`codex`)
 - Node.js 18+ (for the monitor dashboard, optional but recommended)
 - A connected camera (or a source image for offline testing)
@@ -18,20 +17,15 @@ git clone git@github.com:DexHoldem/DexHoldemSKills.git
 cd DexHoldemSKills
 ```
 
-## 2. Activate a Python environment
-
-Any Python 3.10+ environment works. For example with conda:
+## 2. Create a Python environment with uv
 
 ```bash
-conda activate base        # or your preferred env
+uv venv --python 3.12
+source .venv/bin/activate
 ```
 
-The only hard Python dependency is having `uv` available on PATH (used by
-preflight to sync the skill's own venv). Install it if you don't have it:
-
-```bash
-pip install uv
-```
+This creates a local `.venv` and activates it. `uv` will also manage
+dependencies inside the skill during preflight (`--uv-sync`).
 
 ## 3. Run preflight to create the experiment workspace
 
