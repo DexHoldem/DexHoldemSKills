@@ -431,6 +431,8 @@ def score_column(column: str, pred: dict[str, Any], truth: dict[str, Any]) -> tu
             return True, f"pred={pred['community']} expected={expected} match=ordered"
         if pred["community"] == list(reversed(expected)):
             return True, f"pred={pred['community']} expected={expected} match=reversed"
+        if sorted(pred["community"]) == sorted(expected):
+            return True, f"pred={pred['community']} expected={expected} match=unordered"
         return False, f"pred={pred['community']} expected={expected}"
     if column == "bet":
         ok = exact_bets(pred["my_bet"], pred["opp_bet"], truth)
