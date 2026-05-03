@@ -111,6 +111,15 @@ codex \
 Use `medium` reasoning effort for all models — it gives the best
 quality-to-latency tradeoff for perception tasks.
 
+### Prompting the agent
+
+Once the agent session is open, prompt it to start the game loop:
+
+> Start a dexholdem-v2-native game loop
+
+The agent will read `AGENTS.md` and the skill docs, then begin the
+capture-parse-route-execute cycle autonomously.
+
 ## What the agent does
 
 Once launched, the agent follows the workflow defined in the skill:
