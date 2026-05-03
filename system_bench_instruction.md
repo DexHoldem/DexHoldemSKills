@@ -8,6 +8,7 @@ Run a full DexHoldem system-level experiment from scratch.
 - Python 3.10+ (any env manager: conda, venv, pyenv, etc.)
 - `uv` (for dependency sync inside the skill)
 - An agent CLI: **Claude Code** (`claude`) or **Codex** (`codex`)
+- Node.js 18+ (for the monitor dashboard, optional but recommended)
 - A connected camera (or a source image for offline testing)
 
 ## 1. Clone the repo
@@ -126,6 +127,64 @@ Once launched, the agent follows the workflow defined in the skill:
 4. **Execute** — runs `python3 executor.py --action '{...}'` to command the robot
 5. **Advance** — runs `python3 state.py begin-next` to create the next state folder
 6. **Loop** — captures a new image and repeats
+
+## 6. Monitor the experiment (optional)
+
+The repo includes a real-time monitoring dashboard that watches the experiment
+directory and displays live state updates in the browser.
+
+### Setup (one-time)
+
+```bash
+cd monitor-server
+npm install
+npm run build
+cd ..
+```
+
+### Start the monitor
+
+```bash
+# Default: watches ./experiments and ./bench/problems
+npm start --prefix monitor-server
+
+# Custom experiment directory
+npm start --prefix monitor-server -- --exp-dir ./experiments
+
+# Custom port (default 3000)
+npm start --prefix monitor-server -- --port 8080
+```
+
+Then open `http://localhost:3000` in your browser.
+
+### What it shows
+
+- **Live state tracking** — current loop stage (idle, acting, recovering, etc.)
+  and activity (capturing, perceiving, reasoning, acting)
+- **Capture preview** — the latest camera screenshot from the experiment
+- **Table state** — chip counts, bets, community cards, turn indicator
+- **Safety counters** — consecutive waits, recoveries, executor failures
+- **Human help alerts** — pulsing red indicator when the agent requests
+  human intervention, with the reason and resume options displayed
+
+The dashboard uses WebSocket for real-time updates — whenever the agent writes
+a new state file, capture, or action sequence, the monitor reflects it
+immediately.
+
+### Human help workflow
+
+When the agent gets stuck and requests human help:
+
+1. The monitor shows a pulsing "Requesting Human" alert with the reason
+2. Resolve the physical issue (e.g. fix a dropped chip, reposition a card)
+3. Acknowledge and resume:
+
+```bash
+cd experiments/my_run
+python3 state.py ack-human-help --reset-safety --set-stage to_recover
+```
+
+The agent will then re-capture and continue.
 
 ## Troubleshooting
 
