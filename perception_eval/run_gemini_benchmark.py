@@ -172,6 +172,7 @@ def valid_bool(value: object) -> bool:
 
 
 def visual_summary_schema_errors(summary: object) -> list[str]:
+    """Validate visual_summary.json against nested schema (table.* fields)."""
     if not isinstance(summary, dict):
         return ["summary_not_object"]
 
@@ -180,23 +181,29 @@ def visual_summary_schema_errors(summary: object) -> list[str]:
     allowed_blind = {"big_blind", "small_blind", "none"}
     allowed_outcome = {"win", "lose", "tie", "not_showdown"}
 
-    if not valid_bool(summary.get("scene_stable")):
-        errors.append("scene_stable")
     if summary.get("loop_stage") not in allowed_stage:
         errors.append("loop_stage")
-    if not valid_bool(summary.get("is_my_turn")):
-        errors.append("is_my_turn")
     if summary.get("blind") not in allowed_blind:
         errors.append("blind")
-    if not isinstance(summary.get("community_cards"), list):
-        errors.append("community_cards")
-    for key in ("my_chips", "opponent_chips", "my_current_bet", "opponent_bet"):
-        if not valid_chip_counts(summary.get(key)):
-            errors.append(key)
     if summary.get("showdown_outcome") not in allowed_outcome:
         errors.append("showdown_outcome")
-    if not isinstance(summary.get("uncertain_fields"), list):
-        errors.append("uncertain_fields")
+
+    table = summary.get("table", {})
+    if not isinstance(table, dict):
+        errors.append("table")
+        return errors
+
+    if not valid_bool(table.get("scene_stable")):
+        errors.append("table.scene_stable")
+    if not valid_bool(table.get("is_my_turn")):
+        errors.append("table.is_my_turn")
+    if not isinstance(table.get("community_cards"), list):
+        errors.append("table.community_cards")
+    for key in ("my_chips", "opponent_chips", "my_current_bet", "opponent_bet"):
+        if not valid_chip_counts(table.get(key)):
+            errors.append(f"table.{key}")
+    if not isinstance(table.get("uncertain_fields"), list):
+        errors.append("table.uncertain_fields")
     return errors
 
 

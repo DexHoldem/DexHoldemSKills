@@ -96,19 +96,39 @@ Write:
 - runs/<run_id>/visual_summary.json
 - runs/<run_id>/eval_report.md
 
-`visual_summary.json` must use this evaluator-ready top-level schema:
-- `scene_stable`: true or false
+`visual_summary.json` must use this nested schema matching state cache format:
+
+```json
+{
+  "loop_stage": "idle",
+  "blind": "big_blind",
+  "showdown_outcome": "not_showdown",
+  "table": {
+    "scene_stable": true,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {"5": 4, "10": 3, "50": 3, "100": 3},
+    "opponent_chips": {"5": 4, "10": 4, "50": 3, "100": 3},
+    "my_current_bet": {"5": 0, "10": 0, "50": 0, "100": 0},
+    "opponent_bet": {"5": 0, "10": 0, "50": 0, "100": 0},
+    "uncertain_fields": []
+  }
+}
+```
+
+Field rules:
 - `loop_stage`: one of idle, acting, atom_idle, down, to_recover, win, lose,
   show_hand
-- `is_my_turn`: true or false
 - `blind`: big_blind, small_blind, or none
-- `community_cards`: list of card strings like Ah, Td, 6s; omit only absent
-  cards or face-down cards that are not part of the community board
-- `my_chips`, `opponent_chips`, `my_current_bet`, `opponent_bet`: each an
-  object with exactly the denomination keys `5`, `10`, `50`, `100`; values are
-  integer count best estimates
 - `showdown_outcome`: win, lose, tie, or not_showdown
-- `uncertain_fields`: list of field names whose values are uncertain
+- `table.scene_stable`: true or false
+- `table.is_my_turn`: true or false
+- `table.community_cards`: list of card strings like Ah, Td, 6s; omit only
+  absent cards or face-down cards that are not part of the community board
+- `table.my_chips`, `table.opponent_chips`, `table.my_current_bet`,
+  `table.opponent_bet`: each an object with exactly the denomination keys
+  `5`, `10`, `50`, `100`; values are integer count best estimates
+- `table.uncertain_fields`: list of field names whose values are uncertain
 
 `runs/<run_id>/visual_raw/` must contain at least one real evidence file.
 Do not claim raw evidence exists unless the file exists on disk. Before your

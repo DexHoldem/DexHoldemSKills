@@ -365,7 +365,8 @@ def load_batch(batch_dir: Path) -> dict[str, Any]:
 
 
 def run_id_for_problem(batch: dict[str, Any], problem_id: str) -> str:
-    return f"{problem_id}_{batch['visual_variant']}_{batch['visual_setting']}_{batch['run_prefix']}"
+    variant = batch.get("visual_variant") or f"{batch['harness']}_native"
+    return f"{problem_id}_{variant}_{batch['visual_setting']}_{batch['run_prefix']}"
 
 
 def denominator_ids(column: str, problem_types: dict[str, dict[str, Any]], ground_truth: dict[str, dict[str, Any]], community_scope: str) -> list[str]:
