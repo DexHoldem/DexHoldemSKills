@@ -14,10 +14,10 @@ STAGES = ("idle", "atom_idle", "acting", "to_recover", "down", "show_hand", "win
 STAGE_SET = set(STAGES)
 STATE_DIR_RE = re.compile(r"^s(\d+)$")
 DEFAULT_LOOP_SAFETY = {
-    "max_consecutive_waits": 20,
-    "max_total_waits": 200,
+    "max_consecutive_waits": 3,
+    "max_total_waits": None,
     "max_step_retries": 2,
-    "max_total_recoveries": 8,
+    "max_total_recoveries": None,
 }
 
 
@@ -51,8 +51,11 @@ def loop_safety_limits(config):
     limits = {}
     for key, default in DEFAULT_LOOP_SAFETY.items():
         value = raw.get(key, default)
+        if value is None:
+            limits[key] = None
+            continue
         if isinstance(value, bool):
-            raise ValueError(f"loop_safety.{key} must be an integer")
+            raise ValueError(f"loop_safety.{key} must be an integer or null")
         value = int(value)
         if value < 0:
             raise ValueError(f"loop_safety.{key} must be non-negative")

@@ -11,4 +11,5 @@ exec python3 "$ROOT/perception_eval/run_parallel_buffer.py" \
   --reasoning-effort "${REASONING_EFFORT:-medium}" \
   --service-tier "${SERVICE_TIER:-fast}" \
   --agent-max-threads "${AGENT_MAX_THREADS:-9}" \
+  --extra-runner-arg='--codex-disable=image_generation' \
   "$@"

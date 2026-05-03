@@ -249,7 +249,7 @@ def check_remote(config, skip_remote):
         if "click_x" in rh and "click_y" in rh:
             reset = post(base, "/batch", {
                 "actions": [
-                    {"action": "moveTo", "args": [rh["click_x"], rh["click_y"]], "kwargs": {"duration": 0.3}},
+                    {"action": "click", "args": [rh["click_x"], rh["click_y"]]},
                 ]
             }, timeout=timeout)
         return True, {"type_hello_world": hello, "move_cursor_reset_hand": reset}

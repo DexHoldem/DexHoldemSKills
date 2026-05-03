@@ -357,6 +357,11 @@ def main() -> None:
     parser.add_argument("--prompt-file", help="Read codex exec prompt from this file.")
     parser.add_argument("--codex-bin", default="codex")
     parser.add_argument(
+        "--codex-disable",
+        action="append",
+        help="Feature to disable in codex (repeatable). E.g. --codex-disable image_generation",
+    )
+    parser.add_argument(
         "--host-codex-home",
         default=str(default_host_codex_home()),
         help="Host Codex home used only by the wrapper to copy auth.json into the run-local CODEX_HOME.",
@@ -446,6 +451,9 @@ def main() -> None:
         codex_cmd.insert(2, "--ephemeral")
     if not args.no_isolated_workspace:
         codex_cmd.insert(2, "--skip-git-repo-check")
+    if args.codex_disable:
+        for feature in args.codex_disable:
+            codex_cmd.insert(2, f"--disable={feature}")
 
     if args.dry_run:
         planned_codex_home = planned_run_dir / ".codex_home"

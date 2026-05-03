@@ -76,6 +76,9 @@ class MonitorApp {
   private currentExpId: string | null = null;
   private currentExpPath: string | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pingInterval: ReturnType<typeof setInterval> | null = null;
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
+  private lastStateJson: string = '';
 
   constructor() {
     this.init();
@@ -95,6 +98,8 @@ class MonitorApp {
     document.getElementById('refresh-btn')?.addEventListener('click', () => {
       this.loadExperiments();
     });
+
+    setInterval(() => this.loadExperiments(), 10000);
   }
 
   private async loadExperiments(): Promise<void> {
@@ -117,6 +122,12 @@ class MonitorApp {
       if (currentValue) {
         select.value = currentValue;
       }
+
+      if (!select.value && data.experiments.length > 0) {
+        const first = data.experiments[0] as Experiment;
+        select.value = first.id;
+        this.selectExperiment(first.id, first.path);
+      }
     } catch (err) {
       console.error('Failed to load experiments:', err);
     }
@@ -128,6 +139,7 @@ class MonitorApp {
 
     await this.loadState();
     this.connectWebSocket();
+    this.startPolling();
   }
 
   private async loadState(): Promise<void> {
@@ -144,11 +156,19 @@ class MonitorApp {
     }
   }
 
+  private startPolling(): void {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.pollInterval = setInterval(() => this.loadState(), 2000);
+  }
+
   private connectWebSocket(): void {
     if (this.ws) {
       this.ws.close();
     }
-
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
@@ -161,22 +181,35 @@ class MonitorApp {
 
     this.ws.onopen = () => {
       this.setConnectionStatus(true);
+      this.pingInterval = setInterval(() => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 15000);
     };
 
     this.ws.onclose = () => {
       this.setConnectionStatus(false);
+      if (this.pingInterval) {
+        clearInterval(this.pingInterval);
+        this.pingInterval = null;
+      }
       this.reconnectTimeout = setTimeout(() => {
         if (this.currentExpId) {
           this.connectWebSocket();
         }
-      }, 3000);
+      }, 1500);
     };
 
     this.ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'state') {
-          this.updateUI(msg.data as ExperimentState);
+          const stateJson = JSON.stringify(msg.data);
+          if (stateJson !== this.lastStateJson) {
+            this.lastStateJson = stateJson;
+            this.updateUI(msg.data as ExperimentState);
+          }
         }
       } catch (err) {
         console.error('Failed to parse message:', err);
@@ -187,7 +220,7 @@ class MonitorApp {
   private setConnectionStatus(connected: boolean): void {
     const el = document.getElementById('connection-status');
     if (el) {
-      el.textContent = connected ? 'Connected' : 'Disconnected';
+      el.textContent = connected ? 'Live' : 'Reconnecting...';
       el.classList.toggle('connected', connected);
     }
   }
@@ -325,8 +358,13 @@ class MonitorApp {
     if (!wrapper) return;
 
     if (state.latestCapture && state.currentStateNum >= 0) {
-      const imgUrl = `/api/experiments/${state.expId}/capture/${state.currentStateNum}?path=${encodeURIComponent(state.expPath)}`;
-      wrapper.innerHTML = `<img src="${imgUrl}" alt="Latest capture" />`;
+      const imgUrl = `/api/experiments/${state.expId}/capture/${state.currentStateNum}?path=${encodeURIComponent(state.expPath)}&t=${Date.now()}`;
+      const existingImg = wrapper.querySelector('img');
+      if (existingImg) {
+        existingImg.src = imgUrl;
+      } else {
+        wrapper.innerHTML = `<img src="${imgUrl}" alt="Latest capture" />`;
+      }
     } else {
       wrapper.innerHTML = '<div class="no-capture">No capture available</div>';
     }
