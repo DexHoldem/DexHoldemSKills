@@ -26,7 +26,7 @@ Source image: `00_capture.jpg`
       "100": 4
     },
     "opponent_chips": {
-      "5": 4,
+      "5": 3,
       "10": 4,
       "50": 4,
       "100": 4
@@ -38,7 +38,7 @@ Source image: `00_capture.jpg`
       "100": 0
     },
     "opponent_bet": {
-      "5": 0,
+      "5": 1,
       "10": 0,
       "50": 0,
       "100": 0
