@@ -138,18 +138,32 @@ cd ..
 
 ### Start the monitor
 
+Point the monitor at the exact experiment directory that preflight created.
+For example, if you ran `--exp-name my_run`, the experiment lives at
+`experiments/my_run/`:
+
 ```bash
-# Default: watches ./experiments and ./bench/problems
-npm start --prefix monitor-server
-
-# Custom experiment directory
-npm start --prefix monitor-server -- --exp-dir ./experiments
-
-# Custom port (default 3000)
-npm start --prefix monitor-server -- --port 8080
+npm start --prefix monitor-server -- --exp-dir ./experiments/my_run
 ```
 
 Then open `http://localhost:3000` in your browser.
+
+You can also monitor the entire `experiments/` parent directory (picks up
+all experiments):
+
+```bash
+npm start --prefix monitor-server -- --exp-dir ./experiments
+```
+
+Alternatively, you can ask an agent (Claude or Codex) to start the monitor
+for you. From the repo root, prompt the agent:
+
+> Start the DexHoldem monitor server watching experiments/my_run.
+
+The agent will run the `npm start` command with the correct `--exp-dir`
+flag. Make sure the path matches the experiment created by preflight —
+the monitor needs to watch the directory containing `action_sequence.json`,
+`s_current/`, and the state folders to display live updates.
 
 ### What it shows
 
