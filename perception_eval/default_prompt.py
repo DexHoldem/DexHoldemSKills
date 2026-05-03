@@ -13,7 +13,6 @@ robot actions, run helper scripts, or choose a poker action.
   CURRENT state.
 - `hole_card_cache.json`: cached robot hole cards for showdown comparison.
 - `sN-1/01_parsed_state.md`: previous parsed state for inheriting durable fields.
-- Do not inspect benchmark ground-truth files.
 
 # Output
 Write to `runs/<run_id>/`:
