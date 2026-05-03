@@ -76,11 +76,12 @@ Loop-stage merge rule:
   when the image was captured). Use it as CONTEXT, not as the answer.
 - VISUAL EVIDENCE determines the CURRENT `loop_stage`. The perception task is
   to observe what the scene shows NOW, which may differ from the prior state.
-- Use `acting` when visual evidence shows the hand still moving, reaching, or
-  holding an object mid-action. If `action_sequence.json` says `acting` but
-  the hand appears settled, the action may have completed — check visually.
-- Use `atom_idle` when the scene is settled after an action atom but
-  `action_sequence.json` still has pending steps (action completed, more to do).
+- Use `acting` when visual evidence shows the hand still moving, reaching,
+  holding an object, or extended away from its resting position. A sharp image
+  (scene_stable=true) does NOT mean the action is complete — check hand pose.
+- Use `atom_idle` ONLY when: (1) the hand is near its resting position
+  (near_rest=true), AND (2) the action atom visually succeeded (e.g., chip
+  reached the bet area), AND (3) action_sequence.json has pending steps.
 - Use `idle` when the hand is near rest, no held card/chips, no large movement,
   and the action sequence is complete or empty.
 - Use `to_recover` when visual evidence shows a harmless failed atom (e.g.,
