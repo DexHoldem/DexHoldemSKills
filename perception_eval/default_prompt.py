@@ -27,8 +27,12 @@ Output policy:
 Current state and context:
 - `s_current` points to the latest state directory.
 - The latest capture is `s_current/00_capture.jpg`.
-- Use `action_sequence.json` and `hole_card_cache.json` only as workflow/cache
-  context for loop-stage interpretation and previously viewed hidden cards.
+- `action_sequence.json` shows the PRIOR workflow state — what action was
+  dispatched when the image was captured. Use it as context (e.g., "robot was
+  pushing a chip"), but determine the CURRENT state from visual evidence
+  (e.g., "chip push completed" or "chip push failed").
+- `hole_card_cache.json` contains previously viewed robot hole cards. Use for
+  showdown hand comparison when robot cards are face-down but were cached.
 - Do not inspect benchmark ground-truth files.
 
 Subagent inputs and conditions:
@@ -60,33 +64,35 @@ Subagent inputs and conditions:
 - `bet_recognition_agent`: call for current-bet columns. Pass
   `s_current/00_capture.jpg` and ask for robot and opponent current bet areas,
   excluding inventory stacks and button markers.
-- `showdown_outcome_agent`: call when board/hole cards appear face-up, when
-  `action_sequence.json` has a showdown/win/lose stage, or when the raw visual
-  evidence suggests showdown. Pass `s_current/00_capture.jpg`, visible board
-  and hole-card evidence, and cached viewed robot hole cards if present.
+- `showdown_outcome_agent`: ALWAYS call when visual evidence shows showdown
+  conditions: (1) 5 community cards are visible AND either player's hole cards
+  are face-up, OR (2) opponent's hole cards appear folded/mucked toward the
+  center. Do NOT skip this agent based on `action_sequence.json` — showdown
+  is detected visually, not from workflow state. Pass `s_current/00_capture.jpg`,
+  visible board and hole-card evidence, and cached robot hole cards if present.
 
 Loop-stage merge rule:
-- `loop_stage` is a workflow-state field, not pure single-image perception.
-- Start from `action_sequence.json.loop_stage` when present, then use visual
-  subagent evidence to confirm whether the physical scene is compatible.
-- Do not change `acting` to `idle` only because one frame looks sharp or still.
-- Use `acting` when the action sequence says a step is dispatched/in progress
-  or visual evidence shows the hand still moving, reaching, or not settled.
-- Use `atom_idle` when the latest scene is settled after an atom action but
-  the action sequence still has pending steps.
-- Use `idle` only after the full action sequence is complete and the hand is
-  near rest with no held card/chips or large movement.
-- Use `to_recover` only when the action sequence or visual evidence indicates
-  a harmless failed atom and the table is safe/countable enough to retry.
-- Use `down` for unsafe, blocked, dropped, scattered, or human-help states.
-- Use `show_hand`, `win`, or `lose` when showdown/outcome evidence and cached
-  card context support that workflow stage.
-- If `action_sequence.json` is missing and visual evidence cannot distinguish
-  `idle`, `acting`, and `atom_idle`, infer from the previous parsed state and
-  visual continuity. Prefer `acting` for active/pending action cues, `atom_idle`
-  for settled post-atom scenes with likely pending sequence work, and `idle`
-  only when the hand is near rest and no action is visibly pending. Include
-  `loop_stage` in `uncertain_fields`.
+- `action_sequence.json` shows the PRIOR workflow state (what was happening
+  when the image was captured). Use it as CONTEXT, not as the answer.
+- VISUAL EVIDENCE determines the CURRENT `loop_stage`. The perception task is
+  to observe what the scene shows NOW, which may differ from the prior state.
+- Use `acting` when visual evidence shows the hand still moving, reaching, or
+  holding an object mid-action. If `action_sequence.json` says `acting` but
+  the hand appears settled, the action may have completed — check visually.
+- Use `atom_idle` when the scene is settled after an action atom but
+  `action_sequence.json` still has pending steps (action completed, more to do).
+- Use `idle` when the hand is near rest, no held card/chips, no large movement,
+  and the action sequence is complete or empty.
+- Use `to_recover` when visual evidence shows a harmless failed atom (e.g.,
+  chip not fully pushed, card slightly misplaced) and the table is safe to retry.
+- Use `down` when visual evidence shows unsafe conditions: dropped objects,
+  scattered chips, blocked hand, or human intervention needed.
+- Use `show_hand`, `win`, or `lose` when VISUAL showdown evidence is present:
+  both players' hole cards face-up, or opponent folded. Determine outcome by
+  comparing visible hands. Do NOT require `action_sequence.json` to say
+  showdown — the game may have reached showdown since the last workflow update.
+- If visual evidence is ambiguous, use `action_sequence.json` as context to
+  inform the most likely state, and add `loop_stage` to `uncertain_fields`.
 
 Use exactly this output directory: runs/<run_id>
 Do not append the isolated workspace suffix or any other suffix to the run id.

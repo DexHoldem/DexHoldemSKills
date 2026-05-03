@@ -68,12 +68,11 @@ blind or big blind:
 - If robot is **small blind**: push a 5-chip to the betting area.
 - If robot is **big blind**: push a 10-chip to the betting area.
 
-This is a forced bet. Post the blind immediately after confirming the
-blind/dealer assignment, before or right after viewing hole cards:
+This is a forced bet. Post the blind after viewing hole cards:
 
 1. Recognize and cache blind/dealer assignment.
-2. Post the robot's blind chip.
-3. View hole cards.
+2. View hole cards.
+3. Post the robot's blind chip.
 4. Continue preflop betting.
 
 Use `{"action": "raise", "amount": 5}` for small blind or
