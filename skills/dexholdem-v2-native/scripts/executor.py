@@ -15,6 +15,7 @@ from pathlib import Path
 
 from utils import (
     cached_command_for_step,
+    command_prefix_for_index,
     extract_json_object,
     first_pending_step,
     load_config,
@@ -347,6 +348,7 @@ def execute(action, chips=None, table=None, dry_run=False, no_sleep=False, mark_
     command_steps = translation.get("command_steps") or []
     dispatch_step_name = continuation_step
     dispatch_command = commands[0] if commands else None
+    dispatch_prefix = command_prefix_for_index(translation, 0) if dispatch_command else None
     if dispatch_step_name is None and command_steps:
         dispatch_step_name = command_steps[0]
     execution = {
@@ -393,14 +395,14 @@ def execute(action, chips=None, table=None, dry_run=False, no_sleep=False, mark_
         if dispatch_command:
             if not dispatch_step_name:
                 raise RuntimeError("translated robot command has no matching sequence step")
-            run_prefix(translation.get("prefix"), config, dry_run)
+            run_prefix(dispatch_prefix, config, dry_run)
             if not dry_run:
                 remote_exec("--action", "execute", "--command", dispatch_command)
             execution["commands_dispatched"] = 1
             dispatch_step(
                 dispatch_step_name,
                 command=dispatch_command,
-                prefix=translation.get("prefix"),
+                prefix=dispatch_prefix,
                 command_index=0,
             )
             execution["stage"] = "dispatched"

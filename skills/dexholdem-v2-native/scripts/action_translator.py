@@ -251,10 +251,14 @@ def translate(action, chips=None, table=None):
     if name == "view_card":
         position = action.get("position", "left")
         instr = INSTR_VIEW_LEFT if position == "left" else INSTR_VIEW_RIGHT
+        put_down_instr = INSTR_PUT_DOWN.get((position, False))
+        if put_down_instr is None:
+            raise ValueError(f"invalid view_card position={position}")
         return {
             "prefix": "reset",
-            "commands": [_cmd(instr)],
-            "command_steps": ["pick_card"],
+            "command_prefixes": ["reset", "ctrlc"],
+            "commands": [_cmd(instr), _cmd(put_down_instr)],
+            "command_steps": ["pick_card", "put_down_card"],
             "sequence_steps": ["pick_card", "read_card", "put_down_card", "verify_idle"],
         }
 
@@ -263,10 +267,12 @@ def translate(action, chips=None, table=None):
         if position not in ("left", "right"):
             raise ValueError(f"invalid show_card position={position}")
         instr = INSTR_VIEW_LEFT if position == "left" else INSTR_VIEW_RIGHT
+        put_down_instr = INSTR_PUT_DOWN.get((position, True))
         return {
             "prefix": "reset",
-            "commands": [_cmd(instr)],
-            "command_steps": ["pick_card"],
+            "command_prefixes": ["reset", "ctrlc"],
+            "commands": [_cmd(instr), _cmd(put_down_instr)],
+            "command_steps": ["pick_card", "put_down_card_face_up"],
             "sequence_steps": ["pick_card", "put_down_card_face_up", "verify_idle"],
         }
 

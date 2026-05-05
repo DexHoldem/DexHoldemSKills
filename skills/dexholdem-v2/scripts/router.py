@@ -740,6 +740,18 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
                     required_agent_task="repair_action_sequence",
                     context={"current_step": current_step, "intent": intent},
                 )
+            if has_cached_command_step(sequence, current_step):
+                return route(
+                    exp_dir,
+                    state_name,
+                    state_dir,
+                    "continue_sequence",
+                    "show-card sequence should return the held card face-up",
+                    judgments,
+                    agent_required=False,
+                    commands=["python3 executor.py --continue-current"],
+                    context={"current_step": current_step, "intent": intent},
+                )
             action = {"action": "put_down_card", "position": slot, "face_up": True}
             return route(
                 exp_dir,
@@ -776,6 +788,18 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
                     agent_required=True,
                     required_agent_task="cache_held_card_or_request_human",
                     context={"slot": slot, "cache_entry": hole_cache.get(slot)},
+                )
+            if has_cached_command_step(sequence, current_step):
+                return route(
+                    exp_dir,
+                    state_name,
+                    state_dir,
+                    "continue_sequence",
+                    "cached viewed card should be returned face-down",
+                    judgments,
+                    agent_required=False,
+                    commands=["python3 executor.py --continue-current"],
+                    context={"current_step": current_step, "intent": intent},
                 )
             action = {"action": "put_down_card", "position": slot, "face_up": False}
             return route(

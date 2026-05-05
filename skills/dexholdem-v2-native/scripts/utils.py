@@ -244,9 +244,16 @@ def cached_command_for_step(sequence, step_name):
         if name == step_name:
             if index >= len(commands):
                 raise RuntimeError(f"cached command step has no command: {step_name}")
-            prefix = plan.get("prefix")
+            prefix = command_prefix_for_index(plan, index)
             return index, commands[index], prefix
     raise RuntimeError(f"current step is not a cached robot command step: {step_name}")
+
+
+def command_prefix_for_index(plan, index):
+    prefixes = plan.get("command_prefixes") or []
+    if isinstance(prefixes, list) and index < len(prefixes):
+        return prefixes[index] or None
+    return plan.get("prefix")
 
 
 def has_cached_command_step(sequence, step_name):
