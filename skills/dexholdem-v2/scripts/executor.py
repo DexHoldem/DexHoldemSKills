@@ -195,11 +195,11 @@ def run_prefix(prefix, config, dry_run):
         return
     rt = config.get("remote_terminal", {}) or {}
     ctrlc_delay = float(rt.get("ctrlc_delay", 0.5))
-    if prefix == "reset":
-        remote_exec("--action", "click_reset_hand")
     if prefix in ("ctrlc", "reset"):
         remote_exec("--action", "send_ctrlc")
         time.sleep(ctrlc_delay)
+    if prefix == "reset":
+        remote_exec("--action", "click_reset_hand")
 
 
 def play_text_to_sound(payload, dry_run=False):
