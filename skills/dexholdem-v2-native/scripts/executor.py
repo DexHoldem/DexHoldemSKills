@@ -199,7 +199,7 @@ def run_prefix(prefix, config, dry_run):
     if prefix in ("ctrlc", "reset"):
         remote_exec("--action", "send_ctrlc")
         time.sleep(ctrlc_delay)
-    if prefix == "reset":
+    if prefix in ("reset", "reset_to_init"):
         remote_exec("--action", "click_reset_hand")
 
 
@@ -390,6 +390,16 @@ def execute(action, chips=None, table=None, dry_run=False, no_sleep=False, mark_
             execution["stage"] = "completed"
             execution["completed_at"] = utc_now()
             write_action_markdown(action, translation, execution, action.get("reason", "Stop."))
+            return {"status": "success", "execution": execution, "translation": translation}
+
+        if name == "reset_to_init":
+            run_prefix(translation.get("prefix"), config, dry_run)
+            state_cmd("complete-action", "--loop-stage", "idle")
+            execution["stage"] = "completed"
+            execution["completed_at"] = utc_now()
+            execution["prefix"] = translation.get("prefix")
+            execution["prefix_executed"] = not dry_run
+            write_action_markdown(action, translation, execution, action.get("reason", "Reset dexterous hand to init."))
             return {"status": "success", "execution": execution, "translation": translation}
 
         if dispatch_command:

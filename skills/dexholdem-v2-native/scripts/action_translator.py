@@ -233,6 +233,9 @@ def translate(action, chips=None, table=None):
     if name == "wait":
         return {"prefix": None, "commands": [], "command_steps": [], "sequence_steps": []}
 
+    if name == "reset_to_init":
+        return {"prefix": "reset_to_init", "commands": [], "command_steps": [], "sequence_steps": [name]}
+
     if name == "request_human":
         return {
             "prefix": None,
