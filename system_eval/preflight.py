@@ -17,9 +17,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_SOURCE = ROOT / "skills" / "dexholdem-v2"
 SKILL_SOURCE_NATIVE = ROOT / "skills" / "dexholdem-v2-native"
-SKILL_SOURCE_BACKEND = ROOT / "skills" / "dexholdem-v2-backend"
+SKILL_SOURCE_BACKEND = ROOT / "skills" / "dexholdem-v2-backend-preview"
+SKILL_SOURCE_ISOLATED = ROOT / "skills" / "dexholdem-v2-isolated"
 SUBAGENT_ROOT = ROOT / "subagent"
 BACKEND_CODEX_AGENT_SOURCE = SUBAGENT_ROOT / "backend" / "dexholdem_backend_perceiver.toml"
+ISOLATED_CODEX_AGENT_SOURCE = SUBAGENT_ROOT / "isolated" / "visual_agent.toml"
 DEFAULT_EXPERIMENTS_ROOT = ROOT / "experiments"
 DEFAULT_CODEX_VARIANT = "codex_native_gpt5_4_mini_medium"
 DEFAULT_CLAUDE_VARIANT = "claude_sonnet_4_6_medium"
@@ -149,17 +151,27 @@ def backend_agent_files() -> list[Path]:
     return [BACKEND_CODEX_AGENT_SOURCE]
 
 
-def selected_skill_name(native: bool = False, backend: bool = False) -> str:
+def isolated_agent_files() -> list[Path]:
+    if not ISOLATED_CODEX_AGENT_SOURCE.exists():
+        raise SystemExit(f"isolated Codex agent does not exist: {ISOLATED_CODEX_AGENT_SOURCE}")
+    return [ISOLATED_CODEX_AGENT_SOURCE]
+
+
+def selected_skill_name(native: bool = False, backend: bool = False, isolated: bool = False) -> str:
     if backend:
-        return "dexholdem-v2-backend"
+        return "dexholdem-v2-backend-preview"
+    if isolated:
+        return "dexholdem-v2-isolated"
     if native:
         return "dexholdem-v2-native"
     return "dexholdem-v2"
 
 
-def selected_skill_source(native: bool = False, backend: bool = False) -> Path:
+def selected_skill_source(native: bool = False, backend: bool = False, isolated: bool = False) -> Path:
     if backend:
         return SKILL_SOURCE_BACKEND
+    if isolated:
+        return SKILL_SOURCE_ISOLATED
     if native:
         return SKILL_SOURCE_NATIVE
     return SKILL_SOURCE
@@ -179,9 +191,9 @@ def install_agent_files(files: list[Path], target_dir: Path) -> list[dict]:
     return installed
 
 
-def install_skill(exp_dir: Path, native: bool = False, backend: bool = False) -> dict:
-    skill_name = selected_skill_name(native=native, backend=backend)
-    skill_source = selected_skill_source(native=native, backend=backend)
+def install_skill(exp_dir: Path, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
+    skill_source = selected_skill_source(native=native, backend=backend, isolated=isolated)
     shared_skill = exp_dir / ".agent" / "skills" / skill_name
     copytree_clean(skill_source, shared_skill)
 
@@ -200,8 +212,8 @@ def install_skill(exp_dir: Path, native: bool = False, backend: bool = False) ->
     return {"shared_skill": str(shared_skill), "skill_name": skill_name, "links": links}
 
 
-def expose_runtime(exp_dir: Path, native: bool = False, backend: bool = False) -> dict:
-    skill_name = selected_skill_name(native=native, backend=backend)
+def expose_runtime(exp_dir: Path, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
     skill_dir = exp_dir / ".agent" / "skills" / skill_name
     exposed = []
     for name in selected_runtime_files(backend=backend):
@@ -221,8 +233,8 @@ def expose_runtime(exp_dir: Path, native: bool = False, backend: bool = False) -
     return {"runtime_entries": exposed, "skill_name": skill_name}
 
 
-def run_uv_sync(exp_dir: Path, native: bool = False, backend: bool = False) -> dict:
-    skill_name = selected_skill_name(native=native, backend=backend)
+def run_uv_sync(exp_dir: Path, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
     skill_dir = exp_dir / ".agent" / "skills" / skill_name
     if shutil.which("uv") is None:
         raise SystemExit("uv not found on PATH; install uv or omit --uv-sync")
@@ -251,7 +263,7 @@ def init_state(exp_dir: Path) -> dict:
     }
 
 
-def capture_initial(exp_dir: Path, source: str | None = None, native: bool = False, backend: bool = False) -> dict:
+def capture_initial(exp_dir: Path, source: str | None = None, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
     output = exp_dir / "s0" / "00_capture.jpg"
     if source:
         source_path = Path(source)
@@ -262,7 +274,7 @@ def capture_initial(exp_dir: Path, source: str | None = None, native: bool = Fal
         shutil.copy2(source_path, output)
         return {"mode": "source_copy", "source": str(source_path), "output": str(output)}
 
-    skill_name = selected_skill_name(native=native, backend=backend)
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
     venv_python = exp_dir / ".agent" / "skills" / skill_name / ".venv" / "bin" / "python"
     python = str(venv_python) if venv_python.exists() else sys.executable
     command = [python, str(exp_dir / "capture.py"), "--output", str(output), "--meta"]
@@ -362,7 +374,7 @@ parse reuse.
 
 ## Skill Overview
 
-The DexHoldem backend skill (`dexholdem-v2-backend`) runs a physical two-player
+The DexHoldem backend skill (`dexholdem-v2-backend-preview`) runs a physical two-player
 Texas Hold'em setup with a dexterous robot hand. The main agent handles:
 - Canonical state ownership and perception imports
 - State maintenance and interpretation
@@ -375,7 +387,7 @@ The visible Codex backend perceiver handles only background capture/parsing:
 
 ### Key Files
 
-- `SKILL.md` - Full skill documentation (in `.agent/skills/dexholdem-v2-backend/`)
+- `SKILL.md` - Full skill documentation (in `.agent/skills/dexholdem-v2-backend-preview/`)
 - `visual_guidelines/` - Visual parsing reference documents
 - `config.yaml` - Robot and camera configuration
 - `state.py` - State management CLI
@@ -404,6 +416,43 @@ python3 capture.py --output s<N>/00_capture.jpg  # Direct fallback capture
 python3 router.py                           # Get routing decision
 python3 executor.py --action '{{...}}'       # Execute action
 ```
+"""
+
+AGENTS_MD_ISOLATED_TEMPLATE = """# DexHoldem System Evaluation (Isolated Perception)
+
+This experiment workspace is configured for isolated-perception DexHoldem runs.
+The main agent owns routing, state maintenance, poker reasoning, robot actions,
+and recovery decisions. The visible Codex `visual_agent` owns captured-state
+visual parsing and writes `s_current/01_parsed_state.md`.
+
+## Skill Overview
+
+The DexHoldem isolated skill (`dexholdem-v2-isolated`) runs a physical
+two-player Texas Hold'em setup with a dexterous robot hand. The main agent
+captures images, calls the isolated visual subagent, validates the parsed-state
+file, then routes and executes actions.
+
+The visible Codex isolated perceiver is:
+
+- `visual_agent` in `.codex/agents/`
+
+### Key Files
+
+- `SKILL.md` - Full skill documentation (in `.agent/skills/dexholdem-v2-isolated/`)
+- `visual_guidelines/` - Visual parsing reference documents passed by path
+- `state.py` - State management CLI
+- `router.py` - Next-move routing logic
+- `executor.py` - Robot action execution
+- `capture.py` - Camera capture utility
+
+### Core Workflow
+
+1. **Capture** - `python3 capture.py` takes a screenshot
+2. **Delegate parse** - call `visual_agent` with capture/output/cache/guideline paths
+3. **Validate parse** - confirm `s_current/01_parsed_state.md` has a table JSON object
+4. **Route** - `python3 router.py` determines next action
+5. **Execute** - `python3 executor.py --action '<json>'` runs robot commands
+6. **Advance** - `python3 state.py begin-next` creates the next state folder
 """
 
 AGENTS_MD_TEMPLATE = """# DexHoldem System Evaluation
@@ -504,9 +553,17 @@ Split visual subagents are installed for image perception tasks.
 """
 
 
-def generate_agents_md(codex_files: list[Path], claude_files: list[Path], native: bool = False, backend: bool = False) -> str:
+def generate_agents_md(
+    codex_files: list[Path],
+    claude_files: list[Path],
+    native: bool = False,
+    backend: bool = False,
+    isolated: bool = False,
+) -> str:
     if backend:
         return AGENTS_MD_BACKEND_TEMPLATE
+    if isolated:
+        return AGENTS_MD_ISOLATED_TEMPLATE
     if native:
         return AGENTS_MD_NATIVE_TEMPLATE
     codex_list = "\n".join(f"- `{f.stem}` ({f.name})" for f in codex_files)
@@ -537,8 +594,8 @@ def model_checks(codex_files: list[Path], claude_files: list[Path]) -> list[dict
 
 
 def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Path], claude_files: list[Path]) -> dict:
-    skill_source = selected_skill_source(native=args.native, backend=args.backend)
-    skill_name = selected_skill_name(native=args.native, backend=args.backend)
+    skill_source = selected_skill_source(native=args.native, backend=args.backend, isolated=args.isolated)
+    skill_name = selected_skill_name(native=args.native, backend=args.backend, isolated=args.isolated)
     manifest = {
         "schema_version": 1,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -550,10 +607,11 @@ def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Pa
         "defaults": {
             "native": args.native,
             "backend": args.backend,
+            "isolated": args.isolated,
             "skill": skill_name,
-            "visual_setting": "backend_stream_native" if args.backend else "native" if args.native else "split",
-            "codex_variant": args.codex_variant if not args.native and not args.backend else None,
-            "claude_variant": args.claude_variant if not args.native and not args.backend else None,
+            "visual_setting": "backend_stream_native" if args.backend else "isolated" if args.isolated else "native" if args.native else "split",
+            "codex_variant": args.codex_variant if not args.native and not args.backend and not args.isolated else None,
+            "claude_variant": args.claude_variant if not args.native and not args.backend and not args.isolated else None,
         },
         "source": {
             "skill": str(skill_source.relative_to(ROOT)),
@@ -562,6 +620,8 @@ def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Pa
     }
     if args.backend:
         manifest["source"]["codex_backend_agents"] = [file_record(path) for path in codex_files]
+    elif args.isolated:
+        manifest["source"]["codex_isolated_agents"] = [file_record(path) for path in codex_files]
     elif not args.native:
         manifest["source"]["codex_subagents"] = [file_record(path) for path in codex_files]
         manifest["source"]["claude_subagents"] = [file_record(path) for path in claude_files]
@@ -570,8 +630,9 @@ def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Pa
 
 
 def create_experiment(args: argparse.Namespace) -> dict:
-    if args.native and args.backend:
-        raise SystemExit("--native and --backend are mutually exclusive")
+    selected_modes = [args.native, args.backend, args.isolated]
+    if sum(1 for value in selected_modes if value) > 1:
+        raise SystemExit("--native, --backend, and --isolated are mutually exclusive")
     validate_exp_name(args.exp_name)
     experiments_root = Path(args.experiments_root).resolve()
     exp_dir = experiments_root / args.exp_name
@@ -580,6 +641,8 @@ def create_experiment(args: argparse.Namespace) -> dict:
     claude_files: list[Path] = []
     if args.backend:
         codex_files = backend_agent_files()
+    elif args.isolated:
+        codex_files = isolated_agent_files()
     elif not args.native:
         codex_files = split_agent_files(args.codex_variant, ".toml")
         claude_files = split_agent_files(args.claude_variant, ".md")
@@ -595,15 +658,21 @@ def create_experiment(args: argparse.Namespace) -> dict:
         remove_path(exp_dir)
 
     exp_dir.mkdir(parents=True)
-    skill_result = install_skill(exp_dir, native=args.native, backend=args.backend)
-    runtime_result = expose_runtime(exp_dir, native=args.native, backend=args.backend)
-    uv_result = run_uv_sync(exp_dir, native=args.native, backend=args.backend) if args.uv_sync else {"skipped": True}
+    skill_result = install_skill(exp_dir, native=args.native, backend=args.backend, isolated=args.isolated)
+    runtime_result = expose_runtime(exp_dir, native=args.native, backend=args.backend, isolated=args.isolated)
+    uv_result = run_uv_sync(
+        exp_dir,
+        native=args.native,
+        backend=args.backend,
+        isolated=args.isolated,
+    ) if args.uv_sync else {"skipped": True}
     state_result = init_state(exp_dir)
     capture_result = capture_initial(
         exp_dir,
         args.camera_source,
         native=args.native,
         backend=args.backend,
+        isolated=args.isolated,
     ) if args.capture_initial else {"skipped": True}
 
     codex_installed: list[dict] = []
@@ -614,13 +683,22 @@ def create_experiment(args: argparse.Namespace) -> dict:
     if args.backend:
         codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
         visible_codex = [f.stem for f in codex_files]
+    elif args.isolated:
+        codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
+        visible_codex = [f.stem for f in codex_files]
     elif not args.native:
         codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
         claude_installed = install_agent_files(claude_files, exp_dir / ".claude" / "agents")
         visible_codex = [f.stem for f in codex_files]
         visible_claude = [f.stem for f in claude_files]
 
-    agents_md = generate_agents_md(codex_files, claude_files, native=args.native, backend=args.backend)
+    agents_md = generate_agents_md(
+        codex_files,
+        claude_files,
+        native=args.native,
+        backend=args.backend,
+        isolated=args.isolated,
+    )
     (exp_dir / "AGENTS.md").write_text(agents_md)
 
     if not args.no_current:
@@ -636,6 +714,14 @@ def create_experiment(args: argparse.Namespace) -> dict:
         },
     })
     if args.backend:
+        manifest["installed"]["codex_agents"] = codex_installed
+        manifest["visible_agents"] = {
+            "codex": visible_codex,
+            "claude": visible_claude,
+            "codex_dir": ".codex/agents",
+            "claude_dir": ".claude/agents",
+        }
+    elif args.isolated:
         manifest["installed"]["codex_agents"] = codex_installed
         manifest["visible_agents"] = {
             "codex": visible_codex,
@@ -662,7 +748,8 @@ def main() -> None:
     parser.add_argument("--exp-name", required=True, help="Experiment directory name to create")
     parser.add_argument("--experiments-root", default=str(DEFAULT_EXPERIMENTS_ROOT))
     parser.add_argument("--native", action="store_true", help="Use dexholdem-v2-native skill (no subagents)")
-    parser.add_argument("--backend", action="store_true", help="Use dexholdem-v2-backend skill with a background Codex perception stream")
+    parser.add_argument("--backend", action="store_true", help="Use dexholdem-v2-backend-preview skill with a background Codex perception stream")
+    parser.add_argument("--isolated", action="store_true", help="Use dexholdem-v2-isolated skill with a single visual_agent subagent")
     parser.add_argument("--codex-variant", default=DEFAULT_CODEX_VARIANT)
     parser.add_argument("--claude-variant", default=DEFAULT_CLAUDE_VARIANT)
     parser.add_argument("--force", action="store_true", help="Replace an existing experiment directory")

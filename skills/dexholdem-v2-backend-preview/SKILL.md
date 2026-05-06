@@ -1,5 +1,5 @@
 ---
-name: dexholdem-v2-backend
+name: dexholdem-v2-backend-preview
 description: "Backend-stream physical Texas Hold'em robot skill. A background Codex perceiver captures and parses into /tmp, while the main agent owns the canonical game loop and imports fresh parsed states into s_current."
 metadata:
   author: Tianzhe Chu
@@ -22,13 +22,13 @@ updates, stream import, action translation, and robot command dispatch.
 From the user's working directory, expose the helper scripts:
 
 ```bash
-ln -s .agents/skills/dexholdem-v2-backend/scripts/*.py ./
+ln -s .agents/skills/dexholdem-v2-backend-preview/scripts/*.py ./
 ```
 
 For Claude installations:
 
 ```bash
-ln -s .claude/skills/dexholdem-v2-backend/scripts/*.py ./
+ln -s .claude/skills/dexholdem-v2-backend-preview/scripts/*.py ./
 ```
 
 Then run preflight:
