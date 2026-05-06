@@ -863,6 +863,23 @@ def decide(exp_dir, wait_seconds=WAIT_SECONDS):
             required_agent_task="repair_loop_stage",
         )
 
+    last_intent = sequence.get("intent")
+    if last_intent and last_intent != "reset_to_init":
+        add(judgments, "post_action_reset", "needed", f"last intent was {last_intent}; reset to init for clean perception")
+        reset_action = {"action": "reset_to_init", "reason": f"post-action reset after {last_intent}"}
+        return route(
+            exp_dir,
+            state_name,
+            state_dir,
+            "post_action_reset",
+            f"reset robot to init after {last_intent} for clean perception",
+            judgments,
+            agent_required=False,
+            suggested_action=reset_action,
+            commands=[command_for_action(reset_action)],
+        )
+    add(judgments, "post_action_reset", "not_needed", "no post-action reset required")
+
     if is_my_turn is False:
         add(judgments, "is_my_turn", False, "turn marker indicates it is not the robot's turn")
         return route_wait(
