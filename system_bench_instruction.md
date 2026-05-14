@@ -43,6 +43,17 @@ python3 system_eval/preflight.py \
   --capture-initial
 ```
 
+For the **mix** skill (native perception plus per-instruction robot-client
+ports/models):
+
+```bash
+python3 system_eval/preflight.py \
+  --exp-name my_run \
+  --mix \
+  --uv-sync \
+  --capture-initial
+```
+
 This creates `experiments/my_run/` and symlinks `experiments/current` to it.
 
 If you don't have a live camera, pass an existing image:

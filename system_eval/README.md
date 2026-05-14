@@ -30,6 +30,17 @@ python3 system_eval/preflight.py --exp-name exp001 --native
 This uses `dexholdem-v2-native` skill and skips subagent installation. The main
 agent reads images directly using visual guidelines.
 
+## Mix Setup (no subagents, per-instruction ports)
+
+For system benchmarks using the mixed robot-client routing skill:
+
+```bash
+python3 system_eval/preflight.py --exp-name exp001 --mix
+```
+
+This uses `dexholdem-v2-mix`, skips subagent installation, and copies its
+`robot_client.instruction_ports` config into the experiment workspace.
+
 ## Options
 
 Use `--dry-run` to inspect the planned setup without writing. Use `--force`

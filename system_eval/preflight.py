@@ -17,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_SOURCE = ROOT / "skills" / "dexholdem-v2"
 SKILL_SOURCE_NATIVE = ROOT / "skills" / "dexholdem-v2-native"
+SKILL_SOURCE_MIX = ROOT / "skills" / "dexholdem-v2-mix"
 SKILL_SOURCE_BACKEND = ROOT / "skills" / "dexholdem-v2-backend-preview"
 SKILL_SOURCE_ISOLATED = ROOT / "skills" / "dexholdem-v2-isolated"
 SUBAGENT_ROOT = ROOT / "subagent"
@@ -157,21 +158,35 @@ def isolated_agent_files() -> list[Path]:
     return [ISOLATED_CODEX_AGENT_SOURCE]
 
 
-def selected_skill_name(native: bool = False, backend: bool = False, isolated: bool = False) -> str:
+def selected_skill_name(
+    native: bool = False,
+    backend: bool = False,
+    isolated: bool = False,
+    mix: bool = False,
+) -> str:
     if backend:
         return "dexholdem-v2-backend-preview"
     if isolated:
         return "dexholdem-v2-isolated"
+    if mix:
+        return "dexholdem-v2-mix"
     if native:
         return "dexholdem-v2-native"
     return "dexholdem-v2"
 
 
-def selected_skill_source(native: bool = False, backend: bool = False, isolated: bool = False) -> Path:
+def selected_skill_source(
+    native: bool = False,
+    backend: bool = False,
+    isolated: bool = False,
+    mix: bool = False,
+) -> Path:
     if backend:
         return SKILL_SOURCE_BACKEND
     if isolated:
         return SKILL_SOURCE_ISOLATED
+    if mix:
+        return SKILL_SOURCE_MIX
     if native:
         return SKILL_SOURCE_NATIVE
     return SKILL_SOURCE
@@ -191,9 +206,15 @@ def install_agent_files(files: list[Path], target_dir: Path) -> list[dict]:
     return installed
 
 
-def install_skill(exp_dir: Path, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
-    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
-    skill_source = selected_skill_source(native=native, backend=backend, isolated=isolated)
+def install_skill(
+    exp_dir: Path,
+    native: bool = False,
+    backend: bool = False,
+    isolated: bool = False,
+    mix: bool = False,
+) -> dict:
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated, mix=mix)
+    skill_source = selected_skill_source(native=native, backend=backend, isolated=isolated, mix=mix)
     shared_skill = exp_dir / ".agent" / "skills" / skill_name
     copytree_clean(skill_source, shared_skill)
 
@@ -212,8 +233,14 @@ def install_skill(exp_dir: Path, native: bool = False, backend: bool = False, is
     return {"shared_skill": str(shared_skill), "skill_name": skill_name, "links": links}
 
 
-def expose_runtime(exp_dir: Path, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
-    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
+def expose_runtime(
+    exp_dir: Path,
+    native: bool = False,
+    backend: bool = False,
+    isolated: bool = False,
+    mix: bool = False,
+) -> dict:
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated, mix=mix)
     skill_dir = exp_dir / ".agent" / "skills" / skill_name
     exposed = []
     for name in selected_runtime_files(backend=backend):
@@ -233,8 +260,14 @@ def expose_runtime(exp_dir: Path, native: bool = False, backend: bool = False, i
     return {"runtime_entries": exposed, "skill_name": skill_name}
 
 
-def run_uv_sync(exp_dir: Path, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
-    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
+def run_uv_sync(
+    exp_dir: Path,
+    native: bool = False,
+    backend: bool = False,
+    isolated: bool = False,
+    mix: bool = False,
+) -> dict:
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated, mix=mix)
     skill_dir = exp_dir / ".agent" / "skills" / skill_name
     if shutil.which("uv") is None:
         raise SystemExit("uv not found on PATH; install uv or omit --uv-sync")
@@ -263,7 +296,14 @@ def init_state(exp_dir: Path) -> dict:
     }
 
 
-def capture_initial(exp_dir: Path, source: str | None = None, native: bool = False, backend: bool = False, isolated: bool = False) -> dict:
+def capture_initial(
+    exp_dir: Path,
+    source: str | None = None,
+    native: bool = False,
+    backend: bool = False,
+    isolated: bool = False,
+    mix: bool = False,
+) -> dict:
     output = exp_dir / "s0" / "00_capture.jpg"
     if source:
         source_path = Path(source)
@@ -274,7 +314,7 @@ def capture_initial(exp_dir: Path, source: str | None = None, native: bool = Fal
         shutil.copy2(source_path, output)
         return {"mode": "source_copy", "source": str(source_path), "output": str(output)}
 
-    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated)
+    skill_name = selected_skill_name(native=native, backend=backend, isolated=isolated, mix=mix)
     venv_python = exp_dir / ".agent" / "skills" / skill_name / ".venv" / "bin" / "python"
     python = str(venv_python) if venv_python.exists() else sys.executable
     command = [python, str(exp_dir / "capture.py"), "--output", str(output), "--meta"]
@@ -345,6 +385,84 @@ Use these files in `visual_guidelines/` for direct image parsing:
 | `BET_RECOGNITION.md` | Count current bet chips |
 | `HELD_CARD_RECOGNITION.md` | Read cards held by robot |
 | `SHOWDOWN_OUTCOME.md` | Determine winner at showdown |
+
+### Core Workflow
+
+1. **Capture** - `python3 capture.py` takes a screenshot
+2. **Parse** - Read image directly using visual guidelines, write `01_parsed_state.md`
+3. **Route** - `python3 router.py` determines next action
+4. **Execute** - `python3 executor.py --action '<json>'` runs robot commands
+5. **Advance** - `python3 state.py begin-next` creates the next state folder
+
+### Common Commands
+
+```bash
+python3 state.py current                    # Show current state info
+python3 state.py begin-next                 # Advance to next state
+python3 capture.py --output s<N>/00_capture.jpg  # Capture image
+python3 router.py                           # Get routing decision
+python3 executor.py --action '{{...}}'       # Execute action
+```
+"""
+
+AGENTS_MD_MIX_TEMPLATE = """# DexHoldem System Evaluation (Mix)
+
+This experiment workspace is configured for mixed-model native system-level
+DexHoldem runs. The main agent handles all perception directly without
+delegating to subagents, and selected robot atom instructions can route to
+alternate robot-client ports/models.
+
+## Skill Overview
+
+The DexHoldem mix skill (`dexholdem-v2-mix`) runs a physical two-player
+Texas Hold'em setup with a dexterous robot hand. The main agent handles:
+- Visual perception directly (using visual guidelines)
+- State maintenance and interpretation
+- Poker reasoning and action decisions
+- Recovery decisions when errors occur
+- Robot atom routing through `robot_client.instruction_ports`
+
+### Key Files
+
+- `SKILL.md` - Full skill documentation (in `.agent/skills/dexholdem-v2-mix/`)
+- `visual_guidelines/` - Visual parsing reference documents
+- `config.yaml` - Robot, camera, and per-instruction port configuration
+- `state.py` - State management CLI
+- `router.py` - Next-move routing logic
+- `executor.py` - Robot action execution
+- `action_translator.py` - Robot atom command translation
+- `capture.py` - Camera capture utility
+
+### Robot Client Routing
+
+`config.yaml` supports per-instruction model routing:
+
+```yaml
+robot_client:
+  server_ip: "192.168.1.200"
+  port: 13579
+  instruction_ports:
+    5: 13580
+    10: 13580
+    11: 13580
+```
+
+Instructions not listed in `instruction_ports` fall back to
+`robot_client.port`.
+
+### State Contract
+
+```
+experiments/current/
+  s0/                      # First state folder
+    00_capture.jpg         # Screenshot
+    01_parsed_state.md     # Parsed visual state (agent writes)
+    02_action.md           # Committed action (agent writes)
+  s1/, s2/, ...            # Subsequent states
+  s_current -> s<N>        # Symlink to current state
+  hole_card_cache.json     # Cached hole cards
+  action_sequence.json     # Current action sequence and safety counters
+```
 
 ### Core Workflow
 
@@ -559,11 +677,14 @@ def generate_agents_md(
     native: bool = False,
     backend: bool = False,
     isolated: bool = False,
+    mix: bool = False,
 ) -> str:
     if backend:
         return AGENTS_MD_BACKEND_TEMPLATE
     if isolated:
         return AGENTS_MD_ISOLATED_TEMPLATE
+    if mix:
+        return AGENTS_MD_MIX_TEMPLATE
     if native:
         return AGENTS_MD_NATIVE_TEMPLATE
     codex_list = "\n".join(f"- `{f.stem}` ({f.name})" for f in codex_files)
@@ -594,8 +715,9 @@ def model_checks(codex_files: list[Path], claude_files: list[Path]) -> list[dict
 
 
 def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Path], claude_files: list[Path]) -> dict:
-    skill_source = selected_skill_source(native=args.native, backend=args.backend, isolated=args.isolated)
-    skill_name = selected_skill_name(native=args.native, backend=args.backend, isolated=args.isolated)
+    skill_source = selected_skill_source(native=args.native, backend=args.backend, isolated=args.isolated, mix=args.mix)
+    skill_name = selected_skill_name(native=args.native, backend=args.backend, isolated=args.isolated, mix=args.mix)
+    split_subagents = not (args.native or args.backend or args.isolated or args.mix)
     manifest = {
         "schema_version": 1,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -608,10 +730,21 @@ def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Pa
             "native": args.native,
             "backend": args.backend,
             "isolated": args.isolated,
+            "mix": args.mix,
             "skill": skill_name,
-            "visual_setting": "backend_stream_native" if args.backend else "isolated" if args.isolated else "native" if args.native else "split",
-            "codex_variant": args.codex_variant if not args.native and not args.backend and not args.isolated else None,
-            "claude_variant": args.claude_variant if not args.native and not args.backend and not args.isolated else None,
+            "visual_setting": (
+                "backend_stream_native"
+                if args.backend
+                else "isolated"
+                if args.isolated
+                else "mix"
+                if args.mix
+                else "native"
+                if args.native
+                else "split"
+            ),
+            "codex_variant": args.codex_variant if split_subagents else None,
+            "claude_variant": args.claude_variant if split_subagents else None,
         },
         "source": {
             "skill": str(skill_source.relative_to(ROOT)),
@@ -622,7 +755,7 @@ def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Pa
         manifest["source"]["codex_backend_agents"] = [file_record(path) for path in codex_files]
     elif args.isolated:
         manifest["source"]["codex_isolated_agents"] = [file_record(path) for path in codex_files]
-    elif not args.native:
+    elif split_subagents:
         manifest["source"]["codex_subagents"] = [file_record(path) for path in codex_files]
         manifest["source"]["claude_subagents"] = [file_record(path) for path in claude_files]
         manifest["model_checks"] = model_checks(codex_files, claude_files)
@@ -630,9 +763,9 @@ def build_manifest(args: argparse.Namespace, exp_dir: Path, codex_files: list[Pa
 
 
 def create_experiment(args: argparse.Namespace) -> dict:
-    selected_modes = [args.native, args.backend, args.isolated]
+    selected_modes = [args.native, args.backend, args.isolated, args.mix]
     if sum(1 for value in selected_modes if value) > 1:
-        raise SystemExit("--native, --backend, and --isolated are mutually exclusive")
+        raise SystemExit("--native, --backend, --isolated, and --mix are mutually exclusive")
     validate_exp_name(args.exp_name)
     experiments_root = Path(args.experiments_root).resolve()
     exp_dir = experiments_root / args.exp_name
@@ -643,7 +776,7 @@ def create_experiment(args: argparse.Namespace) -> dict:
         codex_files = backend_agent_files()
     elif args.isolated:
         codex_files = isolated_agent_files()
-    elif not args.native:
+    elif not (args.native or args.mix):
         codex_files = split_agent_files(args.codex_variant, ".toml")
         claude_files = split_agent_files(args.claude_variant, ".md")
 
@@ -658,13 +791,26 @@ def create_experiment(args: argparse.Namespace) -> dict:
         remove_path(exp_dir)
 
     exp_dir.mkdir(parents=True)
-    skill_result = install_skill(exp_dir, native=args.native, backend=args.backend, isolated=args.isolated)
-    runtime_result = expose_runtime(exp_dir, native=args.native, backend=args.backend, isolated=args.isolated)
+    skill_result = install_skill(
+        exp_dir,
+        native=args.native,
+        backend=args.backend,
+        isolated=args.isolated,
+        mix=args.mix,
+    )
+    runtime_result = expose_runtime(
+        exp_dir,
+        native=args.native,
+        backend=args.backend,
+        isolated=args.isolated,
+        mix=args.mix,
+    )
     uv_result = run_uv_sync(
         exp_dir,
         native=args.native,
         backend=args.backend,
         isolated=args.isolated,
+        mix=args.mix,
     ) if args.uv_sync else {"skipped": True}
     state_result = init_state(exp_dir)
     capture_result = capture_initial(
@@ -673,6 +819,7 @@ def create_experiment(args: argparse.Namespace) -> dict:
         native=args.native,
         backend=args.backend,
         isolated=args.isolated,
+        mix=args.mix,
     ) if args.capture_initial else {"skipped": True}
 
     codex_installed: list[dict] = []
@@ -686,7 +833,7 @@ def create_experiment(args: argparse.Namespace) -> dict:
     elif args.isolated:
         codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
         visible_codex = [f.stem for f in codex_files]
-    elif not args.native:
+    elif not (args.native or args.mix):
         codex_installed = install_agent_files(codex_files, exp_dir / ".codex" / "agents")
         claude_installed = install_agent_files(claude_files, exp_dir / ".claude" / "agents")
         visible_codex = [f.stem for f in codex_files]
@@ -698,6 +845,7 @@ def create_experiment(args: argparse.Namespace) -> dict:
         native=args.native,
         backend=args.backend,
         isolated=args.isolated,
+        mix=args.mix,
     )
     (exp_dir / "AGENTS.md").write_text(agents_md)
 
@@ -729,7 +877,7 @@ def create_experiment(args: argparse.Namespace) -> dict:
             "codex_dir": ".codex/agents",
             "claude_dir": ".claude/agents",
         }
-    elif not args.native:
+    elif not (args.native or args.mix):
         manifest["installed"]["codex_agents"] = codex_installed
         manifest["installed"]["claude_agents"] = claude_installed
         manifest["visible_agents"] = {
@@ -748,6 +896,7 @@ def main() -> None:
     parser.add_argument("--exp-name", required=True, help="Experiment directory name to create")
     parser.add_argument("--experiments-root", default=str(DEFAULT_EXPERIMENTS_ROOT))
     parser.add_argument("--native", action="store_true", help="Use dexholdem-v2-native skill (no subagents)")
+    parser.add_argument("--mix", action="store_true", help="Use dexholdem-v2-mix skill (no subagents, per-instruction robot ports)")
     parser.add_argument("--backend", action="store_true", help="Use dexholdem-v2-backend-preview skill with a background Codex perception stream")
     parser.add_argument("--isolated", action="store_true", help="Use dexholdem-v2-isolated skill with a single visual_agent subagent")
     parser.add_argument("--codex-variant", default=DEFAULT_CODEX_VARIANT)
