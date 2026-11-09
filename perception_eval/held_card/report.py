@@ -13,7 +13,7 @@ def export_report(campaign: Path, destination: Path) -> None:
     """Save per-repeat scores and original response text without session metadata.
 
     Args:
-        campaign (Path): Completed directory created by run_claude.py.
+        campaign (Path): Completed directory created by a held-card runner.
         destination (Path): Destination for a Markdown report and JSON evidence.
 
     Raises:
@@ -34,11 +34,12 @@ def export_report(campaign: Path, destination: Path) -> None:
         (destination / filename).write_bytes((campaign / filename).read_bytes())
     keys = ('id', 'model', 'repeat', 'input_sha256', 'status', 'result', 'held_card',
             'resolved_models', 'returncode', 'api_error_status', 'elapsed_s', 'cost_usd')
-    optional_keys = ('requested_model', 'original_validation_status', 'source_record_sha256')
+    optional_keys = ('requested_model', 'original_validation_status', 'source_record_sha256',
+                     'model_identity_evidence', 'cli_warnings', 'assistant_messages')
     (destination / 'responses.jsonl').write_text(''.join(
         json.dumps({key: r[key] for key in (*keys, *optional_keys) if key in r}, ensure_ascii=False)+'\n'
         for r in records))
-    family = 'Gemini' if manifest.get('harness') == 'Gemini CLI' else 'Claude'
+    family = manifest.get('harness', 'Claude CLI').removesuffix(' CLI')
     n_images = len(manifest['image_sha256'])
     lines = [
         f'# {family} held-card recognition — 2026-11-09', '',
@@ -100,6 +101,32 @@ def export_report(campaign: Path, destination: Path) -> None:
                   'A separate offline derivation revalidates them against the actual stable ID, '
                   'retaining requested IDs and original validation status. No response was rerun, '
                   'selected by correctness, or changed; the strict answer parser is identical.', '']
+    if manifest.get('harness') == 'Codex CLI':
+        lines += ['## Codex identity and availability', '',
+                  'These are the exact model IDs requested through Codex CLI. Its JSONL events '
+                  'do not expose an independent backend model ID; `resolved_models` is therefore '
+                  'empty rather than inferred. API errors, observed tool invocations, fallback '
+                  'metadata warnings and dropped service-tier warnings are rejected.', '']
+        availability_path = campaign / 'availability.json'
+        if availability_path.exists():
+            (destination / 'availability.json').write_bytes(availability_path.read_bytes())
+            availability = json.loads(availability_path.read_text())
+            unavailable = [r['model'] for r in availability['cases'] if r['status'] != 'completed']
+            lines += ['Separate connectivity checks are preserved in '
+                      '[availability.json](availability.json). All preflight predictions, '
+                      'including successful calls, are excluded from formal scores.', '']
+            if unavailable:
+                lines += ['Original-paper IDs unavailable in this account: '
+                          + ', '.join(f'`{model}`' for model in unavailable)
+                          + '. These configurations were not replaced and have no recognition '
+                          'score. The service errors are retained in the availability record.', '']
+        if 'response_reparse' in manifest:
+            lines += ['The initial extractor incorrectly classified multiple assistant messages '
+                      'as execution failures. A separate offline derivation parses the final '
+                      'assistant message, consistently with the other CLI final-response envelopes. '
+                      'Earlier commentary is retained in `assistant_messages`; the final message '
+                      'must still be strict JSON. Source records, original statuses and hashes are '
+                      'retained. No inference was repeated or selected by correctness.', '']
     (destination / 'README.md').write_text('\n'.join(lines))
 
 
