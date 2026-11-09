@@ -30,16 +30,22 @@ def export_report(campaign: Path, destination: Path) -> None:
     if any(r['input_sha256'] != manifest['image_sha256'][r['id']] for r in records):
         raise ValueError('Image hash mismatch')
     destination.mkdir(parents=True, exist_ok=True)
-    for filename in ('summary.json', 'manifest.json', 'claude_version.txt'):
+    for filename in ('summary.json', 'manifest.json', manifest.get('cli_version_file', 'claude_version.txt')):
         (destination / filename).write_bytes((campaign / filename).read_bytes())
     keys = ('id', 'model', 'repeat', 'input_sha256', 'status', 'result', 'held_card',
             'resolved_models', 'returncode', 'api_error_status', 'elapsed_s', 'cost_usd')
+    optional_keys = ('requested_model', 'original_validation_status', 'source_record_sha256')
     (destination / 'responses.jsonl').write_text(''.join(
-        json.dumps({key: r[key] for key in keys}, ensure_ascii=False)+'\n' for r in records))
+        json.dumps({key: r[key] for key in (*keys, *optional_keys) if key in r}, ensure_ascii=False)+'\n'
+        for r in records))
+    family = 'Gemini' if manifest.get('harness') == 'Gemini CLI' else 'Claude'
+    n_images = len(manifest['image_sha256'])
     lines = [
-        '# Claude held-card recognition — 2026-11-09', '',
-        'Five paper models, 11 fixed images, three independent conversations per image. '
-        'The 165 completed attempts are repeated measurements of 11 images, not 165 independent scenes.', '',
+        f'# {family} held-card recognition — 2026-11-09', '',
+        f"{len(manifest['models'])} model configurations, {n_images} fixed images, "
+        f"{manifest['repeats']} independent conversations per image. "
+        f'The {len(records)} completed attempts are repeated measurements of {n_images} images, '
+        f'not {len(records)} independent scenes.', '',
         f"Label status: **{summary['label_status']}**. Scores remain provisional pending human label verification.", '',
         '## Exact rank-and-suit results', '',
         '| Model | Repeat 1 | Repeat 2 | Repeat 3 | Mean exact | Mean card macro | Balanced6, per repeat | Invalid JSON | Execution errors |',
@@ -82,7 +88,18 @@ def export_report(campaign: Path, destination: Path) -> None:
               '[responses.jsonl](responses.jsonl) preserves each original final response and execution status. '
               'Complete CLI streams remain in the local campaign directory.',
               f'- Execution status counts: `{json.dumps(dict(statuses), sort_keys=True)}`.',
-              '- Validation: four existing dataset/scoring tests and three new input/extraction tests passed.', '']
+              f"- Validation: {manifest.get('validation_tests', 7)} dataset/scoring and input/extraction tests passed.", '']
+    if 'model_resolution' in manifest:
+        resolution = manifest['model_resolution']
+        lines += ['## Model version difference', '',
+                  f"The requested `{resolution['requested']}` ID returned `{resolution['reported_actual']}` "
+                  'in every Flash-Lite call. This result is labeled as the current stable model; '
+                  'it does not reproduce the retired preview used in the original paper. '
+                  f"See [Google's deprecation notice]({resolution['source']}).", '',
+                  'The raw campaign initially rejected these responses as model mismatches. '
+                  'A separate offline derivation revalidates them against the actual stable ID, '
+                  'retaining requested IDs and original validation status. No response was rerun, '
+                  'selected by correctness, or changed; the strict answer parser is identical.', '']
     (destination / 'README.md').write_text('\n'.join(lines))
 
 

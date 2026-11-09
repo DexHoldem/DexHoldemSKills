@@ -1,4 +1,4 @@
-# Held-card image-only Claude evaluation
+# Held-card image-only evaluation
 
 This runner evaluates the five Claude configurations in the DexHoldem paper on
 the separate `held_card_image_only_v1` package. It is a recognition diagnostic,
@@ -70,3 +70,50 @@ contexts. `balanced6` is a nested one-image-per-identity diagnostic, not an
 independent test set. Report per-repeat counts and macro accuracy over the six
 identities, and do not claim general 52-card recognition or a stable ranking
 from this small subset.
+
+## Gemini extension
+
+`run_gemini.py` evaluates the two Gemini IDs from the main paper:
+`gemini-3-flash-preview` and `gemini-3.1-flash-lite-preview`. It uses the same
+11 unchanged images, neutral question, three repeats, frozen labels, original
+scorer, strict JSON extraction, and separate balanced6 reporting. No reasoning
+override is supplied, consistent with the original Gemini launchers.
+
+Gemini CLI receives an `@image.jpg` attachment from a fresh temporary directory.
+Only the selected image and a restrictive settings file are present there;
+neither history nor private labels are copied. Core tools, MCP servers, hooks,
+extensions and normal context-file loading are disabled. The CLI's attachment
+preprocessor supplies the image before inference; model tool calls must remain
+zero and the reported model must match exactly. Gemini's CLI prompt wrapper and
+service-side image handling differ from Claude's; equal inference compute is
+not claimed. Full stdout/stderr and actual model/token statistics are saved.
+
+```sh
+uv run --no-project python perception_eval/held_card/run_gemini.py \
+  --dataset /path/to/held_card_image_only_v1 \
+  --output /path/to/results/gemini_r3 --concurrency 2
+
+uv run --no-project python perception_eval/held_card/resolve_gemini_alias.py \
+  /path/to/held_card_image_only_v1 \
+  /path/to/results/gemini_r3 \
+  /path/to/results/gemini_resolved_r3
+
+uv run --no-project python perception_eval/held_card/report.py \
+  /path/to/results/gemini_resolved_r3 \
+  perception_eval/held_card/results/2026-11-09_gemini
+```
+
+The live service resolved the retired `gemini-3.1-flash-lite-preview` ID to
+`gemini-3.1-flash-lite` in all 33 calls. The source runner correctly rejected
+that identity mismatch. `resolve_gemini_alias.py` creates a separate derived
+campaign labeled as the actual stable model, retaining original request IDs,
+validation status and raw responses; it makes no additional inference calls.
+This is not a reproduction of the paper's retired preview. The alias resolution
+is supported by [Google's deprecation notice](https://ai.google.dev/gemini-api/docs/deprecations).
+
+The one-image Flash connectivity pilot is excluded from formal scores. Four
+additional tests in `test_run_gemini.py` check the Gemini output envelope,
+strict formatting, abstention, execution errors, model substitution and tool
+use. Two more tests cover the explicit retired-to-stable identity derivation
+and rejection of other substitutions. Together with the three shared
+input/extraction tests and four original dataset tests, all 13 checks pass.
