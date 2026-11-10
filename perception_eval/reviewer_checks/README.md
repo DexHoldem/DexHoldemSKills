@@ -1,122 +1,90 @@
 # Reviewer perception checks
 
-## Corrected paper-script ablation (active)
+## Completed reviewer supplement — November 11
 
-The user requested the original paper scripts with historical annotations and
-caches removed. `native_ablation.py` now invokes those original single-run
-scripts directly. It does not replace the prompt, image-reading tools, output
-schema, output validation or scoring functions. Published annotated-history
-results are the control; no new annotated-control runs are scheduled.
+[Combined results](results/2026-11-11_reviewer_handoff/RESULTS.md) follow the
+original paper's columns: Harness, Perceiver, Overall, LS, TO, BI, CC, CB, RCI,
+OCI, SO and Avg. They also report direct scene-stability accuracy, both class
+recalls and balanced accuracy for both history conditions.
 
-All 593 historical/current images across 36 problem folders remain byte-identical,
-as do the 36 `s_current` links. Independent copies omit only the 557
-`01_parsed_state.md` files, 557 `02_action.md` files and 72 cache files
-(`action_sequence.json` and `hole_card_cache.json`). Action notes are annotated
-context too: their prose explicitly states visual/robot states. Original source
-inputs and saved runs are never modified. Prior `runs/` directories are excluded
-as in the original harness.
+- **Without annotated history/caches:** all 11 available configurations completed
+  36 scenes × 3 repeats = 1,188 trials using the original native paper scripts.
+- **With annotated history:** 1,080 original paper outputs cover ten configurations.
+  Four GPT 5.6/6 configurations lack their historical raw outputs; a separate
+  432-trial annotated supplement supplies their stability predictions. These
+  fresh results are explicitly labeled and do not replace the published table.
+- **Held-card diagnostic:** the separately reported 11-image experiment includes
+  363 calls. It is current-image-only and remains separate from the 36-scene table.
 
-Each of 11 available configurations has 36 problems × 3 repeats = 108 planned
-trials. The three inaccessible GPT 5.5/5.4/5.4 mini configurations remain N/A,
-as authorized by the user. Model aliases and current CLI versions are recorded;
-a current service alias is not evidence of the same historical model snapshot.
+The three unavailable GPT 5.5/5.4/5.4 mini configurations are N/A for the new
+ablation, as authorized by the user. No substitute models or zero scores are
+used for unavailable services. Both history conditions are fully scored for
+all eleven currently accessible configurations.
 
-Claude/Gemini source hashes match their retained paper runs. GPT 5.6/6 use the
-September paper source archive and its recorded apps/plugins flags. The archive's
-Windows CRLF bytes were restored and all recorded source hashes verified.
-The [frozen protocol](results/2026-11-10_native_no_annotations/protocol.json)
-records the retained/removed inputs; the [GPT provenance](results/2026-11-10_native_no_annotations/gpt_paper_provenance.json)
-records the original source and command settings. Runtime/OS versions are
-recorded separately and are not claimed to reproduce historical infrastructure.
+## Exact input and harness changes
 
-Working results are under `/private/tmp/dexholdem_native_ablation`. At the
-November 11 checkpoint, all four accessible GPT configurations and both Gemini
-configurations have 108 returned trials each. Claude continues on the user's
-replacement account. The original reset wait was cancelled on the user's
-November 10 instruction; model inputs and settings remain unchanged.
-Completed/malformed answers are retained without score-based retries; explicit
-zero-token Claude quota errors preserve all attempts and defer until the next
-provider-stated reset. Unknown failures remain visible for inspection.
+All 593 historical/current JPEGs and all 36 `s_current` links remain unchanged.
+The ablation removes only 557 historical `01_parsed_state.md` files, 557 annotated
+`02_action.md` files, and 72 `action_sequence.json` / `hole_card_cache.json` files.
+Historical images remain available: this is not a current-image-only task.
+Original source inputs and saved paper runs are never edited. Previous `runs/`
+directories remain excluded by the original isolation process.
 
-Original `evaluate_column.py` remains authoritative for Overall and field scores.
-Direct `table.scene_stable` scoring is added separately to the same outputs;
-it does not alter the original Overall. Six completed-model results are archived below; Claude results remain pending.
+The native runner, prompt, guidelines, image-reading tools, output schema,
+validity check and deterministic scorer are unchanged. Claude/Gemini source
+hashes match their retained paper runs. GPT uses the exact September source
+archive and its recorded apps/plugins flags, reasoning effort and service tier.
+All 432 paired GPT launch settings match between new conditions apart from
+input/output paths and run identifiers. Original source and input hashes were
+checked again after completion.
 
-## Completed retrospective stability scoring
+The original Overall definition is unchanged. Avg equally weights the eight
+individual field accuracies. Scene stability is read directly from explicit
+predictions, never inferred from LS. Labels contain 31 stable and 5 unstable
+scenes: always predicting stable gives 86.1% accuracy but 0% unstable recall
+and 50% balanced accuracy. The three repeats are not 108 independent scenes.
 
-[Original-run stability](results/2026-11-10_original_stability/README.md) covers
-10 original model configurations × 108 retained predictions = 1,080 trials.
-No new inference was needed. The original validity gate and field evaluator
-are reused, and `audit_original.py` verifies the portable raw-output archive.
-Four September GPT model run folders were unavailable, so their historical
-stability values are not imputed from aggregate paper scores.
+## Results and evidence
 
-The 36 labels contain 31 stable and 5 unstable scenes. Report accuracy, both
-class recalls and balanced accuracy. The always-stable baseline is 86.1%
-accuracy, 0% unstable recall and 50% balanced accuracy. Invalid predictions
-remain in the original denominators. Extended Overall requires original Overall
-and correct stability, and is reported separately.
+- [Native ablation scores and full raw archive](results/2026-11-10_native_no_annotations/scored_completed/README.md)
+- [Original-paper stability rescore](results/2026-11-10_original_stability/README.md)
+- [New annotated GPT supplement](results/2026-11-11_annotated_gpt_supplement/README.md)
+- [Separate held-card diagnostic](../held_card/README.md)
+- [Combined tables](results/2026-11-11_reviewer_handoff/RESULTS.md) and
+  [offline audit instructions](results/2026-11-11_reviewer_handoff/REPRODUCE.md)
 
-## Superseded tool-free diagnostics
+The shared problem-data ZIP contains the exact ablated inputs, a byte-exact
+annotation/cache overlay that restores the original inputs, offline reference
+labels, and the separate held-card dataset. The shared results/logs ZIP includes
+all raw experiment outputs and attempts, original-control logs, scoring evidence,
+source snapshots, and a portable offline audit. ZIP manifests are kept with the
+combined report; the large problem-data ZIP is shared through Slack.
 
-The earlier direct-image/tool-free paired campaign changed the original harness.
-It was stopped on the user's correction, including the old Claude resume timer.
-Its Astra and partial all-model artifacts remain under their original result
-folders with `SUPERSEDED.json` markers. They must not be relabeled or used as
-the requested original-script ablation. Source scripts are retained to explain
-those historical artifacts, not as the current execution route.
+## Recovery and interpretation
 
-The initial GPT native setup call before locating the September source archive
-was also excluded by configuration before scoring, with its evidence retained
-under `excluded_setup_check/`. No answer-quality selection was performed.
+Claude finished all 540 trials on the user-authorized replacement account.
+Gemini 3 Flash recovered exactly eight unanswered/unstarted quota trials through
+direct paid Google API authentication using the unchanged original CLI/runner.
+All preceding attempts remain archived. Its p29/repeat-3 saved valid answer was
+retained despite the later CLI error. Invalid/incorrect answers were not rerun.
+The requested Gemini Flash Lite preview alias reports the stable model ID in
+all 108 ablation records; it is not claimed identical to the historical preview.
 
-The separate [11-image held-card diagnostic](../held_card/README.md) is unchanged
-and remains a distinct experiment.
+The source/time distinction between historical and newly measured controls is
+explicit. Current service aliases, CLI versions and billing routes can differ
+from historical runs; these small diagnostics do not establish model rankings
+under matched compute. Held-card labels remain proposed_visual_review and the
+small red-suit-only subset does not establish general 52-card recognition.
 
-## Validation
+## Validation and superseded work
 
-Run CPU-only tests from a temporary directory with `uv run --no-project python
--m pytest`. Current tests cover input removal, unchanged images/links, original
-runner commands, quota-only retry gates, stability scoring and archive auditing.
-All 32 relevant tests passed at this checkpoint. No local GPU scripts are used.
+All 39 CPU-only tests passed. Independent audits verified 1,188 ablation outputs
+and 5,808 applicable individual-field scores, 432 fresh annotated outputs and
+2,112 field scores, and 1,080 original stability outputs. All ten original table
+rows with retained raw data reproduce the paper. Raw archives and ZIP contents
+are round-trip hash checked and scanned for credentials.
 
-## Rolling queue update
-
-The bounded queue refills each completed request without a whole-batch barrier.
-GPT/Claude/Gemini now use 6/6/4 workers. Old controllers drained existing calls
-before replacements acquired the provider locks; 119 preexisting record hashes
-were verified unchanged. Only scheduling changed: frozen model inputs, original
-inference scripts, prompts, tools and scoring remain unchanged. Quota or wrapper
-errors stop new submissions and drain ongoing requests. Real-thread tests cover
-refill, concurrency bounds, exactly-once results and safe stopping. All 35
-relevant tests passed. Throughput comparisons across different scenes are
-descriptive only; later scenes may take substantially longer.
-
-## November 11 checkpoint
-
-The four accessible GPT configurations are complete. Gemini recovery uses the
-original native runner with direct paid Google API authentication for exactly
-eight unanswered/unstarted Flash trials. Existing invalid outputs are retained.
-Claude remains in progress on its original queue.
-
-Completed-model fields, per-repeat metrics, scene-level records and portable
-source outputs are in [the native results checkpoint](results/2026-11-10_native_no_annotations/scored_completed/README.md).
-See its summary for the current completeness snapshot and the recovery protocol
-for the disclosed authentication-route change. The published annotated-history
-results remain the control.
-
-## Final handoff preparation (in progress)
-
-The latest request adds complete WITH/WITHOUT-history scene-stability coverage
-for all accessible models. Four GPT configurations lack their original raw
-outputs, so a separate annotated supplement is now running under
-`/private/tmp/dexholdem_annotated_gpt_supplement`. These fresh evaluations retain
-all original annotations/caches and use the archived paper script. They will
-be labeled as new results, never substituted for the published original table.
-The existing ten-model historical stability rescore remains unchanged.
-
-Final report generation and ZIP packaging require all 1,188 ablation trials
-and all 432 annotated GPT supplement trials. The report follows every original
-paper column and separates explicit stable/unstable scoring. The problem ZIP
-also includes the distinct 11-image held-card diagnostic; the results ZIP
-includes its full logs and final parsed results.
+The earlier tool-free campaign was stopped on the user's protocol correction.
+Its retained artifacts remain marked superseded and are excluded from these
+results. The initial GPT setup call before locating the archived paper source
+was also excluded by configuration before scoring, not by answer quality.

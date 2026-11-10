@@ -1,0 +1,164 @@
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Experimental Setup}
+\label{subsec:experiment_details}
+
+We use the policy-bench protocol in \Cref{subsec:policy_bench} to test whether current visuomotor policies can execute the 14 atomic primitives in \Cref{tab:primitive_spec} under a shared demonstration split, robot interface, and physical scoring protocol. Each multi-task policy uses the fixed 100/5 train--validation split per primitive and maps three camera views and proprioception to 30-dimensional joint-position targets, executed in 32-step chunks at 10 Hz without action filtering. We reset the hand and task-relevant objects and randomize the tabletop configuration within the benchmark layout before each independently initialized trial; paired put-down trials continue from the preceding pickup. We score rollouts using the four outcome categories defined in \Cref{subsec:policy_bench} and report scene-preserving success rate (SPSR), which counts only scene-preserving successes, and task completion rate (TCR), which also counts disruptive completions. The detailed rollout randomization schedule and primitive-group breakdown are provided in \Cref{app:dexterous_hand_policy_bench_details}.
+
+We compare two broad policy families under this interface. The first family contains pretrained robot policies and vision-language-action models adapted to \ours{}, including $\pi_{0.5}$, $\pi_0$, and RDT~\citep{intelligence2025pi05visionlanguageactionmodelopenworld,black2024pi0,liu2025rdt1bdiffusionfoundationmodel}, all conditioned on natural-language task text. The second family contains task-specific imitation baselines trained on \ours{} demonstrations, including diffusion-policy variants~\citep{chi2023diffusionpolicy}, ACT~\citep{zhao2023learning}, and BAKU~\citep{haldar2024bakuefficienttransformermultitask}, which are conditioned on discrete instruction IDs. DP (DINO) uses a DINOv2 visual representation but is trained only as a task-specific policy rather than as a pretrained foundation policy model~\citep{oquab2023dinov2}, and DP-Transformer is trained from scratch as an instruction-ID-conditioned diffusion-policy baseline. RDT-small uses the RDT architecture family with a randomly initialized policy backbone. All policies follow the same physical trial protocol and scoring rule; model-native input encoders and action adapters differ (\Cref{tab:policy_configuration}).
+
+
+
+\subsection{Policy Model Results}
+
+\Cref{tab:policy_model_results_summary} summarizes aggregate physical evaluation for each policy over the 80-trial schedule per policy (720 trials in total), covering all 14 primitives in \Cref{tab:primitive_spec}.
+Although individual primitives use different trial counts, the schedule forms four balanced 20-trial primitive groups; \Cref{tab:primitive_group_success} reports the corresponding pickup, chip-push, chip-pull, and put-down/show breakdown. By task completion rate, $\pi_{0.5}$ obtains the highest observed aggregate result at $61.2\%$. By the stricter scene-preserving success rate, however, $\pi_{0.5}$ and $\pi_0$ tie at $47.5\%$; $\pi_0$ has a lower task completion rate because it produces fewer disruptive completions. All other policies trail these two models by a substantial margin, showing that \ours{} remains difficult even when evaluation is restricted to atomic skill execution rather than full game-level routing.
+\Cref{fig:model_scale_success} relates pretraining scale, policy size, and task completion rate.
+
+
+% \begin{figure*}[t]
+%     \centering
+%     \includegraphics[width=\textwidth]{figs/example_figure_cropped_tighter_top.pdf}
+%     \caption{\textbf{Overview of \ours{}}}
+%     \label{fig:succ}
+% \end{figure*}
+
+\begin{table}[t]
+    \caption{Aggregate policy-model results over the 80-trial real-world evaluation schedule per policy; put-down trials whose preceding pickup failed count as failures (\Cref{app:physical_scoring}). Params reports policy-only parameter count, excluding visual encoders. Trial outcomes are abbreviated as SP (scene-preserving success), DC (disruptive completion), TF (task failure), and DF (disruptive failure). SPSR counts SP; TCR counts SP and DC.}
+    \label{tab:policy_model_results_summary}
+    \centering
+    \small
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.08}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
+        \toprule
+        & & \multicolumn{4}{c}{\textbf{Trial outcomes}} & & \multicolumn{2}{c}{\textbf{Rates}} \\
+        \cmidrule(lr){3-6}\cmidrule(l){8-9}
+        \textbf{Policy} & \textbf{Params} & \textbf{SP} & \textbf{DC} & \textbf{TF} & \textbf{DF} & \textbf{$N$} & \textbf{SPSR} & \textbf{TCR} \\
+        \midrule
+        $\pi_{0.5}$ & 2.94B & 38 & 11 & 31 & 0 & 80 & 47.5\% & 61.2\% \\
+        $\pi_0$ & 2.82B & 38 & 8 & 33 & 1 & 80 & 47.5\% & 57.5\% \\
+        RDT & 1.23B & 24 & 13 & 40 & 3 & 80 & 30.0\% & 46.2\% \\
+        DP (DINO) & 128M & 21 & 8 & 48 & 3 & 80 & 26.2\% & 36.2\% \\
+        DP-Transformer & 128M & 11 & 5 & 46 & 18 & 80 & 13.8\% & 20.0\% \\
+        RDT-small & 165M & 11 & 3 & 59 & 7 & 80 & 13.8\% & 17.5\% \\
+        ACT & 72.8M & 8 & 4 & 67 & 1 & 80 & 10.0\% & 15.0\% \\
+        BAKU & 39.4M & 5 & 5 & 67 & 3 & 80 & 6.2\% & 12.5\% \\
+        DP-UNet & 74.4M & 1 & 0 & 79 & 0 & 80 & 1.2\% & 1.2\% \\
+        \bottomrule
+    \end{tabular*}
+    \vspace{-1.0em}
+\end{table}
+
+Task groups reveal a more specific difficulty than aggregate ranking alone. Both $\pi$ policies achieve $100\%$ SPSR on pickup, but only $25\%$ on chip push and $15\%$ on chip pull. On put-down/show, their $80\%$ TCR falls to $50\%$ SPSR (\Cref{tab:primitive_group_success}). RDT reaches $30.0\%$ overall SPSR, and DP (DINO) reaches $26.2\%$. These are observed differences under the evaluated configurations, not isolated effects of architecture or pretraining. In particular, the two $\pi$ policies tie at 38/80 SP outcomes and differ by only three completions (49/80 versus 46/80). The aggregate is trial-weighted: each of the four 20-trial groups contributes equally.
+
+The SPSR--TCR gap identifies completed primitives whose terminal scenes violate the preservation rules: 11 trials for $\pi_{0.5}$ and 13 for RDT. Thus, task completion alone hides a substantial number of disruptive outcomes. These labels characterize the terminal scene; beyond the paired put-down trials, they do not estimate the success probability of a subsequent task.
+
+\subsection{RDT Fine-Tuning Data Scaling Study}
+\label{subsec:pretraining_data_scaling}
+
+\begin{wrapfigure}{r}{0.40\linewidth}
+    \centering
+    \vspace{-5mm}
+    \includegraphics[width=\linewidth]{figs/rdt_pretraining_final_loss_scaling.pdf}
+    \vspace{-5mm}
+    \caption{Final validation loss for the RDT fine-tuning data-scaling probe. Random and pretrained initializations follow similar data-scaling trends. Error bars denote one standard deviation over three completed paired seeds.}
+    \vspace{-0.7em}
+    \label{fig:rdt_pretraining_final_loss_scaling}
+\end{wrapfigure}
+
+We use RDT as a representative policy instantiation to probe how much \ours{}-specific dexterous-hand data is needed to reliably fit the target action distribution, using held-out action-prediction loss as an offline diagnostic. Architecture, objective, validation split, and evaluation protocol are fixed; only initialization and data amount vary. We compare random initialization against a gripper-pretrained RDT checkpoint~\citep{liu2025rdt1bdiffusionfoundationmodel} using paired random seeds. The $10\%$, $20\%$, $50\%$, and $100\%$ data ratios correspond to 10, 20, 50, and 100 training trajectories per primitive, sampled from each primitive's 100-trajectory training split. All ratios use the same five held-out validation trajectories per primitive. We report the full train-time validation-loss curves in \Cref{fig:rdt_pretraining_scaling} and summarize final validation loss in \Cref{fig:rdt_pretraining_final_loss_scaling}.
+
+
+Under this held-out action-prediction-loss criterion, pretrained initialization reduces final loss by $1.2\%$, $9.0\%$, $10.7\%$, and $11.3\%$ at the four increasing data fractions. The two initializations follow similar trends, with a small difference at $10\%$ data and larger offsets at higher fractions. This is an offline diagnostic of the evaluated RDT configuration: it does not establish physical few-shot transfer, scene preservation, or a general reduction in dexterous demonstration requirements. ``Random initialization'' refers to the policy initialization comparison, not a claim that all visual and language representations lack pretraining.
+
+\subsection{Benchmarking Perception Modules of Agents}
+\label{subsec:perception_module_benchmark}
+
+We evaluate each perceiver in the isolated agentic-perception setting defined in \Cref{subsec:perception_bench}. Each problem supplies the current image, permitted predecessor context, and field-specific visual guidelines. The prompt requires visual evidence and a structured summary, and prohibits robot actions, helper scripts, and poker-action selection. GPT, Claude, and Gemini models run through Codex, Claude Code, and Gemini CLI, respectively. This compares model--harness configurations; reasoning labels do not equalize compute or tool budgets. The GPT configurations use \texttt{medium} reasoning and the \texttt{fast} service tier. The Gemini runner supplies no reasoning override. \Cref{app:perception_run_configuration} gives model identifiers, the full prompt, tool and budget settings, and configuration provenance.
+
+\Cref{tab:perception_agent_results} reports the resulting semantic perception accuracy over the 36-problem benchmark inventory in \Cref{app:perception_benchmark_design}. Overall is strict problem-level exact-match accuracy: a problem is counted as correct only when every applicable scored field is correct. The remaining columns report field-wise accuracy on their applicable subsets, and Avg is the unweighted mean over the eight sub-capability columns, excluding Overall. Neither measures every runtime state field or downstream routing correctness.
+\begin{table}[t]
+    \caption{\textbf{Per-perceiver accuracy on perception bench.} Each row is the average of three evaluation runs. \textbf{Overall} is strict problem-level exact match: a problem counts as correct iff every applicable scored field is correct. \textbf{LS} (loop stage), \textbf{TO} (turn ownership), \textbf{BI} (blind info), \textbf{CC} (community cards), \textbf{CB} (current bet chips), \textbf{RCI} (robot chip inventory), \textbf{OCI} (opponent chip inventory), and \textbf{SO} (showdown outcome) are field-wise accuracies on their applicable problem subsets, defined in \Cref{app:agentic_perception_bench_details} and tabulated in \Cref{tab:perception_column_applicability}. \textbf{Avg} is the unweighted mean of these eight columns, excluding Overall.}
+    \label{tab:perception_agent_results}
+    \centering
+    \small
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.12}
+    \setlength{\dashlinedash}{0.6pt}
+    \setlength{\dashlinegap}{1.4pt}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llc:ccccccccc@{}}
+        \toprule
+        \textbf{Harness} & \textbf{Perceiver} & \textbf{Overall} & \textbf{LS} & \textbf{TO} & \textbf{BI} & \textbf{CC} & \textbf{CB} & \textbf{RCI} & \textbf{OCI} & \textbf{SO} & \textbf{Avg} \\
+        \midrule
+        \multirow{7}{*}{\makebox[0.055\linewidth][c]{\codexlogo}} & GPT 6 Astra & 48.1 & 69.4 & \textbf{97.2} & \textbf{100.0} & 20.5 & \textbf{93.8} & \textbf{93.8} & \textbf{100.0} & 66.7 & 80.2 \\
+        & GPT 6 Sol & 46.3 & 66.7 & 96.3 & 98.1 & 43.6 & 79.2 & 91.7 & 83.3 & 76.2 & 79.4 \\
+        & GPT 5.6 Sol & 46.3 & \textbf{78.7} & 95.4 & \textbf{100.0} & 38.5 & 68.8 & 75.0 & 56.2 & \textbf{85.7} & 74.8 \\
+        & GPT 5.6 Luna & 27.8 & 62.0 & 79.6 & 97.2 & 43.6 & 41.7 & 47.9 & 50.0 & 57.1 & 59.9 \\
+        & GPT 5.5 & 31.5 & 72.2 & 80.6 & \textbf{100.0} & \textbf{61.5} & 45.8 & 62.5 & 35.4 & 76.2 & 66.8 \\
+        & GPT 5.4 & 31.5 & 65.7 & 93.5 & \textbf{100.0} & 23.1 & 31.2 & 56.2 & 18.8 & 47.6 & 54.5 \\
+        & GPT 5.4 mini & 25.9 & 56.5 & 94.4 & 99.1 & 33.3 & 14.6 & 29.2 & 18.8 & 47.6 & 49.2 \\
+        \arrayrulecolor{black!25}\midrule\arrayrulecolor{black}
+        \multirow{5}{*}{\makebox[0.055\linewidth][c]{\claudecodelogo}} & Opus 5.5 & \textbf{49.1} & 76.9 & \textbf{97.2} & \textbf{100.0} & 20.5 & 81.2 & 91.7 & 91.7 & \textbf{85.7} & \textbf{80.6} \\
+        & Sonnet 5 & 36.1 & 61.1 & 94.4 & \textbf{100.0} & 5.1 & 31.2 & 33.3 & 35.4 & 23.8 & 48.1 \\
+        & Opus 4.7 & 34.3 & 43.5 & 93.5 & \textbf{100.0} & 43.6 & 31.2 & 37.5 & 43.8 & 0.0 & 49.1 \\
+        & Sonnet 4.6 & 25.0 & 46.3 & 88.0 & \textbf{100.0} & 23.1 & 10.4 & 29.2 & 22.9 & 14.3 & 41.8 \\
+        & Haiku 4.5 & 13.9 & 47.2 & 68.5 & 91.7 & 35.9 & 12.5 & 25.0 & 18.8 & 0.0 & 37.4 \\
+        \arrayrulecolor{black!25}\midrule\arrayrulecolor{black}
+        \multirow{2}{*}{\makebox[0.055\linewidth][c]{\geminiclilogo}} & Gemini 3 Flash & 20.4 & 63.9 & 77.8 & \textbf{100.0} & 28.2 & 18.8 & 29.2 & 22.9 & 71.4 & 51.5 \\
+        & Gemini 3.1 Flash L. & 10.2 & 27.8 & 73.1 & 94.4 & 28.2 & 12.5 & 22.9 & 14.6 & 0.0 & 34.2 \\
+        \bottomrule
+    \end{tabular*}
+    \vspace{-1.0em}
+\end{table}
+
+Opus~5.5 in the Claude Code harness achieves both the best strict Overall ($49.1\%$) and the best Avg ($80.6\%$), narrowly ahead of GPT~6 Astra in the Codex harness (by one of 108 attempts and $0.4$ points). Even the best Overall leaves over half of the attempts incorrect: one wrong field fails a problem, and table-decision and outcome-judge states require many fields at once.
+
+The easiest fields are those tied to explicit tabletop markers. Blind information (BI) is near-saturated, with nine of fourteen perceivers reaching $100.0\%$, and turn ownership (TO) reaches $97.2\%$ for GPT~6 Astra and Opus~5.5. Chip-state accuracy varies substantially across configurations: GPT~6 Astra reaches $93.8\%$ on current bet chips (CB) and $100.0\%$ on opponent chip inventory (OCI), both requiring exact denomination-level chip dictionaries. Community-card recovery remains difficult: CC peaks at $61.5\%$ for GPT~5.5, while the two strongest aggregate configurations, Opus~5.5 and GPT~6 Astra, score only $20.5\%$, showing that strong aggregates can still conceal a weak routing-relevant field.
+
+A no-vision predecessor-copy baseline achieves 8/36 Overall ($22.2\%$), by copying the most recent provided structured state and counting the 12 problems without history as failures. \Cref{tab:history_copy} reports the breakdown by problem type. This diagnostic shows that history reuse alone can satisfy some scored targets; it does not quantify the value of history to each evaluated model. The three model runs reuse the same 36 problems and are not 108 independent scenes. Held-card identity, scene stability, and uncertainty flags are not directly scored by the reported columns (\Cref{app:perception_benchmark_design}).
+
+\subsection{System-Level Evaluation}
+\label{subsec:system_eval_results}
+
+We instantiate the system-level protocol of \Cref{subsec:system_eval} with the Codex harness, using GPT 5.5 as both the perceiver and the main agent and $\pi_0$ as the dexterous policy, over 33 hand-level rollouts (\Cref{tab:system_trajectory_summary}); five further rollouts invalidated by operator error during setup are excluded. Each rollout plays one heads-up hand in closed loop until the hand completes and the agent stops, or the experiment conductor terminates it once the robot can no longer make progress (unrecognized disruption, indefinite waiting, or a scene that cannot be restored after a human-help request). A \texttt{request\_human} dispatch pauses the loop for conductor intervention (\Cref{app:embodied_system_design}).
+% Provenance: the 33-rollout set and the six counter means come from exp_dex/summary_runs/SUMMARY.md
+% (11 May-5 runs + 22 Jul-27 runs). Recovery numbers are recomputed from the per-state logs by
+% analysis/revision/system_recovery/recovery_stats.py: RC = 36 prepared retries (runtime counter),
+% 34 dispatched, 12 verified complete / 8 retried again / 7 escalated / 7 cut before verification.
+% The rebuttal's 16/23 and the earlier 21/36 counted any later dispatch (including re-retries of the
+% same atom) as success and are superseded. Case study (i) (May-5 run20) is not one of the 33
+% aggregated rollouts; (ii) and (iii) (run26, run28) are.
+% Completed-hand split (same script): old run21 = neither retry nor request_human; old run26 (s37,
+% pick_up_right inside show_card) and old run28 (s15, push_chip_100) = verified retry only; new run10 =
+% verified retry (s24, chip push inside raise) + request_human (s11, s21).
+
+\begin{table}[t]
+    \caption{\textbf{System-level evaluation} (Codex GPT 5.5 agent, $\pi_0$ policy): three case-study rollouts and the aggregate over 33 hand-level rollouts under the same protocol; (ii) and (iii) belong to the 33, whereas (i) is an earlier rollout. Counters follow \Cref{subsec:system_eval}; RC counts retries prepared by the runtime, of which 34 were dispatched and 12 verified complete before any further retry, escalation, or termination. A completion is assisted if its rollout contains a \texttt{request\_human} dispatch.}
+    \label{tab:system_trajectory_summary}
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lccccccl@{}}
+        \toprule
+        \textbf{Rollout} & \textbf{States} & \textbf{AP} & \textbf{DPP} & \textbf{WA} & \textbf{HL} & \textbf{RC} & \textbf{Outcome} \\
+        \midrule
+        (i)   & 22 &  8 &  7 &  7 & 2 & 1 & terminated during \texttt{call} \\
+        (ii)  & 54 & 13 & 22 & 26 & 0 & 1 & won at showdown \\
+        (iii) & 23 &  8 & 10 &  7 & 0 & 1 & lost at showdown \\
+        \midrule
+        Mean over 33 rollouts & 18.1 & 4.6 & 5.1 & 9.4 & 0.5 & 1.1 & completion 4/33 (12.1\%) \\
+        Median [min, max]     & 12 [2, 54] & 3 [1, 18] & 4 [1, 22] & 5 [0, 34] & 0 [0, 4] & 1 [0, 4] & retries verified 12/34 (35.3\%) \\
+        Completed hands       & \multicolumn{7}{l}{neither retry nor help 1 $\cdot$ retry only 2 $\cdot$ retry and help 1 $\cdot$ no \texttt{request\_human} 3/33 (9.1\%)} \\
+        \bottomrule
+    \end{tabular*}
+    \vspace{-1.0em}
+\end{table}
+
+\paragraph{The evaluated system rarely sustains a full hand.} Only 4 of 33 rollouts (12.1\%) play a hand to its outcome (two won, two lost). A typical rollout spans 18.1 captured states (median 12) but dispatches only 4.6 agent primitives and 5.1 dexterous-policy primitives before it completes or is terminated: about five physical actions per hand. Wait-branch events account for 51.8\% of all captured states, and human help is requested in 13 rollouts.
+
+\paragraph{Three of the four completed hands survive only through recovery.} The router retries a primitive only when the failure is harmless and the scene is preserved (\texttt{to\_recover}); a disrupted scene routes to \texttt{request\_human}. Across the 33 rollouts the runtime prepared 36 retries and dispatched 34: 12 completed the retried primitive, 8 were retried again, 7 escalated to human help, and 7 were cut before verification. Retries concentrate on the hole-card cycle (12 pickups, 15 put-downs). In three of the four completed hands, a primitive failed mid-hand with the scene intact (a card pickup for the showdown reveal and two chip pushes during bets), and the hand could not advance until the retry re-executed it; the router's only other exit is \texttt{request\_human}, so without the retry these hands would have ended there or needed human help. Only one hand completes with neither (\Cref{tab:system_trajectory_summary}). Beyond completed hands, 28.5\% of all captured states and 35 of 167 dispatches occur after a rollout's first verified recovery, and 9 of the 10 rollouts with one advance at least one hand stage (hole cards read, pre-flop bet, community-card street, showdown, outcome) afterwards. Human help also lets hands continue: 13 of 18 requests were resolved and the hand continued, and 11 of the 18 report a hole card returned face-up after put-down, the same failure that produces the largest SPSR--TCR gap in \Cref{tab:primitive_group_success}. Trajectory (iii) (panels in \Cref{app:system_trajectory_panels}) shows a full hand played to showdown with one verified recovery.
+
+\paragraph{Takeaway.} In the evaluated instantiation, over half of the captured states are waits and a typical rollout sustains only about five dispatches, far fewer than a full hand needs, although the policy (\Cref{tab:policy_model_results_summary}) and the perceiver (\Cref{tab:perception_agent_results}) each reach moderate success in isolation. Separating the effects of perception, execution, and the termination protocol requires controlled diagnostics, such as annotated-state inputs or a no-retry configuration, which we leave to future work.

@@ -173,3 +173,20 @@ requires both campaigns complete, includes full native/original/held-card raw
 logs and all attempts, and refuses missing directories or credential-like
 content. The final ZIP is round-trip hash verified. No incomplete report is
 sent as a finished experiment.
+
+## Final verification and delivery
+
+Both new campaigns completed: 1,188 no-annotation trials and 432 annotated GPT
+supplement trials. Independent portable-output audits check every Overall and
+stability prediction plus 5,808 and 2,112 applicable individual-field scores.
+These field counts exclude Overall, which is checked once per trial. All ten
+original rows with retained outputs match the published table. All 39 tests
+pass. `audit_reviewer_bundle.py` verifies the extracted results ZIP without
+relying on execution-machine paths or making any external model calls.
+
+The annotated supplement's 432 launch commands match the corresponding
+no-annotation commands after excluding only problem paths, run IDs and isolation
+paths. Both input trees pass their original byte-level manifests. The native
+archive contains 1,191 run directories including three retained quota failures;
+the new annotated archive contains all 432 directories. Final reporting keeps
+all invalid model answers and does not retry answers according to correctness.

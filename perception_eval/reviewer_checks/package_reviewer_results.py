@@ -45,7 +45,7 @@ def package(repo: Path, campaign: Path, annotated: Path, held_card: Path, handof
                 raise ValueError("Unexpected symlink in log archive")
             files[f"{prefix}/{relative.as_posix()}"] = path
 
-    for name in ("RESULTS.md", "combined_results.json", "paper_table_source.tex"):
+    for name in ("RESULTS.md", "REPRODUCE.md", "combined_results.json", "paper_table_source.tex"):
         files[name] = handoff / name
     files["problem_data_manifest.json"] = handoff.parent / "dexholdem_problem_data.manifest.json"
     add_tree(campaign / "scored_completed", "without_history/scores")
@@ -88,6 +88,7 @@ def package(repo: Path, campaign: Path, annotated: Path, held_card: Path, handof
                     "score_native.py", "evaluate_stability.py", "audit_original.py", "history_ablation.py",
                     "providers.py", "export_native_snapshot.py",
                     "supplement_annotated_gpt.py", "test_supplement_annotated_gpt.py",
+                    "audit_reviewer_bundle.py",
                     "package_reviewer_inputs.py", "reviewer_handoff_report.py", "package_reviewer_results.py")
     for name in helper_names:
         files[f"source/reviewer_helpers/{name}"] = Path(__file__).parent / name

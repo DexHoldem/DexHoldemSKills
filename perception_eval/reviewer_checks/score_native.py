@@ -118,7 +118,7 @@ def score(repo: Path, root: Path, output: Path) -> dict:
               "Gemini 3 Flash includes eight quota-recovery trials using the same CLI and native runner with direct paid Google API authentication. The remaining trials use the original CLI account route. This route change is disclosed; infrastructure is not claimed identical. The p29/repeat-3 answer is retained despite its later CLI error because its original output check passed.", "",
               "The requested Gemini 3.1 Flash Lite preview alias reports `gemini-3.1-flash-lite` in all 108 CLI model-stat records. This is not claimed to be the historical preview snapshot.", "",
               "Full native outputs and all attempts: [raw archive](raw_runs_and_attempts.tar.gz), with [per-file hashes](raw_archive_manifest.json). Portable scoring evidence: [source outputs](source_outputs.jsonl), [scene-level scores](records.jsonl), and [aggregate/per-repeat results](summary.json).", "",
-              "Incomplete configurations are not ranked or presented as full results:"]
+              "Incomplete configurations are not ranked or presented as full results:" if pending else "All declared configurations are complete."]
     if annotated:
         lines = [line for line in lines if not line.startswith(("Gemini 3 Flash includes", "The requested Gemini 3.1"))]
         report.pop("model_alias_note")
