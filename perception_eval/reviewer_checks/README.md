@@ -32,7 +32,9 @@ recorded separately and are not claimed to reproduce historical infrastructure.
 Working results are under `/private/tmp/dexholdem_native_ablation` while the
 campaign runs. GPT and Gemini each passed their first formal p3 trial's original
 output checks, and their full queues are active. These formal trials are reused.
-Claude is scheduled for 2026-11-11 02:51 Asia/Singapore after its quota reset.
+The user switched Claude accounts and requested immediate execution at 23:19
+Asia/Singapore on 2026-11-10; Claude is now running and the old reset wait was
+cancelled. Model inputs and settings are unchanged.
 Completed/malformed answers are retained without score-based retries; explicit
 zero-token Claude quota errors preserve all attempts and defer until the next
 provider-stated reset. Unknown failures remain visible for inspection.
