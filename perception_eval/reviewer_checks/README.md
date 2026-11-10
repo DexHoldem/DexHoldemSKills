@@ -104,3 +104,19 @@ source outputs are in [the native results checkpoint](results/2026-11-10_native_
 See its summary for the current completeness snapshot and the recovery protocol
 for the disclosed authentication-route change. The published annotated-history
 results remain the control.
+
+## Final handoff preparation (in progress)
+
+The latest request adds complete WITH/WITHOUT-history scene-stability coverage
+for all accessible models. Four GPT configurations lack their original raw
+outputs, so a separate annotated supplement is now running under
+`/private/tmp/dexholdem_annotated_gpt_supplement`. These fresh evaluations retain
+all original annotations/caches and use the archived paper script. They will
+be labeled as new results, never substituted for the published original table.
+The existing ten-model historical stability rescore remains unchanged.
+
+Final report generation and ZIP packaging require all 1,188 ablation trials
+and all 432 annotated GPT supplement trials. The report follows every original
+paper column and separates explicit stable/unstable scoring. The problem ZIP
+also includes the distinct 11-image held-card diagnostic; the results ZIP
+includes its full logs and final parsed results.

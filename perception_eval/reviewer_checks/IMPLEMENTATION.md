@@ -139,3 +139,37 @@ The existing tests cover input preservation, original runner arguments, quota
 handling, rolling queues and stability scoring. Three new real-filesystem
 tests cover recovery eligibility and rejection of answered, invalid-output and
 non-quota cases. The selected 19 tests pass. No credentials are committed.
+
+## Completed-experiment handoff and new annotated GPT supplement
+
+The latest request requires scene-stability results with and without history
+information for every available configuration. Ten original configurations
+have usable raw paper outputs, including all Claude and Gemini models; the
+four GPT 5.6/6 historical output directories are unavailable.
+`supplement_annotated_gpt.py` therefore runs a separate 432-trial annotated
+supplement with the exact archived GPT script and original input bytes. It
+restores annotations and caches against the frozen original hashes, excludes
+gold labels and previous runs, and keeps all new outputs separate. Six workers
+use the same native command settings. Any transport failure stops new launches;
+answered or invalid-output cases are never retried for accuracy. These new
+results do not replace the published table. A real-filesystem test checks
+annotation/cache preservation, current-image links, exclusion of offline gold,
+resume identity, and rejection of modified source input.
+
+`score_native.py` reads the campaign's declared model set and input condition,
+allowing the separate annotated supplement to use the same unchanged scoring
+rules. `reviewer_handoff_report.py` reproduces all ten available original table
+rows, audits every new applicable field directly from portable outputs, and
+keeps original/fresh annotated runs explicit. Final generation refuses any
+incomplete configuration in either new campaign. Columns follow the paper:
+Harness, Perceiver, Overall, LS, TO, BI, CC, CB, RCI, OCI, SO, Avg. Stability
+uses direct predictions, class recalls and balanced accuracy alongside accuracy.
+
+`package_reviewer_inputs.py` packages the 36 ablated input trees, removed-file
+overlay, offline reference labels and separate held-card dataset. The overlay
+restores annotated inputs without duplicating images. ZIP symlink metadata and
+all file hashes are checked after compression. `package_reviewer_results.py`
+requires both campaigns complete, includes full native/original/held-card raw
+logs and all attempts, and refuses missing directories or credential-like
+content. The final ZIP is round-trip hash verified. No incomplete report is
+sent as a finished experiment.

@@ -26,6 +26,9 @@ def score(repo: Path, root: Path, output: Path) -> dict:
             not produce a publishable model row. Three repeats share 36 scenes.
     """
     ec = load_module(repo / "perception_eval/evaluate_column.py", "native_paper_rules")
+    protocol = json.loads((root / "protocol.json").read_text())
+    annotated = protocol.get("retains_annotated_history", False)
+    configurations = protocol.get("models", MODELS)
     truth, types = ec.load_reference_data()
     ids = sorted(truth, key=ec.problem_sort_key)
     if len(ids) != 36:
@@ -33,7 +36,7 @@ def score(repo: Path, root: Path, output: Path) -> dict:
     source_files = [repo / "perception_eval/evaluate_column.py", ec.GROUND_TRUTH, ec.PROBLEM_TYPES]
     denominator = {c: set(ec.denominator_ids(c, types, truth, "high")) for c in ec.COLUMNS}
     models, pending, records, sources = [], [], [], []
-    for model, harness in MODELS.items():
+    for model, harness in configurations.items():
         paths = [root / "records" / model / f"repeat_{r}" / p / "record.json"
                  for r in range(1, 4) for p in ids]
         returned = [json.loads(p.read_text()) for p in paths if p.exists()]
@@ -90,9 +93,11 @@ def score(repo: Path, root: Path, output: Path) -> dict:
                        "repeats": repeat_rows})
         records.extend(selected)
     output.mkdir(parents=True, exist_ok=True)
-    report = {"protocol": "Original native paper scripts; historical images retained; historical annotations and caches removed.",
+    description = ("New annotated GPT scene-stability supplement using the original paper scripts and all original historical annotations/caches. Does not replace published paper results."
+                   if annotated else "Original native paper scripts; historical images retained; historical annotations and caches removed.")
+    report = {"protocol": description, "retains_annotated_history": annotated,
               "created_unix": time.time(), "models": models, "pending": pending,
-              "control": "Published original annotated-history runs; no newly rerun control.",
+              "control": "Fresh annotated supplement, kept separate from published paper scores." if annotated else "Published original annotated-history runs; new GPT stability supplements reported separately.",
               "community_scope": "high", "independent_scenes": 36, "repeats": 3,
               "model_alias_note": "The requested gemini-3.1-flash-lite-preview alias reports gemini-3.1-flash-lite in all 108 CLI model-stat records; it is not claimed to be the historical preview snapshot."}
     dump(output / "summary.json", report)
@@ -100,8 +105,8 @@ def score(repo: Path, root: Path, output: Path) -> dict:
          "scorer_sha256": digest(Path(__file__)), "campaign_protocol_sha256": digest(root / "protocol.json")})
     for name, rows in (("records.jsonl", records), ("source_outputs.jsonl", sources)):
         (output / name).write_text("".join(json.dumps(r) + "\n" for r in rows))
-    lines = ["# Original-script perception ablation", "",
-        "Historical images retained; annotated history and caches removed. Each complete row has three repeats of the same 36 scenes. Original paper scorer and validity gate are unchanged. Invalid model answers remain in the denominator.", "",
+    lines = ["# " + ("New annotated GPT supplement" if annotated else "Original-script perception ablation"), "",
+        description + " Each complete row has three repeats of the same 36 scenes. Original paper scorer and validity gate are unchanged. Invalid model answers remain in the denominator.", "",
         "| Model | Overall /108 | LS | TO | BI | CC | CB | RCI | OCI | SO | Field avg | Stability | Unstable recall | Balanced acc. |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for row in models:
@@ -114,6 +119,10 @@ def score(repo: Path, root: Path, output: Path) -> dict:
               "The requested Gemini 3.1 Flash Lite preview alias reports `gemini-3.1-flash-lite` in all 108 CLI model-stat records. This is not claimed to be the historical preview snapshot.", "",
               "Full native outputs and all attempts: [raw archive](raw_runs_and_attempts.tar.gz), with [per-file hashes](raw_archive_manifest.json). Portable scoring evidence: [source outputs](source_outputs.jsonl), [scene-level scores](records.jsonl), and [aggregate/per-repeat results](summary.json).", "",
               "Incomplete configurations are not ranked or presented as full results:"]
+    if annotated:
+        lines = [line for line in lines if not line.startswith(("Gemini 3 Flash includes", "The requested Gemini 3.1"))]
+        report.pop("model_alias_note")
+        dump(output / "summary.json", report)
     lines += [f"- {r['model']}: {r['returned']}/108 returned; {r['unresolved_transport']} unresolved transport trials." for r in pending]
     (output / "README.md").write_text("\n".join(lines) + "\n")
     return report
