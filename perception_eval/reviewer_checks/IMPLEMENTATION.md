@@ -93,3 +93,15 @@ user's correction. Their raw artifacts remain, marked superseded. No existing
 result is relabeled as having used the native harness. New tests verify input
 exclusion, byte-identical images, preserved links, original runner invocation,
 and zero-token quota-only recovery. No answer-quality retry is allowed.
+
+## Rolling queue update
+
+The bounded queue refills each completed request without a whole-batch barrier.
+GPT/Claude/Gemini now use 6/6/4 workers. Old controllers drained existing calls
+before replacements acquired the provider locks; 119 preexisting record hashes
+were verified unchanged. Only scheduling changed: frozen model inputs, original
+inference scripts, prompts, tools and scoring remain unchanged. Quota or wrapper
+errors stop new submissions and drain ongoing requests. Real-thread tests cover
+refill, concurrency bounds, exactly-once results and safe stopping. All 35
+relevant tests passed. Throughput comparisons across different scenes are
+descriptive only; later scenes may take substantially longer.

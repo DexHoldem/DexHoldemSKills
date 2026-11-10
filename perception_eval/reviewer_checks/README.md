@@ -80,3 +80,15 @@ Run CPU-only tests from a temporary directory with `uv run --no-project python
 -m pytest`. Current tests cover input removal, unchanged images/links, original
 runner commands, quota-only retry gates, stability scoring and archive auditing.
 All 32 relevant tests passed at this checkpoint. No local GPU scripts are used.
+
+## Rolling queue update
+
+The bounded queue refills each completed request without a whole-batch barrier.
+GPT/Claude/Gemini now use 6/6/4 workers. Old controllers drained existing calls
+before replacements acquired the provider locks; 119 preexisting record hashes
+were verified unchanged. Only scheduling changed: frozen model inputs, original
+inference scripts, prompts, tools and scoring remain unchanged. Quota or wrapper
+errors stop new submissions and drain ongoing requests. Real-thread tests cover
+refill, concurrency bounds, exactly-once results and safe stopping. All 35
+relevant tests passed. Throughput comparisons across different scenes are
+descriptive only; later scenes may take substantially longer.

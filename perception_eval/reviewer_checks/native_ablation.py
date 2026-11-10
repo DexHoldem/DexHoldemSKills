@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
+from rolling_pool import rolling_map
 from datetime import datetime
 from pathlib import Path
 
@@ -230,6 +230,7 @@ def main() -> None:
     parser.add_argument('--runner-source',type=Path,help='Exact archived paper source, if different from the dataset repo')
     parser.add_argument('--family',choices=['codex','claude','gemini'])
     parser.add_argument('--workers',type=int,default=3)
+    parser.add_argument('--wait-for-lock',action='store_true',help='Wait for the previous controller to drain before starting')
     parser.add_argument('--not-before')
     parser.add_argument('--prepare-only',action='store_true')
     parser.add_argument('--models',nargs='+')
@@ -254,7 +255,7 @@ def main() -> None:
         raise ValueError('Wrong family')
     jobs=[(m,p,r) for r in args.repeats for p in (args.problems or [f'p{i}' for i in range(1,37)]) for m in models]
     with (root/f'{args.family}.lock').open('a') as lock:
-        fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        fcntl.flock(lock, fcntl.LOCK_EX if args.wait_for_lock else fcntl.LOCK_EX|fcntl.LOCK_NB)
         wake=datetime.fromisoformat(args.not_before) if args.not_before else datetime.now(ZONE)
         prior=root/f'{args.family}_status.json'
         if prior.exists():
@@ -275,16 +276,25 @@ def main() -> None:
             print('PENDING',len(pending),'NOT_BEFORE',wake.isoformat(),flush=True)
             while datetime.now(ZONE)<wake:
                 time.sleep(min(60,max(0.1,wake.timestamp()-time.time())))
-            quotas=[]
-            with ThreadPoolExecutor(max_workers=args.workers) as pool:
-                for index in range(0,len(pending),args.workers):
-                    futures=[pool.submit(run_trial,runner_repo,root,*job) for job in pending[index:index+args.workers]]
-                    rows=[future.result() for future in futures]
-                    quotas=[row for row in rows if row['status']=='quota_without_answer']
-                    if quotas:
-                        break
-                    if any(row['status']=='wrapper_failed' for row in rows):
-                        raise RuntimeError('Wrapper failure: inspect preserved logs before continuing')
+            finished = 0
+            quota_count = 0
+
+            def update_progress(row: dict) -> None:
+                """Persist each returned record's queue progress (row: dict)."""
+                nonlocal finished, quota_count
+                finished += 1
+                quota_count += row['status'] == 'quota_without_answer'
+                dump(prior, {'pending':len(pending)-finished+quota_count,
+                             'not_before':wake.isoformat(), 'updated_unix':time.time(),
+                             'workers':args.workers, 'scheduling':'rolling_refill'})
+
+            rows = rolling_map(pending,
+                lambda job: run_trial(runner_repo,root,*job), args.workers,
+                lambda row: row['status'] in {'quota_without_answer','wrapper_failed'},
+                update_progress)
+            quotas = [row for row in rows if row['status']=='quota_without_answer']
+            if any(row['status']=='wrapper_failed' for row in rows):
+                raise RuntimeError('Wrapper failure: inspect preserved logs before continuing')
             wake=max(reset_time(row['quota_message'],datetime.now(ZONE)) for row in quotas) if quotas else datetime.now(ZONE)
 
 
