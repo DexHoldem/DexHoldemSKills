@@ -1,0 +1,1797 @@
+Extract the CURRENT DexHoldem visual state from the attached images. Images are in chronological order. The LAST image is the target to score; all earlier images are history. Do not execute actions or choose a poker action. No tools or external files are available. Any guideline references to files refer only to supplied content. Never assume an unavailable cache exists.
+
+Image order (one-based attachment index):
+1: s0/00_capture.jpg [HISTORY]
+2: s1/00_capture.jpg [HISTORY]
+3: s2/00_capture.jpg [HISTORY]
+4: s3/00_capture.jpg [HISTORY]
+5: s4/00_capture.jpg [HISTORY]
+6: s5/00_capture.jpg [HISTORY]
+7: s6/00_capture.jpg [HISTORY]
+8: s7/00_capture.jpg [HISTORY]
+9: s8/00_capture.jpg [HISTORY]
+10: s9/00_capture.jpg [HISTORY]
+11: s10/00_capture.jpg [CURRENT TARGET]
+
+Shared field guidelines:
+
+--- BET_RECOGNITION.md ---
+# Bet Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to count chips currently
+placed in the two betting areas from a captured table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless recent movement makes current bet
+placement ambiguous.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+The table has two players. Bet recognition only counts unfolded chips currently
+placed in the betting areas near the community cards.
+
+The vision model does not need to produce structured JSON. It should report
+counts in plain language by side and denomination. The coding agent will parse
+those counts into `my_current_bet` and `opponent_bet`.
+
+Do not model a generic pot or a generic players array in parsed visual state.
+Keep the two bet areas separate. Later collection actions may pull chips from
+`opponent_bet` and `my_current_bet` as distinct source zones, so do not merge
+them into one pot count.
+
+## Denominations And Colors
+
+Use the same denomination order as inventory chip recognition:
+
+```text
+5, 10, 50, 100
+```
+
+Colors:
+
+- red chips -> 5
+- blue chips -> 10
+- green chips -> 50
+- brown chips -> 100
+
+## Table Geometry
+
+Use the community-card row as the anchor:
+
+- my current bet: chips on the left side of the community cards,
+- opponent bet: chips on the right side of the community cards.
+
+The chips are flat on the felt, not vertical stacks. Count individual visible
+chip faces in these betting areas. If table orientation is unclear, first use
+`TABLE_GEOMETRY.md` in this folder.
+
+Only count chips placed in these betting areas. Do not include:
+
+- the robot/player inventory chips near the bottom seat,
+- the opponent inventory chips near the top seat,
+- dealer/blind/turn buttons,
+- chips that clearly belong to an inventory group rather than a bet area,
+- community cards or hole cards.
+
+## No Chips Visible
+
+If no chips are visible in a betting area, say that no bet chips are visible on
+that side.
+
+## Unclear Counts
+
+If a betting area is partially occluded or angled, report the best visible count
+and say that the count is uncertain.
+
+## Robot Hand Occlusion
+
+The dexterous hand may partially block the opponent's betting area when it is in
+a near-idle pose (close to but not exactly the initial pose). If the robot hand
+occludes the opponent bet area:
+
+- Report which part of the betting area is blocked.
+- Give the best visible count for any chips that are countable.
+- Mark the opponent bet count as uncertain due to occlusion.
+
+When bet recognition reports occlusion by the robot hand, the main agent should
+consider dispatching `reset_to_init` to move the hand to its true initial pose,
+then capture a fresh image for a clear view of the betting areas.
+
+## Derived Betting Math
+
+`to_call` is derived later from the two bet counts. Do not ask the vision model
+to compute or report `to_call`.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+My current bet area, left of the community cards: no chips visible.
+Opponent bet area, right of the community cards: no chips visible.
+```
+
+or:
+
+```text
+My current bet area: two red 5-chips, no blue, green, or brown chips visible.
+Opponent bet area: about two red 5-chips, one blue 10-chip, no green chips, and
+two brown 100-chips. The opponent bet count is uncertain because the right side
+is angled.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- my current bet counts by denomination,
+- opponent bet counts by denomination,
+- which side or denomination counts are uncertain or not countable.
+
+Do not count inventory chips, do not report `to_call`, and do not model a
+generic pot.
+
+
+--- BLIND_BUTTON_RECOGNITION.md ---
+# Blind Button Recognition Guideline
+
+Use this guideline once during preflight to identify dealer, small blind, and
+big blind positions from the table image.
+
+In this setup there are only two players. The small blind is tied to the dealer
+button. The other player is the big blind.
+
+## Inputs To Provide
+
+Give the vision agent the preflight or first state image, usually
+`s0/00_capture.jpg`.
+
+Optionally also provide `TABLE_GEOMETRY.md` so the agent can orient robot/player
+seat versus opponent seat.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+## What To Look For
+
+Identify the physical circular buttons on the table:
+
+- dealer button: usually a white button labeled `DEALER`,
+- small blind button: may be a blue button labeled `SMALL BLIND`,
+- big blind button: usually a yellow button labeled `BIG BLIND`.
+
+The buttons can move between hands, but preflight needs the current initial
+blind assignment for this session/hand.
+
+## Two-Player Rule
+
+Use this rule after locating the dealer button:
+
+- the player with the dealer button is also the small blind,
+- the other player is the big blind.
+
+If a visible small-blind or big-blind button conflicts with the dealer rule,
+say exactly what conflict you see instead of forcing an answer.
+
+## Seat Names
+
+Use only these seat names:
+
+- `robot` - bottom-side robot/player seat,
+- `opponent` - top-side human opponent seat,
+- `unclear` - button cannot be localized safely.
+
+Do not use poker table position names such as BTN, SB, BB, UTG, or CO in the
+visual response.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+Dealer/small blind is at the robot seat. The opponent is the big blind.
+```
+
+or:
+
+```text
+Dealer/small blind is at the opponent seat. The robot is the big blind.
+```
+
+or:
+
+```text
+Blind assignment is unclear. The dealer button is partly occluded and I cannot
+safely determine which seat has it.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- which seat has the dealer button,
+- which seat is small blind,
+- which seat is big blind,
+- any uncertainty or button conflict.
+
+Do not produce structured JSON. The coding agent will cache the result in
+`hole_card_cache.json` using `state.py set-blinds`.
+
+
+--- CHIP_RECOGNITION.md ---
+# Chip Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to count the two
+players' remaining chip inventories from a captured table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless occlusion makes the current inventory
+count ambiguous.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Chip recognition counts unfolded inventory chips for the robot/player and the
+opponent. It does not count current bets; current bets are handled by
+`BET_RECOGNITION.md` in this folder.
+
+The vision model does not need to produce structured JSON. It should report
+counts in plain language by denomination. The coding agent will parse those
+counts into the state files.
+
+## Geometry First
+
+The chips are unfolded flat on the felt, not piled vertically. Count individual
+visible chip faces in each color group. Do not estimate stack height.
+
+If table orientation is unclear, first use `TABLE_GEOMETRY.md` in this folder.
+
+## Denominations And Colors
+
+Use this fixed left-to-right denomination order:
+
+```text
+5, 10, 50, 100
+```
+
+Colors:
+
+- red chips -> 5
+- blue chips -> 10
+- green chips -> 50
+- brown chips -> 100
+
+## Robot/Player Inventory Chips
+
+Robot/player inventory chips are the unfolded chip groups at the bottom seat
+area, near the bottom rail and around the robot hole-card area. Do not include:
+
+- chips in the current betting areas,
+- opponent inventory chips,
+- dealer/blind/turn buttons,
+- community cards or hole cards.
+
+## Opponent Inventory Chips
+
+Opponent inventory chips are the unfolded chip groups at the top/opponent seat
+area, near the top rail and around the opponent hole-card area. Do not include:
+
+- opponent current bet,
+- robot current bet,
+- robot/player inventory chips,
+- dealer/blind/turn buttons,
+- community cards or hole cards.
+
+## Unclear Counts
+
+If a denomination is partially occluded, report the best visible count and say
+that the count is uncertain.
+
+If an entire inventory group is not visible enough to count, say that the group
+is not countable from the image.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+Robot/player inventory: about 4 red 5-chips, 3 blue 10-chips, 3 green 50-chips, and 3
+brown 100-chips. The brown count is partly occluded.
+
+Opponent inventory: about 3 red 5-chips, 5 blue 10-chips, 3 green 50-chips, and
+4 brown 100-chips. Counts are approximate because the group is angled.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- robot/player inventory counts by denomination,
+- opponent inventory counts by denomination,
+- which chip group or denomination counts are uncertain or not countable.
+
+Do not include bet chips, pot chips, buttons, cards, or generic player arrays.
+
+
+--- COMMUNITY_CARDS.md ---
+# Community Card Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to read the shared
+community cards from a captured table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless comparing frames helps determine whether a
+card was just dealt or moved.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Community cards are the shared board cards in the center of the table. They are
+the only source for deriving the poker board stage in V2.
+
+The vision model does not need to produce structured JSON. It should describe
+how many community cards are visible, read any clear rank/suit values, and say
+which cards are uncertain. The coding agent will parse that response into the
+state files.
+
+Do not ask the vision model to output a separate `street` field. The poker
+stage is derived from the number of visible community cards.
+
+## Card Notation
+
+Use rank + suit notation when a card is readable:
+
+- ranks: `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `T`, `J`, `Q`, `K`, `A`
+- suits: `h`, `d`, `c`, `s`
+
+Examples:
+
+- `Ah` = ace of hearts
+- `Td` = ten of diamonds
+- `7c` = seven of clubs
+
+## Deriving Board Stage
+
+The coding agent can derive the poker stage from the count:
+
+- 0 cards -> preflop
+- 3 cards -> flop
+- 4 cards -> turn
+- 5 cards -> river
+
+## Recognition Rules
+
+- Read only face-up cards in the shared board area.
+- Do not include robot hole cards or opponent hole cards.
+- Do not include folded/mucked opponent hole cards. A fold often appears as the
+  opponent's two face-down hole cards moved away from their normal top-seat
+  hole-card position and placed onto or near the community-card lane, compared
+  with the first or previous stable states. Those face-down moved cards are not
+  community cards.
+- Do not guess face-down cards.
+- Keep board order left-to-right as seen on the table.
+- If a card is partially occluded but rank/suit is still reasonably clear,
+  report the best read and say it is uncertain.
+- If a card is too blurry or occluded, preserve its position by saying that the
+  card is visible but unreadable.
+
+## Response Style
+
+Use a short natural-language answer:
+
+```text
+No community cards are visible.
+```
+
+or:
+
+```text
+Three community cards are visible from left to right. The first looks like 7d,
+the second is unreadable, and the third looks like Kc. The middle card is
+uncertain.
+```
+
+or:
+
+```text
+Five community cards are visible. The first four are 7d, 6s, 7c, Kc; the fifth
+card is too blurry to read.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- how many community cards are visible,
+- the left-to-right card read for each visible position,
+- which positions are unreadable or uncertain.
+
+Do not include hole cards, do not output a `street` field, and do not invent
+hidden or face-down card values.
+
+
+--- HELD_CARD_RECOGNITION.md ---
+# Held Card Recognition Guideline
+
+Use this guideline when a vision-capable agent is asked to read a hole card
+currently held by the robot dexterous hand.
+
+This is separate from community-card recognition. Hole cards on the table are
+usually face-down and must not be guessed. A hole card can be read only while
+the dexterous hand is holding it with the face visible to the camera.
+
+## Inputs To Provide
+
+Give the vision agent:
+
+- the current state image, usually `sN/00_capture.jpg`,
+- optionally a crop around the dexterous hand/card if available,
+- optionally the current action-sequence intent in plain language, such as
+  "view left hole card" or "view right hole card".
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+## Card Notation
+
+Use rank + suit notation when the card is readable:
+
+- ranks: `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `T`, `J`, `Q`, `K`, `A`
+- suits: `h`, `d`, `c`, `s`
+
+Examples:
+
+- `Ah` = ace of hearts
+- `Td` = ten of diamonds
+- `7c` = seven of clubs
+
+## Recognition Rules
+
+- Read only a card visibly held by the dexterous hand.
+- Do not read or guess face-down hole cards lying on the table.
+- Do not infer the other hole card.
+- If the card face is partly visible but uncertain, give the best read and say
+  exactly what is uncertain.
+- If rank or suit is not readable, say the held card is unreadable.
+- If no card is clearly held, say no readable held card is visible.
+
+The coding agent decides which cache slot to update from the action-sequence
+intent. The vision agent should not guess left/right slot unless the prompt
+explicitly asks it to inspect sequence context.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+The dexterous hand is holding a readable card. It appears to be Ah.
+```
+
+or:
+
+```text
+The dexterous hand is holding a card, but the rank is occluded and the card is
+not safely readable.
+```
+
+or:
+
+```text
+No readable held card is visible. The hole cards on the table are face-down and
+should not be guessed.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- whether the dexterous hand is holding a card,
+- the card value if readable,
+- which part is uncertain if not fully readable,
+- whether the card should be treated as unreadable.
+
+Do not produce structured JSON. The coding agent will update
+`hole_card_cache.json` only when the card is readable and the sequence slot is
+known.
+
+
+--- ROBOT_BEHAVIOR.md ---
+# Robot Behavior Guideline
+
+Use this guideline when a vision-capable agent is asked to describe what the
+robot dexterous hand is physically doing and whether the current action has
+created a physical failure that needs human help.
+
+## Inputs To Provide
+
+Give the vision agent:
+
+- the current state image, usually `sN/00_capture.jpg`,
+- optionally the previous state image if motion or sequence progress is
+  ambiguous,
+- optionally the current `action_sequence` intent in plain language, such as
+  "view left hole card", "put down left hole card", or "push chips",
+- optionally the recent `action_sequence` step statuses,
+- optionally the current `hole_card_cache` in plain language, for example
+  "left card is cached as Ah; right card is unknown",
+- optionally earlier state images if the agent needs to compare whether cards
+  or chip groups were disturbed.
+
+Do not require the vision agent to read JSON files or produce JSON.
+If JSON cache files are provided, treat them as context and answer in plain
+language.
+
+## What To Observe
+
+Focus on the physical robot arm and dexterous hand:
+
+- whether the hand is near its initial/rest pose,
+- whether the hand is reaching, moving, blurred, or mid-action,
+- whether the hand is holding a card,
+- whether the hand is holding or pushing chips,
+- whether the hand appears stuck, blocked, or in contact with something,
+- whether the hand occludes cards, chips, the turn button, or betting areas.
+
+Do not infer poker strategy from the robot pose. This guideline describes
+physical behavior only.
+
+## Near-Idle Occlusion
+
+After completing an action, the robot hand returns to a near-idle pose that is
+close to but not exactly the initial pose. This near-idle pose may partially
+block the opponent's betting area or other table regions.
+
+When describing the robot state, note if the hand is:
+
+- in true initial pose (not blocking any table regions),
+- in near-idle pose but blocking the opponent's betting area,
+- in near-idle pose but blocking other important table regions.
+
+If the near-idle pose blocks bet recognition or other visual parsing, the main
+agent should dispatch `reset_to_init` to move the hand to its true initial pose
+before capturing a fresh image.
+
+## Action-Specific Failure Checks
+
+The vision agent may inspect the current action intent, action-sequence
+progress, hole-card cache, and previous images to judge whether a failure needs
+human help.
+
+Before judging failure or recovery, first decide whether the robot is still in
+motion. If the hand is reaching, blurred, lifting a card, moving away from the
+table, rotating a card, transporting chips, or otherwise not settled, describe
+the action as still in progress. The coding agent should treat that as
+`acting` and wait for another capture. Do not call the game failed, do not call
+the atom failed, and do not propose `to_recover` while the hand is still
+executing the atom.
+
+If the context says a specific step is `dispatched`, explicitly judge whether
+that atom appears physically successful, still in progress, retryable, or unsafe
+after comparing the current image with the previous state.
+
+Call out a human-help condition when any of these are visible or strongly
+suspected:
+
+- During `view_card`, the dexterous hand dropped the card, knocked it out of
+  its normal hole-card area, exposed it on the table, or left it in an
+  unreadable/unsafe position.
+- During `put_down_card`, the returned card overlaps chips, hides chips,
+  covers a betting area, covers the turn button, or does not return to the
+  expected hole-card area.
+- During chip movement, including betting pushes or pulling back winnings, the
+  dexterous hand moved a card, button, opponent chip, community card, or any
+  non-target object.
+- During chip movement, including betting pushes or pulling back winnings, the
+  dexterous hand disturbed the unfolded chip layout: chips are scattered,
+  denomination groups are mixed, order is no longer countable, or
+  inventory/bet chips are no longer separable.
+- The dexterous hand appears stuck, pressing into the table, pinning a card or
+  chip, or holding an object after the action should have finished.
+
+If the issue is only temporary motion or mild blur, say the robot is still
+moving or the scene is unstable rather than immediately requiring human help.
+Human help is for physical states that look unsafe to retry or impossible to
+parse reliably.
+
+For card-pick/view-card actions, be especially conservative. A card partly
+lifted from the table, a card in the gripper but not yet readable, a hand
+rotating the card toward the camera, or a hand moving away from the hole-card
+area usually means the atom is still running. Do not classify those frames as
+missed pickup, failed pickup, dropped card, or lost game unless the hand has
+settled and the card is clearly dropped, exposed, misplaced, or pinned.
+
+## Retryable Recovery Checks
+
+Call out a retryable recovery condition when the previous atom action appears
+to have failed harmlessly after the hand settled and the table layout is still
+intact. These are `to_recover` candidates for the main coding agent:
+
+- During `view_card`, the target card was not picked up and still appears
+  face-down near its original hole-card position.
+- During `view_card`, the hand missed the card but did not expose, move, cover,
+  or damage any game object.
+- During chip movement, including betting pushes or pulling back winnings, the
+  intended chip did not move or did not follow the dexterous hand, and the chip
+  layout remains countable and ordered.
+- After a chip-push attempt, no target chip appears to have been pushed, but no
+  card, button, chip group, betting area, or opponent object was disturbed.
+
+Only call a state retryable from a settled post-atom view. In workflow terms,
+retryable recovery belongs after the scene is stable enough to be
+`atom_idle`; it does not belong during `acting`. If the hand is still away from
+rest pose, still moving, still holding an object, or the latest two frames show
+continued change, the correct visual conclusion is "still in progress; wait",
+not `to_recover`.
+
+Also do not call a state retryable if a card is exposed, dropped, misplaced,
+hidden, or if chips are scattered, mixed, hidden, or no longer countable. Those
+are `down` candidates after the scene has settled because blind retry could
+damage the table state.
+
+## Safe Continuation Checks
+
+Say the action looks safe to continue only when:
+
+- no card or chip layout appears damaged,
+- target chips/cards are still in recognizable zones,
+- no unrelated object was moved,
+- any viewed card is either still held for reading or has been returned cleanly,
+- the dexterous hand is not stuck or pinning an object.
+
+## Useful Descriptions
+
+Use concise natural language such as:
+
+```text
+The dexterous hand is near its initial pose and is not holding a card or chips.
+```
+
+```text
+The dexterous hand is extended over the table and appears to be holding a card
+face-up toward the camera.
+```
+
+```text
+The dexterous hand is near the chip area and may be pushing chips. The hand is
+not near its initial pose.
+```
+
+```text
+The dexterous hand is still in progress on the card-pick action. It is not near
+rest pose, and the card/hand relationship is still changing, so wait for another
+capture rather than judging recovery or failure.
+```
+
+```text
+The dexterous hand appears stuck or pressed against an object; the physical
+state is unsafe to continue automatically.
+```
+
+```text
+Human help needed. During chip movement, the dexterous hand appears to have
+scattered the unfolded chip groups, and the denominations are no longer
+separable enough for reliable counting.
+```
+
+```text
+Human help needed. The returned card overlaps a chip group and hides several
+chips, so the table state cannot be parsed safely.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- where the dexterous hand is,
+- what it appears to be doing,
+- whether it is holding a card or chips,
+- whether it is near idle/rest pose,
+- whether the current action appears safe, still in progress, or failed,
+- whether a failure looks retryable without human help,
+- any occlusion, disturbed layout, dropped card, moved non-target object, or
+  human-help concern.
+
+When the current action is still in progress, say that directly and stop there:
+do not also speculate that the atom failed or that recovery is needed. Recovery
+and failure labels require a settled post-action image, preferably compared
+against at least the previous state and the pre-action state.
+
+Do not produce structured JSON. The coding agent will convert the description
+into the `robot` field and use it with `loop_stage`.
+
+
+--- SCENE_STABILITY.md ---
+# Scene Stability Guideline
+
+Use this guideline when a vision-capable agent is asked to decide whether the
+latest captured scene is stable enough for the main coding agent to continue.
+
+## Inputs To Provide
+
+Give the vision agent:
+
+- the current state image, usually `sN/00_capture.jpg`,
+- the previous state image, usually `sN-1/00_capture.jpg`,
+- optionally older state images if the last two frames are ambiguous,
+- optionally the previous action or action-sequence note, if available,
+- when a robot atom was just dispatched, the pre-action image or last clearly
+  settled image, if available.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Scene stability is a visual judgment used before the main agent chooses the
+next action. It is not an absolute property of the table, and it is not
+guaranteed just because a cancel/reset prefix was sent.
+
+The vision model does not need to produce structured JSON. It should explain,
+in plain language, whether the latest scene looks stable and why. The coding
+agent will parse that response into the state files.
+
+## Key Idea
+
+Judge stability by comparing the two most recent state images:
+
+```text
+sN-1/00_capture.jpg
+sN/00_capture.jpg
+```
+
+The vision model or vision agent may inspect older states when the last two
+frames are ambiguous, but the final decision should answer whether the latest
+frame is safe for the main agent's next decision.
+
+**Important:** Scene stability only cares about the **dexterous hand's stability**,
+not the human opponent's general motion. Ignore the opponent's body movement,
+hand gestures, or posture changes unless they are actively blocking or moving
+objects on the table. The opponent may fidget, adjust their position, or move
+their hands near their chips—none of this affects scene stability unless they
+are physically interfering with the table layout.
+
+For robot actions, compare enough frames to avoid judging too early. The current
+frame, previous frame, and last clearly settled pre-action frame are often all
+needed. If the current atom is a card-pick/view-card step and the hand is still
+approaching, lifting, rotating, or holding the card in a non-settled pose, the
+scene is unstable and the action is still running.
+
+## Stable
+
+Call the scene stable only when:
+
+- the previous action appears finished,
+- the robot hand has returned to a near-idle pose or another clearly settled
+  pose,
+- the robot is not doing large movement,
+- cards and chips are not visibly moving,
+- unfolded chip groups are not being rearranged,
+- no human arm is substantially on the table organizing, moving, or blocking
+  cards/chips,
+- the latest image is clear enough for the main agent to use.
+
+Small visual differences are allowed. Lighting changes, tiny camera noise, or a
+slightly different human posture do not make the scene unstable by themselves.
+
+**Human opponent motion is not a stability concern.** The opponent may move their
+hands, adjust their posture, gesture, or shift position at any time. These normal
+human movements do not affect scene stability. Only flag human interference when
+an arm/hand is physically blocking the robot's workspace or actively moving
+cards/chips on the table.
+
+## Unstable
+
+Call the scene unstable when:
+
+- the robot arm is mid-motion, blurred, reaching, or still settling,
+- the robot is holding or moving a card/chips and the action is not clearly
+  complete,
+- cards or chips changed position between the two recent frames,
+- a human arm/hand is largely on the table and appears to be organizing,
+  moving, or blocking cards/chips,
+- the latest frame is too occluded to determine whether the action finished,
+- the robot looks stuck against an object or table feature.
+
+If the robot may be stuck or has hit something, mark the scene unstable and let
+the higher-level state machine escalate to human help after repeated unstable
+captures. This guideline does not define the human-help escalation policy.
+
+Do not use an unstable frame to declare a retryable recovery. Recovery is a
+post-atom judgment: the hand must have settled into an `atom_idle`-compatible
+state first. While the robot is still moving or the latest frames show continued
+change, the correct conclusion is unstable/still running, so the next action
+should be wait and recapture.
+
+## Cancel And Reset Prefix
+
+Most executable actions are prefixed with cancel/reset behavior:
+
+- send cancel / Ctrl+C,
+- reset the robot hand toward its init pose,
+- then execute the requested action.
+
+This prefix is part of the action execution flow. It should not be treated as a
+standalone action that automatically makes the scene stable.
+
+The scene becomes stable only after the full action sequence has visually
+finished and the robot has stopped large movement. For `put_down_card`, the
+reset prefix must be skipped because resetting while holding a card can drop it;
+the vision check must account for that special case. The cancel prefix is only
+terminal-control setup before dispatching the next robot policy; it is not
+evidence that the resulting atom has finished.
+
+## Vision Agent Procedure
+
+1. Open the current image `sN/00_capture.jpg`.
+2. Open the previous image `sN-1/00_capture.jpg`.
+3. Compare the robot arm, dexterous hand, cards, chips, and turn marker. Check
+   human arms only for large table-blocking or object-moving behavior.
+4. If the last two frames disagree, the robot is not near a settled pose, or a
+   card/chip is mid-transfer, inspect `sN-2/00_capture.jpg` or the last
+   pre-action image before making any failure or recovery judgment.
+5. Answer in plain language:
+   - stable or unstable,
+   - which frames were compared,
+   - the concrete visual reason,
+   - any notable uncertainty.
+
+Example stable response:
+
+```text
+Stable. Compared s4/00_capture.jpg and s5/00_capture.jpg. The robot hand is
+near idle, no card or chip movement is visible, and no human arm is changing the
+table.
+```
+
+Example unstable response:
+
+```text
+Unstable. Compared s4/00_capture.jpg and s5/00_capture.jpg. A human arm is
+substantially on the table and appears to be moving chips, so the table state
+may still be changing.
+```
+
+Example still-running robot response:
+
+```text
+Unstable. Compared s7/00_capture.jpg, s8/00_capture.jpg, and the pre-action
+frame. The dexterous hand is still lifting or rotating the hole card and has not
+settled, so this is still an acting state rather than a recovery decision.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- `Stable` or `Unstable` as the first word,
+- which images were compared,
+- the concrete visual reason,
+- any uncertainty that matters.
+
+Do not decide the robot's next action. The coding agent will use the response
+to choose wait, continue the current sequence, retry, or human help.
+
+## Agent Use
+
+If the scene is unstable, the next action should normally be `wait`, not a
+robot movement or poker decision.
+
+If the scene is unstable because a dispatched atom is still running, the next
+action should be `wait` and recapture. Do not choose recovery from this
+guideline output. Recovery can be considered only after a later capture shows a
+settled `atom_idle`-compatible scene.
+
+Repeated unstable states may indicate the robot is stuck, the table is blocked,
+or a human is still acting. Escalation should be handled by the higher-level
+state cache and action policy.
+
+
+--- SHOWDOWN_OUTCOME.md ---
+# Showdown And Outcome Guideline
+
+Use this guideline when a vision-capable agent is asked whether the hand has
+entered showdown, whether the robot must reveal its hole cards, or whether the
+robot has won or lost the hand.
+
+## Inputs To Provide
+
+Give the vision agent:
+
+- the current state image, usually `sN/00_capture.jpg`,
+- the current community-card read in plain language,
+- the robot hole-card cache in plain language, if available,
+- optionally previous state images if they help distinguish a fold from normal
+  face-down hole cards,
+- optionally the latest action or table event in plain language, such as
+  "opponent folded", "opponent showed cards", or "river betting finished".
+
+Do not require the vision agent to read JSON files or produce JSON. If JSON
+cache files are provided, treat them as context and answer in plain language.
+
+## What To Observe
+
+Focus on cards and visible hand outcome, not robot motion:
+
+- whether the opponent's two hole cards are face-up in the top/opponent hole
+  card area,
+- whether the robot's two hole cards are face-up in the bottom/robot hole card
+  area,
+- which face-up opponent cards are readable,
+- which face-up robot cards are readable,
+- whether a player has clearly folded or mucked,
+- whether enough cards are known to compare the best Texas Hold'em hand.
+
+Use the community cards from `COMMUNITY_CARDS.md`. Use cached robot hole cards
+when the robot cards are still face-down but were previously viewed and cached.
+
+## Fold / Muck Signature
+
+Treat the opponent as folded when their two hole cards are still face-down but
+have been moved out of the normal top/opponent hole-card area and placed into or
+onto the central community-card lane. This is especially strong evidence when a
+previous or initial state shows the opponent's normal two-card position near the
+top seat, while the current image shows those same two card backs displaced
+toward the shared board row or away from the opponent's usual hole-card slot.
+
+Do not require the opponent's folded cards to be face-up. A fold/muck is usually
+identified by face-down opponent hole cards being pushed away from their normal
+position toward the community cards. In that case no showdown comparison is
+needed: the robot wins the hand uncontested.
+
+Do not count these moved face-down opponent hole cards as community cards. They
+are folded/mucked hole cards, not newly dealt board cards.
+
+## Stage Decisions
+
+Say `show_hand` when the opponent has made their hole cards face-up, or the
+hand has otherwise reached showdown, and the robot's hole cards still need to
+be revealed or the outcome is not yet clear.
+
+Say `win` only when one of these is clear:
+
+- the opponent folded and the robot is the uncontested winner,
+- all needed showdown cards are readable or cached, and the robot's best
+  five-card Texas Hold'em hand is stronger than the opponent's.
+
+Say `lose` only when one of these is clear:
+
+- the robot folded,
+- all needed showdown cards are readable or cached, and the opponent's best
+  five-card Texas Hold'em hand is stronger than the robot's.
+
+If the result is tied, unreadable, occluded, or depends on a card that cannot be
+read or found in cache, do not force `win` or `lose`. Say exactly what is
+missing or ambiguous so the main coding agent can keep the state in
+`show_hand`, rerun visual parsing, wait, or request human help.
+
+## Poker Comparison
+
+Compare each player using the best five-card hand from their two hole cards and
+the shared community cards. Apply ordinary Texas Hold'em hand ranking:
+
+straight flush, four of a kind, full house, flush, straight, three of a kind,
+two pair, one pair, high card. Use kickers when the hand category is the same.
+
+Do not judge by a single "larger card" unless that is truly the deciding
+kicker after making each player's best five-card hand.
+
+## Response Style
+
+Use concise plain language:
+
+```text
+The opponent's two hole cards are face-up and readable as Qh and Qd. The
+robot's hole cards are still face-down, but the cache says Ah and Kc. With the
+visible board 2c 7d Qs 9h Jh, the opponent has three queens and the robot has
+ace high. The robot loses.
+```
+
+```text
+The opponent appears to have folded; their cards are not face-up and no
+showdown comparison is needed. The robot wins the hand uncontested.
+```
+
+```text
+The opponent's cards are face-up, but the right opponent card is unreadable.
+The robot should not be marked win or lose yet.
+```
+
+## Response Contract
+
+Answer in plain language. Include:
+
+- whether opponent hole cards are face-up,
+- readable opponent card values,
+- whether robot hole cards are face-up or must come from cache,
+- the best hand comparison when enough information is available,
+- the recommended loop-stage label: `show_hand`, `win`, or `lose`,
+- any missing card, unreadable card, possible tie, fold ambiguity, or other
+  reason not to decide the outcome.
+
+Do not output structured JSON. The coding agent will convert the answer into
+the parsed state's `loop_stage` and any compact table notes needed for routing.
+
+
+--- TABLE_GEOMETRY.md ---
+# Table Geometry Guideline
+
+Use this as a short fixed-layout reference for DexHoldem visual prompts.
+
+## Orientation
+
+The camera looks diagonally from the robot/player side toward the opponent.
+
+- Robot/player seat: bottom of image.
+- Opponent seat: top of image.
+- Robot hand/camera body: usually enters from the right and may occlude the
+  right side of the table.
+- Community cards: central row across the middle-lower table.
+- Robot hole cards: lower area near the robot/player seat.
+- Opponent hole cards: upper area near the opponent seat.
+
+Avoid bare "left" and "right" for player ownership. Prefer
+`bottom/robot side`, `top/opponent side`, `lower-left of board`, or
+`upper-right of board`.
+
+## Approximate Regions
+
+Use these as rough priors for the usual 1920x1080 image. Trust visible table
+markings over exact numbers if the camera shifts.
+
+Coordinates are normalized `(x_min-x_max, y_min-y_max)`, with image left/top as
+`0%`.
+
+- Felt/table: `(0-100%, 40-95%)`
+- Robot/player seat band: `(0-100%, 62-95%)`
+- Opponent seat band: `(15-75%, 34-54%)`
+- Community-card row: `(25-70%, 52-66%)`
+- Robot hole cards: `(45-72%, 70-86%)`
+- Opponent hole cards: `(35-55%, 42-52%)`
+- Robot-turn button area: `(7-17%, 73-86%)`
+- Deck at far left edge: `(0-5%, 58-66%)`
+- Common robot/camera occlusion: `(62-100%, 0-55%)`
+
+## Chips
+
+Chips are flat/unfolded, not stacked. Count visible chip faces one by one.
+
+Denominations:
+
+- red = 5
+- blue = 10
+- green = 50
+- brown = 100
+
+Buttons are not chips. White/yellow/blue labeled round markers are turn,
+dealer, small blind, or big blind buttons unless they clearly match chip
+denomination styling.
+
+## Zones
+
+- Robot inventory chips: bottom seat band, near lower rail and robot hole-card
+  area, outside the central betting lane.
+- Opponent inventory chips: top seat band, near opponent hole-card area,
+  outside the central betting lane.
+- Robot current bet: central betting lane on the lower/robot side of the
+  community-card row, between robot inventory and board.
+- Opponent current bet: central betting lane on the upper/opponent side of the
+  community-card row, between opponent inventory and board.
+- Community cards: face-up shared cards in the central row.
+- Deck: far-left edge; not hole cards or community cards.
+
+If a chip/card/button zone is ambiguous or occluded, say which zone is uncertain
+instead of forcing a count or card read.
+
+## Response Contract
+
+Answer in plain language. Mention:
+
+- which zone names you used,
+- whether chips are inventory chips or bet chips,
+- any occluded or ambiguous zones.
+
+Do not output JSON.
+
+
+--- TURN_DETECTION.md ---
+# Turn Detection Guideline
+
+Use this guideline for every captured-state parse to determine whether it is
+the robot/player's turn from the current table image.
+
+## Inputs To Provide
+
+Give the vision agent the current state image, usually `sN/00_capture.jpg`.
+No previous image is required unless the white turn button is hard to localize.
+
+Do not require the vision agent to read JSON files or produce JSON.
+
+Turn detection is based only on the small white physical turn button.
+
+The vision model does not need to produce structured JSON. It should simply say
+whether the white turn button indicates it is the robot/player's turn. The
+coding agent will convert that answer into the boolean `is_my_turn` field.
+
+Do not infer the robot's turn from dealer order, betting order, opponent body
+posture, chip positions, or poker action prompts. Those cues may be useful for
+strategy, but they should not decide turn ownership in this setup.
+
+## Positive Case
+
+Say it is our turn when the white button labeled like "Your Turn" is at the
+robot/player seat area.
+
+In the usual camera view, the robot/player seat is the bottom side of the table.
+If the button is near the bottom-left robot seat area, the turn is true.
+
+## Negative Case
+
+Say it is not our turn when the white turn button is at another player's seat
+area.
+
+For example, `bench/bench_raw/50.jpg` is a clear false case: the white turn
+button is on the opponent/top side of the table, not near the robot seat.
+
+## Occluded Or Unclear Case
+
+If the button is not visible or is too occluded/blurry to localize, say that it
+is not safely identifiable. The coding agent should normally treat that as not
+our turn and wait or ask for human confirmation.
+
+## Response Style
+
+Use a short natural-language answer:
+
+```text
+It is our turn. The white "Your Turn" button is near the robot seat at the
+bottom-left of the table.
+```
+
+or:
+
+```text
+It is not our turn. The white turn button is on the opponent side of the table.
+```
+
+Keep this separate from available poker actions. The button answers only:
+"is it our turn to act now?"
+
+## Response Contract
+
+The answer must make one of these plain-language judgments:
+
+- it is our turn,
+- it is not our turn,
+- the turn button is not safely identifiable.
+
+Do not report confidence or available actions.
+
+
+PRIOR CONTEXT (may be stale; current visual evidence takes priority):
+
+--- s0/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/1.jpg`.
+- Loop stage: `idle`.
+- dexterous hand is near its initial pose and not holding a card or chips.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "idle",
+  "robot": "dexterous hand is near its initial pose and not holding a card or chips",
+  "table": {
+    "scene_stable": true,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+
+
+--- s1/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/3.jpg`.
+- Loop stage: `acting`.
+- dexterous hand is moving through the left hole-card pickup sequence.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "acting",
+  "robot": "dexterous hand is moving through the left hole-card pickup sequence",
+  "table": {
+    "scene_stable": false,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+
+
+--- s2/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/4.jpg`.
+- Loop stage: `acting`.
+- dexterous hand is moving through the left hole-card pickup sequence.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "acting",
+  "robot": "dexterous hand is moving through the left hole-card pickup sequence",
+  "table": {
+    "scene_stable": false,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+
+
+--- s3/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/5.jpg`.
+- Loop stage: `acting`.
+- dexterous hand is lifting the left hole card; the card face is not readable.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "acting",
+  "robot": "dexterous hand is lifting the left hole card; the card face is not readable",
+  "table": {
+    "scene_stable": false,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+
+
+--- s4/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/6.jpg`.
+- Loop stage: `acting`.
+- dexterous hand is lifting the left hole card; the card face is not readable.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "acting",
+  "robot": "dexterous hand is lifting the left hole card; the card face is not readable",
+  "table": {
+    "scene_stable": false,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+
+
+--- s5/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/7.jpg`.
+- Loop stage: `atom_idle`.
+- dexterous hand is holding the left hole card face-visible to the camera.
+- Readable held card: `9d` from the left slot.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "atom_idle",
+  "robot": "dexterous hand is holding the left hole card face-visible to the camera",
+  "table": {
+    "scene_stable": true,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  },
+  "held_card": {
+    "position": "left",
+    "card": "9d"
+  }
+}
+```
+
+
+--- s6/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/8.jpg`.
+- Loop stage: `acting`.
+- dexterous hand is moving through the left hole-card put-down sequence.
+- Readable held card: `9d` from the left slot.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "acting",
+  "robot": "dexterous hand is moving through the left hole-card put-down sequence",
+  "table": {
+    "scene_stable": false,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  },
+  "held_card": {
+    "position": "left",
+    "card": "9d"
+  }
+}
+```
+
+
+--- s7/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/9.jpg`.
+- Loop stage: `acting`.
+- dexterous hand is moving through the left hole-card put-down sequence.
+- Readable held card: `9d` from the left slot.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "acting",
+  "robot": "dexterous hand is moving through the left hole-card put-down sequence",
+  "table": {
+    "scene_stable": false,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  },
+  "held_card": {
+    "position": "left",
+    "card": "9d"
+  }
+}
+```
+
+
+--- s8/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/14.jpg`.
+- Loop stage: `idle`.
+- dexterous hand has returned near the table after putting down the left hole card and is ready to view the right hole card.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "idle",
+  "robot": "dexterous hand has returned near the table after putting down the left hole card and is ready to view the right hole card",
+  "table": {
+    "scene_stable": true,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+
+
+--- s9/01_parsed_state.md ---
+# Parsed State
+
+Source image: `00_capture.jpg`
+
+## Visual Summary
+
+- Source raw image is `bench/bench_raw/14.jpg`.
+- Loop stage: `idle`.
+- dexterous hand has returned near the table after putting down the left hole card and is ready to view the right hole card.
+
+## State JSON
+
+```json
+{
+  "loop_stage": "idle",
+  "robot": "dexterous hand has returned near the table after putting down the left hole card and is ready to view the right hole card",
+  "table": {
+    "scene_stable": true,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {
+      "5": 4,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "opponent_chips": {
+      "5": 3,
+      "10": 4,
+      "50": 4,
+      "100": 4
+    },
+    "my_current_bet": {
+      "5": 0,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    },
+    "opponent_bet": {
+      "5": 1,
+      "10": 0,
+      "50": 0,
+      "100": 0
+    }
+  }
+}
+```
+
+
+--- action_sequence.json ---
+{
+  "schema_version": 1,
+  "sequence_id": "seq_view_right_hole_card",
+  "loop_stage": "acting",
+  "intent": "view_right_hole_card",
+  "action": {
+    "action": "view_card",
+    "position": "right"
+  },
+  "plan": {
+    "prefix": "reset",
+    "commands": [
+      "python Dexas-Policy/robot_client.py --instruction 1 --port 13579 --server_ip 192.168.1.200"
+    ],
+    "command_steps": [
+      "pick_card"
+    ],
+    "sequence_steps": [
+      "pick_card",
+      "read_card",
+      "put_down_card",
+      "verify_idle"
+    ]
+  },
+  "steps": [
+    {
+      "name": "pick_card",
+      "status": "dispatched"
+    },
+    {
+      "name": "read_card",
+      "status": "pending"
+    },
+    {
+      "name": "put_down_card",
+      "status": "pending"
+    },
+    {
+      "name": "verify_idle",
+      "status": "pending"
+    }
+  ],
+  "current_step": "pick_card",
+  "retry_count": 0,
+  "last_error": null,
+  "human_required": false,
+  "safety_counters": {
+    "consecutive_waits": 0,
+    "total_waits": 0,
+    "consecutive_recoveries": 0,
+    "total_recoveries": 0,
+    "executor_failures": 0,
+    "action_sequences_started": 1
+  },
+  "updated_at": "2026-05-01T00:00:00+08:00"
+}
+
+
+--- hole_card_cache.json ---
+{
+  "schema_version": 1,
+  "left": {
+    "card": "9d",
+    "status": "cached",
+    "source_state": "s5",
+    "confidence": 1.0
+  },
+  "right": {
+    "card": null,
+    "status": "unknown",
+    "source_state": null,
+    "confidence": 0.0
+  },
+  "blinds": {
+    "dealer": "opponent",
+    "small_blind": "opponent",
+    "big_blind": "robot",
+    "source_state": "s0",
+    "status": "recognized"
+  }
+}
+
+
+FINAL OUTPUT CONTRACT (overrides individual guideline output formats): Return only one JSON object matching the following schema, with no markdown fences. Produce concrete estimates, including table.scene_stable; list low-confidence, inferred or inherited values in table.uncertain_fields. Do not write files.
+
+
+```json
+{
+  "loop_stage": "idle",
+  "blind": "big_blind",
+  "showdown_outcome": "not_showdown",
+  "table": {
+    "scene_stable": true,
+    "is_my_turn": true,
+    "community_cards": [],
+    "my_chips": {"5": 4, "10": 3, "50": 3, "100": 3},
+    "opponent_chips": {"5": 4, "10": 4, "50": 3, "100": 3},
+    "my_current_bet": {"5": 0, "10": 0, "50": 0, "100": 0},
+    "opponent_bet": {"5": 0, "10": 0, "50": 0, "100": 0},
+    "uncertain_fields": []
+  }
+}
+```
+
+Field values:
+- `loop_stage`: idle, acting, atom_idle, down, to_recover, win, lose, show_hand
+- `blind`: big_blind, small_blind, none
+- `showdown_outcome`: win, lose, tie, not_showdown
+- Chip fields: objects with keys "5", "10", "50", "100" (integer counts)
+- `uncertain_fields`: field names with inherited/inferred/low-confidence values
+
