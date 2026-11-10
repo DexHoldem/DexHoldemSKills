@@ -29,19 +29,18 @@ records the retained/removed inputs; the [GPT provenance](results/2026-11-10_nat
 records the original source and command settings. Runtime/OS versions are
 recorded separately and are not claimed to reproduce historical infrastructure.
 
-Working results are under `/private/tmp/dexholdem_native_ablation` while the
-campaign runs. GPT and Gemini each passed their first formal p3 trial's original
-output checks, and their full queues are active. These formal trials are reused.
-The user switched Claude accounts and requested immediate execution at 23:19
-Asia/Singapore on 2026-11-10; Claude is now running and the old reset wait was
-cancelled. Model inputs and settings are unchanged.
+Working results are under `/private/tmp/dexholdem_native_ablation`. At the
+November 11 checkpoint, all four accessible GPT configurations and both Gemini
+configurations have 108 returned trials each. Claude continues on the user's
+replacement account. The original reset wait was cancelled on the user's
+November 10 instruction; model inputs and settings remain unchanged.
 Completed/malformed answers are retained without score-based retries; explicit
 zero-token Claude quota errors preserve all attempts and defer until the next
 provider-stated reset. Unknown failures remain visible for inspection.
 
 Original `evaluate_column.py` remains authoritative for Overall and field scores.
 Direct `table.scene_stable` scoring is added separately to the same outputs;
-it does not alter the original Overall. Full results are pending.
+it does not alter the original Overall. Six completed-model results are archived below; Claude results remain pending.
 
 ## Completed retrospective stability scoring
 
@@ -92,3 +91,16 @@ errors stop new submissions and drain ongoing requests. Real-thread tests cover
 refill, concurrency bounds, exactly-once results and safe stopping. All 35
 relevant tests passed. Throughput comparisons across different scenes are
 descriptive only; later scenes may take substantially longer.
+
+## November 11 checkpoint
+
+The four accessible GPT configurations are complete. Gemini recovery uses the
+original native runner with direct paid Google API authentication for exactly
+eight unanswered/unstarted Flash trials. Existing invalid outputs are retained.
+Claude remains in progress on its original queue.
+
+Completed-model fields, per-repeat metrics, scene-level records and portable
+source outputs are in [the native results checkpoint](results/2026-11-10_native_no_annotations/scored_completed/README.md).
+See its summary for the current completeness snapshot and the recovery protocol
+for the disclosed authentication-route change. The published annotated-history
+results remain the control.

@@ -105,3 +105,37 @@ errors stop new submissions and drain ongoing requests. Real-thread tests cover
 refill, concurrency bounds, exactly-once results and safe stopping. All 35
 relevant tests passed. Throughput comparisons across different scenes are
 descriptive only; later scenes may take substantially longer.
+
+## Paid Google API recovery and completed-model export — 2026-11-11
+
+Gemini 3 Flash exhausted the original CLI account quota near the end of repeat 3.
+Three unanswered 429 trials (p26–p28) and five unstarted trials (p32–p36) are
+recovered using direct paid Gemini Developer API authentication. The original
+Gemini CLI, native runner, prompt, tool permissions, images and output checks
+are unchanged. This authentication/backend route change is explicit in every
+recovered record; it is not claimed identical to the original service route.
+OpenRouter connectivity checks failed before any benchmark recovery request.
+
+`recover_gemini_google.py` acquires the existing provider lock, verifies frozen
+source/input hashes, and validates an explicit eight-trial plan before launch.
+It requires both a missing answer and explicit 429/RESOURCE_EXHAUSTED evidence
+to retry a failed trial. Invalid or answered trials are never selected. The p29
+repeat-3 answer is retained despite its later CLI error because the original
+output check passed. Old canonical failure records and attempt artifacts are
+preserved. Hashes of all unaffected Gemini records are verified after recovery.
+The two-worker rolling queue stops new submissions on a transport/wrapper error.
+Run-local authentication settings and the credential are kept outside the repo.
+
+`score_native.py` uses the original column evaluator and its default `high`
+community-card scope. It exports Overall, all eight paper fields, field average,
+and explicit stable/unstable metrics for configurations with all 108 returned
+trials and no unresolved transport failures. Invalid model outputs remain in
+the denominators. Incomplete Claude configurations are listed separately.
+The portable summary/output-check archive is independently checked using
+`audit_original.py`; raw runner outputs and all attempts are also retained.
+There are 36 distinct scenes repeated three times, not 108 independent scenes.
+
+The existing tests cover input preservation, original runner arguments, quota
+handling, rolling queues and stability scoring. Three new real-filesystem
+tests cover recovery eligibility and rejection of answered, invalid-output and
+non-quota cases. The selected 19 tests pass. No credentials are committed.
